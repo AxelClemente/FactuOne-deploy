@@ -3,6 +3,8 @@ import { ClientForm } from "@/components/clients/client-form"
 import { getCurrentUser } from "@/lib/auth"
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
 
+export const dynamic = 'force-dynamic'
+
 export default async function NewClientPage() {
   // Obtener el usuario actual
   const user = await getCurrentUser()

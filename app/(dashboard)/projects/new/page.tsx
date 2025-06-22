@@ -5,6 +5,8 @@ import { clients as clientsTable } from "@/app/db/schema"
 import { getActiveBusiness } from "@/lib/getActiveBusiness"
 import { ProjectForm } from "@/components/projects/project-form"
 
+export const dynamic = 'force-dynamic'
+
 export default async function NewProjectPage() {
   const activeBusinessId = await getActiveBusiness()
   if (!activeBusinessId) {
