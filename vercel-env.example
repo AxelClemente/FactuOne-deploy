@@ -1,0 +1,18 @@
+# Variables de entorno para Vercel
+# Copia estas variables en la configuración de Vercel
+
+# Base de datos MySQL del cliente
+DATABASE_URL=mysql://factuuser:F0rd@Rapt0r@37.59.125.76:3306/factuone
+
+# NextAuth.js
+NEXTAUTH_SECRET=tu-secret-key-muy-seguro-aqui
+NEXTAUTH_URL=https://tu-app.vercel.app
+
+# Configuración de la aplicación
+NODE_ENV=production
+APP_URL=https://tu-app.vercel.app
+
+# Notas importantes:
+# 1. Reemplaza 'tu-app.vercel.app' con tu dominio real de Vercel
+# 2. Genera un NEXTAUTH_SECRET seguro (puedes usar: openssl rand -base64 32)
+# 3. Asegúrate de que la base de datos MySQL esté accesible desde Vercel 
