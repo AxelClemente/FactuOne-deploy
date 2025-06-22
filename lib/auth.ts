@@ -1,6 +1,6 @@
 import { compare, hash } from "bcryptjs"
 import { cookies } from "next/headers"
-import { getDb } from "@/lib/db"
+import { getDb, schema } from "@/lib/db"
 
 /**
  * Verifica si la contraseña proporcionada coincide con el hash almacenado
@@ -77,6 +77,8 @@ export async function getCurrentUser() {
   // En una implementación real, verificaríamos la sesión en la base de datos
   // y obtendríamos el usuario asociado
   // Para desarrollo, devolvemos el primer usuario disponible
-  const db = await getDb();
-  return db.query.users.findFirst();
+  const db = await getDb()
+  // Usamos una sintaxis más explícita que es más compatible con el build de Vercel
+  const users = await db.select().from(schema.users).limit(1)
+  return users[0] || null
 }
