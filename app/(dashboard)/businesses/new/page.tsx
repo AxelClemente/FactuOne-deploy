@@ -2,6 +2,8 @@ import { redirect } from "next/navigation"
 import { BusinessForm } from "@/components/businesses/business-form"
 import { getCurrentUser } from "@/lib/auth"
 
+export const dynamic = 'force-dynamic'
+
 export default async function NewBusinessPage() {
   // Obtener el usuario actual
   const user = await getCurrentUser()
@@ -17,7 +19,7 @@ export default async function NewBusinessPage() {
       </div>
 
       <div className="mx-auto max-w-2xl">
-        <BusinessForm userId={user.id} />
+        <BusinessForm userId={user.id.toString()} />
       </div>
     </div>
   )
