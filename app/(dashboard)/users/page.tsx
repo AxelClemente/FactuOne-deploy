@@ -5,7 +5,7 @@ import { PlusCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getCurrentUser } from "@/lib/auth"
 import { getActiveBusiness } from "@/lib/getActiveBusiness"
-import { db } from "@/lib/db"
+import { getUsersForBusiness } from "./actions"
 import { UserList } from "@/components/users/user-list"
 
 export default async function UsersPage() {

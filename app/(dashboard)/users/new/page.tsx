@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation"
 import { getCurrentUser } from "@/lib/auth"
 import { getActiveBusiness } from "@/lib/getActiveBusiness"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { UserRegistrationForm } from "@/components/users/user-registration-form"
-import { db } from "@/lib/db"
 
 export default async function NewUserPage() {
   // Verificar que el usuario está autenticado
