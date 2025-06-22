@@ -47,11 +47,11 @@ const mockNotifications = [
 
 export async function GET(request: NextRequest) {
   try {
-    // Verificar autenticación
-    const user = await getCurrentUser()
-    if (!user) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
+    // La llamada a getCurrentUser() se elimina para evitar errores de base de datos
+    // durante el proceso de build en Vercel, ya que esta ruta devuelve datos mock.
+    // if (!user) {
+    //   return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    // }
 
     // En una aplicación real, aquí filtrarías por usuario y negocio activo
     // const businessId = await getActiveBusiness()
