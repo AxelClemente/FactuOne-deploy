@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { notFound } from "next/navigation"
-import { getUserById } from "../actions"
+import { getUserById } from "../../actions"
 import { UserForm } from "@/components/users/user-form"
 import { getActiveBusiness } from "@/lib/getActiveBusiness"
 
