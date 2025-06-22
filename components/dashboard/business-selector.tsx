@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast"
 
 type Business = {
   id: string
-  name: string
+  name: string | null
 }
 
 interface BusinessSelectorProps {

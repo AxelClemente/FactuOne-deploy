@@ -5,14 +5,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getDashboardData, type MonthlyData } from "@/app/(dashboard)/dashboard/actions"
 
-export function DashboardCharts() {
+interface DashboardChartsProps {
+  searchParams: {
+    startDate?: string
+    endDate?: string
+    period?: string
+  }
+}
+
+export function DashboardCharts({ searchParams }: DashboardChartsProps) {
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const dashboardData = await getDashboardData("clb1234567890")
+        const dashboardData = await getDashboardData(
+          "clb1234567890",
+          searchParams.startDate ? new Date(searchParams.startDate) : undefined,
+          searchParams.endDate ? new Date(searchParams.endDate) : undefined,
+        )
         setMonthlyData(dashboardData.monthlyData)
       } catch (error) {
         console.error("Error al cargar datos del dashboard:", error)
@@ -22,7 +34,7 @@ export function DashboardCharts() {
     }
 
     fetchData()
-  }, [])
+  }, [searchParams])
 
   const formattedData = monthlyData.map((item) => {
     const [year, month] = item.month.split("-")
