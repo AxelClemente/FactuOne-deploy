@@ -181,13 +181,25 @@ export async function updateUser(userId: string, data: { name?: string; email?: 
 
 // Eliminar un usuario de un negocio
 export async function deleteUserFromBusiness(userId: string, businessId: string) {
-  const db = await getDb()
-  const userIdNumber = parseInt(userId, 10)
-  const businessIdNumber = parseInt(businessId, 10)
+  try {
+    const db = await getDb()
+    const userIdNumber = parseInt(userId, 10)
+    const businessIdNumber = parseInt(businessId, 10)
 
-  await db
-    .delete(businessUsers)
-    .where(and(eq(businessUsers.userId, userIdNumber), eq(businessUsers.businessId, businessIdNumber)))
+    await db
+      .delete(businessUsers)
+      .where(and(eq(businessUsers.userId, userIdNumber), eq(businessUsers.businessId, businessIdNumber)))
 
-  revalidatePath("/users")
+    revalidatePath("/users")
+    
+    return {
+      success: true
+    }
+  } catch (error) {
+    console.error("Error al eliminar usuario del negocio:", error)
+    return {
+      success: false,
+      error: "Error al eliminar el usuario del negocio"
+    }
+  }
 }

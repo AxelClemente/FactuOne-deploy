@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
-import { removeUserFromBusiness } from "@/app/(dashboard)/users/actions"
+import { deleteUserFromBusiness } from "@/app/(dashboard)/users/actions"
 
 interface User {
   id: string
@@ -54,7 +54,7 @@ export function UserList({ users, businessId, currentUserId, isAdmin }: UserList
     setIsRemoving(userId)
 
     try {
-      const result = await removeUserFromBusiness(userId, businessId)
+      const result = await deleteUserFromBusiness(userId, businessId)
 
       if (result.success) {
         toast({
