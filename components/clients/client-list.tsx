@@ -23,6 +23,10 @@ type ClientWithStats = {
   totalPending: number
   invoiceCount: number
   status: "current" | "overdue"
+  totalInvoicedBase: number
+  totalPendingBase: number
+  totalInvoicedIVA: number
+  totalPendingIVA: number
 }
 
 type SortField = "name" | "totalInvoiced" | "totalPending" | "invoiceCount"
@@ -279,12 +283,18 @@ export function ClientList({ businessId }: { businessId: string }) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Total facturado</p>
-                    <p className="font-medium">{formatCurrency(client.totalInvoiced)}</p>
+                    <p className="font-medium">
+                      {formatCurrency(client.totalInvoicedBase)} <span className="text-xs text-muted-foreground">(base)</span>
+                      <br />
+                      {formatCurrency(client.totalInvoicedIVA)} <span className="text-xs text-muted-foreground">(IVA)</span>
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Pendiente de cobro</p>
-                    <p className={`font-medium ${client.totalPending > 0 ? "text-destructive" : ""}`}>
-                      {formatCurrency(client.totalPending)}
+                    <p className={`font-medium ${client.totalPendingBase > 0 ? "text-destructive" : ""}`}>
+                      {formatCurrency(client.totalPendingBase)} <span className="text-xs text-muted-foreground">(base)</span>
+                      <br />
+                      {formatCurrency(client.totalPendingIVA)} <span className="text-xs text-muted-foreground">(IVA)</span>
                     </p>
                   </div>
                 </div>

@@ -165,26 +165,35 @@ export async function getClientsWithStats(businessId: string) {
         const clientInvoices = await db.select().from(invoices).where(eq(invoices.clientId, client.id))
 
         // Calcular totales
-        const totalInvoiced = clientInvoices
-          .filter(invoice => invoice.status === "paid")
-          .reduce((sum, invoice) => sum + Number(invoice.total), 0)
+        const paidInvoices = clientInvoices.filter(invoice => invoice.status === "paid")
         const pendingInvoices = clientInvoices.filter(
           (invoice) => invoice.status !== "paid" && invoice.status !== "cancelled"
         )
+        // Facturado solo pagado
+        const totalInvoicedBase = paidInvoices.reduce((sum, invoice) => sum + Number(invoice.subtotal), 0)
+        const totalInvoicedIVA = paidInvoices.reduce((sum, invoice) => sum + Number(invoice.taxAmount), 0)
+        const totalInvoiced = paidInvoices.reduce((sum, invoice) => sum + Number(invoice.total), 0)
+        // Pendiente de cobro
+        const totalPendingBase = pendingInvoices.reduce((sum, invoice) => sum + Number(invoice.subtotal), 0)
+        const totalPendingIVA = pendingInvoices.reduce((sum, invoice) => sum + Number(invoice.taxAmount), 0)
         const totalPending = pendingInvoices.reduce((sum, invoice) => sum + Number(invoice.total), 0)
         const invoiceCount = clientInvoices.length
 
         // Debug
-        console.log(`[getClientsWithStats] Cliente: ${client.name}, totalInvoiced (pagado):`, totalInvoiced)
+        console.log(`[getClientsWithStats] Cliente: ${client.name}, totalInvoicedBase:`, totalInvoicedBase, 'totalInvoicedIVA:', totalInvoicedIVA, 'totalPendingBase:', totalPendingBase, 'totalPendingIVA:', totalPendingIVA)
 
         // Determinar estado
-        const status = totalPending > 0 ? "overdue" : "current"
+        const status: "current" | "overdue" = totalPending > 0 ? "overdue" : "current"
 
         return {
           ...client,
           id: client.id.toString(),
           totalInvoiced,
+          totalInvoicedBase,
+          totalInvoicedIVA,
           totalPending,
+          totalPendingBase,
+          totalPendingIVA,
           invoiceCount,
           status,
         }
