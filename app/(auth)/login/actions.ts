@@ -77,6 +77,15 @@ export async function loginUser(formData: z.infer<typeof loginSchema>): Promise<
       secure: process.env.NODE_ENV === "production",
       expires: expiresAt,
     })
+    // Guardar el userId en una cookie
+    cookieStore.set({
+      name: "session_user_id",
+      value: user.id.toString(),
+      httpOnly: true,
+      path: "/",
+      secure: process.env.NODE_ENV === "production",
+      expires: expiresAt,
+    })
     console.log("Cookie establecida correctamente")
 
     // Determinar a dónde redirigir al usuario basado en sus negocios

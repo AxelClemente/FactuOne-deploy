@@ -26,6 +26,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   return (
     <div className="w-full py-4 space-y-5">
+      {/* DEBUG: Usuario activo */}
+      <div style={{ background: "#f5f5f5", padding: "8px", borderRadius: "6px", marginBottom: "16px" }}>
+        <strong>Usuario activo:</strong> {user?.name} ({user?.email}) [id: {user?.id}]
+      </div>
       <DashboardHeader />
       <BusinessSelector businesses={businesses} activeBusinessId={activeBusinessId} />
       <DashboardFilters />

@@ -74,11 +74,13 @@ export async function isAuthenticated(): Promise<boolean> {
  * Obtiene el usuario actual basado en la cookie de sesión
  */
 export async function getCurrentUser() {
-  // En una implementación real, verificaríamos la sesión en la base de datos
-  // y obtendríamos el usuario asociado
-  // Para desarrollo, devolvemos el primer usuario disponible
-  const db = await getDb()
-  // Usamos una sintaxis más explícita que es más compatible con el build de Vercel
-  const users = await db.select().from(schema.users).limit(1)
-  return users[0] || null
+  const cookieStore = cookies();
+  const userId = cookieStore.get("session_user_id")?.value;
+  if (!userId) return null;
+
+  const db = await getDb();
+  const user = await db.query.users.findFirst({
+    where: (users: any, { eq }: any) => eq(users.id, parseInt(userId)),
+  });
+  return user || null;
 }
