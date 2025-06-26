@@ -233,6 +233,8 @@ export async function getInvoices({
 export async function getInvoiceWithLines(invoiceId: number) {
   const db = await getDb()
   try {
+    console.log(`[getInvoiceWithLines] Buscando factura con ID: ${invoiceId}`)
+    
     const invoice = await db.query.invoices.findFirst({
       where: eq(invoices.id, invoiceId),
       with: {
@@ -240,7 +242,15 @@ export async function getInvoiceWithLines(invoiceId: number) {
         client: true,
       },
     })
-    if (!invoice) throw new Error("Factura no encontrada")
+    
+    console.log(`[getInvoiceWithLines] Resultado de la consulta:`, invoice)
+    
+    if (!invoice) {
+      console.log(`[getInvoiceWithLines] Factura no encontrada`)
+      throw new Error("Factura no encontrada")
+    }
+    
+    console.log(`[getInvoiceWithLines] Factura encontrada con ${invoice.lines?.length || 0} líneas`)
     return invoice
   } catch (error) {
     console.error("Error al obtener factura con líneas:", error)

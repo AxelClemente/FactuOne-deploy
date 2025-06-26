@@ -1,6 +1,7 @@
 import { compare, hash } from "bcryptjs"
 import { cookies } from "next/headers"
 import { getDb, schema } from "@/lib/db"
+import { eq } from "drizzle-orm"
 
 /**
  * Verifica si la contraseña proporcionada coincide con el hash almacenado
@@ -66,7 +67,8 @@ export async function isAuthenticated(): Promise<boolean> {
   }
 
   // En producción, verificaríamos la sesión en la base de datos
-  const sessionToken = cookies().get("session_token")?.value
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get("session_token")?.value
   return !!sessionToken
 }
 
@@ -74,13 +76,11 @@ export async function isAuthenticated(): Promise<boolean> {
  * Obtiene el usuario actual basado en la cookie de sesión
  */
 export async function getCurrentUser() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const userId = cookieStore.get("session_user_id")?.value;
   if (!userId) return null;
 
   const db = await getDb();
-  const user = await db.query.users.findFirst({
-    where: (users: any, { eq }: any) => eq(users.id, parseInt(userId)),
-  });
-  return user || null;
+  const user = await db.select().from(schema.users).where(eq(schema.users.id, parseInt(userId))).limit(1);
+  return user[0] || null;
 }
