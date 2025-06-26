@@ -21,7 +21,7 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
   }
 
   try {
-    const { id } = await params // Correctamente esperando los parámetros
+    const { id } = params // Acceso directo, sin await
     const invoice = await getInvoiceWithLines(parseInt(id)) // Usando el 'id' y convirtiéndolo a número
 
     // Verificar que la factura pertenece al negocio activo

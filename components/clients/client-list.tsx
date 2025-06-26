@@ -48,8 +48,12 @@ export function ClientList({ businessId }: { businessId: string }) {
     async function loadClients() {
       try {
         const clientsData = await getClientsWithStats(businessId)
-        setClients(clientsData)
-        setFilteredClients(clientsData)
+        const clientsDataWithStringId = clientsData.map(client => ({
+          ...client,
+          id: client.id.toString()
+        }))
+        setClients(clientsDataWithStringId)
+        setFilteredClients(clientsDataWithStringId)
       } catch (error) {
         console.error("Error al cargar clientes:", error)
         toast({

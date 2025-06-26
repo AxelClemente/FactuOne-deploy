@@ -165,18 +165,24 @@ export async function getClientsWithStats(businessId: string) {
         const clientInvoices = await db.select().from(invoices).where(eq(invoices.clientId, client.id))
 
         // Calcular totales
-        const totalInvoiced = clientInvoices.reduce((sum, invoice) => sum + Number(invoice.total), 0)
+        const totalInvoiced = clientInvoices
+          .filter(invoice => invoice.status === "paid")
+          .reduce((sum, invoice) => sum + Number(invoice.total), 0)
         const pendingInvoices = clientInvoices.filter(
-          (invoice) => invoice.status === "sent" || invoice.status === "overdue",
+          (invoice) => invoice.status !== "paid" && invoice.status !== "cancelled"
         )
         const totalPending = pendingInvoices.reduce((sum, invoice) => sum + Number(invoice.total), 0)
         const invoiceCount = clientInvoices.length
+
+        // Debug
+        console.log(`[getClientsWithStats] Cliente: ${client.name}, totalInvoiced (pagado):`, totalInvoiced)
 
         // Determinar estado
         const status = totalPending > 0 ? "overdue" : "current"
 
         return {
           ...client,
+          id: client.id.toString(),
           totalInvoiced,
           totalPending,
           invoiceCount,
