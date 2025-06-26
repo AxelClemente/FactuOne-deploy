@@ -108,7 +108,7 @@ export const invoiceLines = table("invoice_lines", {
 });
 
 // ReceivedInvoiceTypes
-export const receivedTypes = table("received_types", {
+export const receivedTypes = table("received_invoice_types", {
   ...autoincrementId,
   businessId: t.int("business_id").notNull().references(() => businesses.id),
   name: t.varchar("name", { length: 255 }).notNull(),
@@ -120,7 +120,7 @@ export const receivedTypes = table("received_types", {
 export const receivedInvoices = table("received_invoices", {
   ...autoincrementId,
   businessId: t.int("business_id").notNull().references(() => businesses.id),
-  typeId: t.int("type_id").references(() => receivedTypes.id),
+  typeId: t.int("received_invoice_type_id").references(() => receivedTypes.id),
   number: t.varchar("number", { length: 50 }).notNull(),
   date: t.datetime("date").notNull(),
   dueDate: t.datetime("due_date").notNull(),

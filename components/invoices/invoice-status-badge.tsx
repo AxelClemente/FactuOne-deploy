@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge"
 
-type InvoiceStatus = "pending" | "paid" | "overdue" | "cancelled"
+type InvoiceStatus = "pending" | "paid" | "overdue" | "cancelled" | "draft"
 
 interface InvoiceStatusBadgeProps {
   status: InvoiceStatus
@@ -8,7 +8,7 @@ interface InvoiceStatusBadgeProps {
 
 export function InvoiceStatusBadge({ status }: InvoiceStatusBadgeProps) {
   switch (status) {
-    case "pending":
+    case "draft":
       return <Badge variant="secondary">Pendiente</Badge>
     case "paid":
       return (

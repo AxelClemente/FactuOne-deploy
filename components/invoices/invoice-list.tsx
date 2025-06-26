@@ -72,7 +72,7 @@ export function InvoiceList({ businessId, initialInvoices }: InvoiceListProps) {
   }, [businessId, searchParams.toString(), toast])
 
   // Cambiar estado de factura
-  const handleStatusChange = async (invoiceId: string, status: "pending" | "paid" | "overdue" | "cancelled") => {
+  const handleStatusChange = async (invoiceId: string, status: "draft" | "paid" | "overdue" | "cancelled") => {
     try {
       const result = await updateInvoiceStatus(invoiceId, status)
 
@@ -239,11 +239,11 @@ export function InvoiceList({ businessId, initialInvoices }: InvoiceListProps) {
                             </Link>
                           </DropdownMenuItem>
                         )}
-                        {invoice.status === "pending" && (
-                          <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, "paid")}>
-                            <FileCheck className="mr-2 h-4 w-4 text-emerald-500" />
-                            Marcar como pagada
-                          </DropdownMenuItem>
+                        {invoice.status === "draft" && (
+                          <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, "paid")}>Marcar como pagada</DropdownMenuItem>
+                        )}
+                        {invoice.status !== "draft" && (
+                          <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, "draft")}>Marcar como pendiente</DropdownMenuItem>
                         )}
                         <DropdownMenuItem onClick={() => handleDelete(invoice.id)} className="text-destructive">
                           <Trash className="mr-2 h-4 w-4" />

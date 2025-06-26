@@ -23,7 +23,7 @@ export function InvoiceDetail({ invoice, client, lines }: InvoiceDetailProps) {
   const [isLoading, setIsLoading] = useState(false)
 
   // Cambiar estado de factura
-  const handleStatusChange = async (status: "pending" | "paid" | "overdue" | "cancelled") => {
+  const handleStatusChange = async (status: "draft" | "paid" | "overdue" | "cancelled") => {
     setIsLoading(true)
 
     try {
@@ -132,23 +132,17 @@ export function InvoiceDetail({ invoice, client, lines }: InvoiceDetailProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {invoice.status !== "pending" && (
-                <DropdownMenuItem onClick={() => handleStatusChange("pending")}>Marcar como pendiente</DropdownMenuItem>
+              {invoice.status !== "draft" && (
+                <DropdownMenuItem onClick={() => handleStatusChange("draft")}>Marcar como pendiente</DropdownMenuItem>
               )}
               {invoice.status !== "paid" && (
-                <DropdownMenuItem onClick={() => handleStatusChange("paid")}>
-                  <FileCheck className="mr-2 h-4 w-4 text-emerald-500" />
-                  Marcar como pagada
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleStatusChange("paid")}>Marcar como pagada</DropdownMenuItem>
               )}
               {invoice.status !== "overdue" && (
                 <DropdownMenuItem onClick={() => handleStatusChange("overdue")}>Marcar como vencida</DropdownMenuItem>
               )}
               {invoice.status !== "cancelled" && (
-                <DropdownMenuItem onClick={() => handleStatusChange("cancelled")}>
-                  <FileX className="mr-2 h-4 w-4 text-destructive" />
-                  Marcar como cancelada
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleStatusChange("cancelled")}>Marcar como cancelada</DropdownMenuItem>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
