@@ -6,6 +6,7 @@ import { getDb } from "@/lib/db"
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
 import { invoices, invoiceLines, clients, Client } from "@/app/db/schema"
 import { eq, and, sql, gte, lte, or, like } from "drizzle-orm"
+import { v4 as uuidv4 } from "uuid"
 
 // Esquemas de validación
 const invoiceLineSchema = z.object({
@@ -30,7 +31,7 @@ type InvoiceFormData = z.infer<typeof invoiceSchema>
 type InvoiceActionResult = {
   success: boolean
   error?: string
-  invoiceId?: number
+  invoiceId?: string
 }
 
 // Acción para crear una nueva factura
@@ -56,36 +57,38 @@ export async function createInvoice(formData: InvoiceFormData): Promise<InvoiceA
       .toString()
       .padStart(3, "0")}`
 
+    const invoiceId = uuidv4()
+
     const [newInvoice] = await db
       .insert(invoices)
       .values({
+        id: invoiceId,
         businessId: business.id,
-        clientId: parseInt(validatedData.clientId),
+        clientId: validatedData.clientId,
         date: validatedData.date,
         dueDate: validatedData.dueDate,
         concept: validatedData.concept,
-        subtotal,
-        taxAmount,
-        total,
+        subtotal: subtotal.toString(),
+        taxAmount: taxAmount.toString(),
+        total: total.toString(),
         status: "draft",
         number,
       })
 
-    const newInvoiceId = newInvoice.insertId
-
     await db.insert(invoiceLines).values(
       validatedData.lines.map((line) => ({
-        invoiceId: newInvoiceId,
+        id: uuidv4(),
+        invoiceId: invoiceId,
         description: line.description,
         quantity: line.quantity,
-        unitPrice: line.unitPrice,
-        taxRate: line.taxRate,
-        total: line.quantity * line.unitPrice,
+        unitPrice: line.unitPrice.toString(),
+        taxRate: line.taxRate.toString(),
+        total: (line.quantity * line.unitPrice).toString(),
       })),
     )
 
     revalidatePath("/invoices")
-    return { success: true, invoiceId: newInvoiceId }
+    return { success: true, invoiceId: invoiceId }
   } catch (error) {
     console.error("Error al crear factura:", error)
     return { success: false, error: error instanceof z.ZodError ? "Datos de formulario inválidos" : "Error al crear la factura" }
@@ -93,7 +96,7 @@ export async function createInvoice(formData: InvoiceFormData): Promise<InvoiceA
 }
 
 // Acción para actualizar una factura existente
-export async function updateInvoice(invoiceId: number, formData: InvoiceFormData): Promise<InvoiceActionResult> {
+export async function updateInvoice(invoiceId: string, formData: InvoiceFormData): Promise<InvoiceActionResult> {
   const db = await getDb()
   try {
     const validatedData = invoiceSchema.parse(formData)
@@ -114,13 +117,13 @@ export async function updateInvoice(invoiceId: number, formData: InvoiceFormData
     await db
       .update(invoices)
       .set({
-        clientId: parseInt(validatedData.clientId),
+        clientId: validatedData.clientId,
         date: validatedData.date,
         dueDate: validatedData.dueDate,
         concept: validatedData.concept,
-        subtotal,
-        taxAmount,
-        total,
+        subtotal: subtotal.toString(),
+        taxAmount: taxAmount.toString(),
+        total: total.toString(),
       })
       .where(eq(invoices.id, invoiceId))
 
@@ -128,12 +131,13 @@ export async function updateInvoice(invoiceId: number, formData: InvoiceFormData
 
     await db.insert(invoiceLines).values(
       validatedData.lines.map((line) => ({
+        id: uuidv4(),
         invoiceId,
         description: line.description,
         quantity: line.quantity,
-        unitPrice: line.unitPrice,
-        taxRate: line.taxRate,
-        total: line.quantity * line.unitPrice,
+        unitPrice: line.unitPrice.toString(),
+        taxRate: line.taxRate.toString(),
+        total: (line.quantity * line.unitPrice).toString(),
       })),
     )
 
@@ -147,7 +151,7 @@ export async function updateInvoice(invoiceId: number, formData: InvoiceFormData
 }
 
 // Acción para cambiar el estado de una factura
-export async function updateInvoiceStatus(invoiceId: number, status: "draft" | "sent" | "paid" | "overdue" | "cancelled"): Promise<InvoiceActionResult> {
+export async function updateInvoiceStatus(invoiceId: string, status: "draft" | "sent" | "paid" | "overdue" | "cancelled"): Promise<InvoiceActionResult> {
   const db = await getDb()
   try {
     await db.update(invoices).set({ status }).where(eq(invoices.id, invoiceId))
@@ -161,7 +165,7 @@ export async function updateInvoiceStatus(invoiceId: number, status: "draft" | "
 }
 
 // Acción para eliminar una factura
-export async function deleteInvoice(invoiceId: number): Promise<InvoiceActionResult> {
+export async function deleteInvoice(invoiceId: string): Promise<InvoiceActionResult> {
   const db = await getDb()
   try {
     await db.delete(invoiceLines).where(eq(invoiceLines.invoiceId, invoiceId))
@@ -183,7 +187,7 @@ export async function getInvoices({
   endDate,
   searchTerm,
 }: {
-  businessId: number
+  businessId: string
   status?: string
   clientId?: string
   startDate?: Date
@@ -194,7 +198,7 @@ export async function getInvoices({
   try {
     const whereClauses = [eq(invoices.businessId, businessId)]
     if (status) whereClauses.push(eq(invoices.status, status))
-    if (clientId) whereClauses.push(eq(invoices.clientId, parseInt(clientId)))
+    if (clientId) whereClauses.push(eq(invoices.clientId, clientId))
     if (startDate) whereClauses.push(gte(invoices.date, startDate))
     if (endDate) whereClauses.push(lte(invoices.date, endDate))
     if (searchTerm) {
@@ -230,7 +234,7 @@ export async function getInvoices({
 }
 
 // Obtener una factura con sus líneas
-export async function getInvoiceWithLines(invoiceId: number) {
+export async function getInvoiceWithLines(invoiceId: string) {
   const db = await getDb()
   try {
     console.log(`[getInvoiceWithLines] Buscando factura con ID: ${invoiceId}`)
@@ -259,7 +263,7 @@ export async function getInvoiceWithLines(invoiceId: number) {
 }
 
 // Obtener clientes de un negocio
-export async function getClientsForBusiness(businessId: number): Promise<Client[]> {
+export async function getClientsForBusiness(businessId: string): Promise<Client[]> {
   const db = await getDb()
   try {
     const clientList = await db.query.clients.findMany({

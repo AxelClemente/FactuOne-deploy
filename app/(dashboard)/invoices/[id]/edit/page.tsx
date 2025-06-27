@@ -29,8 +29,8 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
 
   try {
     // Obtener la factura con sus líneas
-    console.log(`[EditInvoicePage] Llamando a getInvoiceWithLines con ID: ${parseInt(id)}`)
-    const invoice = await getInvoiceWithLines(parseInt(id))
+    console.log(`[EditInvoicePage] Llamando a getInvoiceWithLines con ID: ${id}`)
+    const invoice = await getInvoiceWithLines(id)
     console.log(`[EditInvoicePage] Factura obtenida:`, invoice)
 
     // Verificar que la factura pertenece al negocio activo

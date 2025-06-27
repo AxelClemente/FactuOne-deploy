@@ -5,6 +5,7 @@ import { z } from "zod"
 import { eq } from "drizzle-orm"
 import { getDb, getBusinessesForUser, schema } from "@/lib/db"
 import { getCurrentUser } from "@/lib/auth"
+import { v4 as uuidv4 } from "uuid"
 
 // Validación del esquema
 const businessSchema = z.object({
@@ -35,7 +36,8 @@ export async function createBusiness(data: z.infer<typeof businessSchema>, userI
     }
 
     // Crear el negocio
-    await db.insert(schema.businesses).values({ 
+    await db.insert(schema.businesses).values({
+      id: uuidv4(),
       ...validatedData
     });
 
@@ -50,7 +52,8 @@ export async function createBusiness(data: z.infer<typeof businessSchema>, userI
 
     // Crear la relación usuario-negocio
     await db.insert(schema.businessUsers).values({
-      userId: parseInt(userId),
+      id: uuidv4(),
+      userId: userId,
       businessId: newBusiness.id,
       role: "admin",
     });
@@ -102,8 +105,17 @@ export async function getActiveBusiness() {
     const cookieStore = await cookies();
     const activeBusinessId = cookieStore.get("active_business")?.value
 
+    console.log("[getActiveBusiness] Cookie active_business:", activeBusinessId)
+
     if (!activeBusinessId) {
-      if (process.env.NODE_ENV === "development") return { id: "1" }
+      if (process.env.NODE_ENV === "development") {
+        console.log("[getActiveBusiness] Modo desarrollo - buscando primer negocio")
+        // En desarrollo, obtener el primer negocio disponible
+        const db = await getDb();
+        const firstBusiness = await db.query.businesses.findFirst();
+        console.log("[getActiveBusiness] Primer negocio encontrado:", firstBusiness)
+        return firstBusiness || null;
+      }
       return null
     }
 
@@ -112,6 +124,7 @@ export async function getActiveBusiness() {
       where: (businesses, { eq }) => eq(businesses.id, activeBusinessId),
     })
 
+    console.log("[getActiveBusiness] Negocio encontrado por ID:", business)
     return business || null
   } catch (error) {
     console.error("Error al obtener negocio activo:", error)

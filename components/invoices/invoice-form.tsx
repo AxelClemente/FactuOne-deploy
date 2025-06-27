@@ -130,8 +130,6 @@ export function InvoiceForm({ clients, invoice }: InvoiceFormProps) {
   // Función para enviar el formulario
   async function onSubmit(data: InvoiceFormValues) {
     setIsSubmitting(true)
-    const action = isEditing ? updateInvoice : createInvoice
-
     const dataForAction = {
       ...data,
       lines: data.lines.map((line) => ({
@@ -141,8 +139,9 @@ export function InvoiceForm({ clients, invoice }: InvoiceFormProps) {
     }
 
     try {
-      // @ts-ignore - La acción espera 'id' en la data si es update, lo cual es correcto
-      const result = await action(isEditing ? invoice.id : dataForAction, isEditing ? dataForAction : undefined)
+      const result = isEditing 
+        ? await updateInvoice(invoice.id, dataForAction)
+        : await createInvoice(dataForAction)
 
       if (result.success) {
         toast({

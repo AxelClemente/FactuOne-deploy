@@ -4,6 +4,7 @@ import { z } from "zod"
 import { getDb } from "@/lib/db"
 import { clients, invoices } from "@/app/db/schema"
 import { eq, and, ne } from "drizzle-orm"
+import { v4 as uuidv4 } from "uuid"
 
 // Esquema de validación para clientes
 const clientSchema = z.object({
@@ -34,7 +35,7 @@ export async function createClient(businessId: string, formData: ClientFormData)
     // Verificar si ya existe un cliente con el mismo NIF en este negocio
     const existingClient = await db.select().from(clients).where(
       and(
-        eq(clients.businessId, parseInt(businessId)),
+        eq(clients.businessId, businessId),
         eq(clients.nif, validatedData.nif)
       )
     ).limit(1)
@@ -48,7 +49,8 @@ export async function createClient(businessId: string, formData: ClientFormData)
 
     // Crear el nuevo cliente
     const [newClient] = await db.insert(clients).values({
-      businessId: parseInt(businessId),
+      id: uuidv4(),
+      businessId: businessId,
       name: validatedData.name,
       nif: validatedData.nif,
       address: validatedData.address,
@@ -89,7 +91,7 @@ export async function updateClient(clientId: string, formData: ClientFormData): 
     const db = await getDb()
 
     // Obtener el cliente actual para verificar su negocio
-    const currentClient = await db.select().from(clients).where(eq(clients.id, parseInt(clientId))).limit(1)
+    const currentClient = await db.select().from(clients).where(eq(clients.id, clientId)).limit(1)
 
     if (currentClient.length === 0) {
       return {
@@ -103,7 +105,7 @@ export async function updateClient(clientId: string, formData: ClientFormData): 
       and(
         eq(clients.businessId, currentClient[0].businessId),
         eq(clients.nif, validatedData.nif),
-        ne(clients.id, parseInt(clientId))
+        ne(clients.id, clientId)
       )
     ).limit(1)
 
@@ -123,7 +125,7 @@ export async function updateClient(clientId: string, formData: ClientFormData): 
         email: validatedData.email || "",
         phone: validatedData.phone || "",
       })
-      .where(eq(clients.id, parseInt(clientId)))
+      .where(eq(clients.id, clientId))
 
     console.log("Cliente actualizado:", clientId)
 
@@ -156,7 +158,7 @@ export async function getClientsWithStats(businessId: string) {
     const db = await getDb()
     
     // Obtener todos los clientes del negocio
-    const clientsList = await db.select().from(clients).where(eq(clients.businessId, parseInt(businessId)))
+    const clientsList = await db.select().from(clients).where(eq(clients.businessId, businessId))
 
     // Para cada cliente, calcular estadísticas basadas en sus facturas
     const clientsWithStats = await Promise.all(
@@ -214,7 +216,7 @@ export async function getClientInvoices(clientId: string) {
   try {
     const db = await getDb()
     
-    const clientInvoices = await db.select().from(invoices).where(eq(invoices.clientId, parseInt(clientId)))
+    const clientInvoices = await db.select().from(invoices).where(eq(invoices.clientId, clientId))
 
     return clientInvoices
   } catch (error) {
@@ -230,7 +232,7 @@ export async function getClients(businessId: string) {
   try {
     const db = await getDb()
     
-    const clientsList = await db.select().from(clients).where(eq(clients.businessId, parseInt(businessId)))
+    const clientsList = await db.select().from(clients).where(eq(clients.businessId, businessId))
 
     return clientsList
   } catch (error) {

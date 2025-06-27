@@ -13,10 +13,8 @@ export default async function NewProjectPage() {
     redirect("/select-business")
   }
 
-  const businessIdNumber = parseInt(activeBusinessId, 10)
-  if (isNaN(businessIdNumber)) {
-    redirect("/select-business")
-  }
+  // Usar el businessId como string (UUID)
+  const businessId = activeBusinessId
 
   const db = await getDb()
   const clients = await db
@@ -25,7 +23,7 @@ export default async function NewProjectPage() {
       name: clientsTable.name,
     })
     .from(clientsTable)
-    .where(eq(clientsTable.businessId, businessIdNumber))
+    .where(eq(clientsTable.businessId, businessId))
 
   // Convertir IDs a string para el formulario
   const clientOptions = clients.map((client) => ({

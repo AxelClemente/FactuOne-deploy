@@ -7,7 +7,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
 import { getInvoiceWithLines } from "@/app/(dashboard)/invoices/actions"
 
-export default async function InvoiceDetailPage({ params }: { params: { id: string } }) {
+export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   // Obtener el usuario actual
   const user = await getCurrentUser()
   if (!user) {
@@ -21,8 +21,8 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
   }
 
   try {
-    const { id } = params // Acceso directo, sin await
-    const invoice = await getInvoiceWithLines(parseInt(id)) // Usando el 'id' y convirtiéndolo a número
+    const { id } = await params // Await params
+    const invoice = await getInvoiceWithLines(id) // Usar el ID directamente como string
 
     // Verificar que la factura pertenece al negocio activo
     if (invoice.businessId !== activeBusiness.id) {

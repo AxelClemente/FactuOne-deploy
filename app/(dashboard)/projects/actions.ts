@@ -7,11 +7,12 @@ import { getDb } from "@/lib/db"
 import { projects, clients, invoices } from "@/app/db/schema"
 import { getActiveBusiness } from "@/lib/getActiveBusiness"
 import { uploadContract } from "@/lib/upload"
+import { v4 as uuidv4 } from "uuid"
 
 // Esquema de validación para los datos EXTRAÍDOS del FormData
 const projectSchema = z.object({
   name: z.string().min(1, "El nombre es obligatorio"),
-  clientId: z.coerce.number().optional(),
+  clientId: z.string().nullable().optional(),
   status: z.enum(["pending", "won", "lost"]),
   startDate: z.date().optional(),
   endDate: z.date().optional(),
@@ -20,7 +21,7 @@ const projectSchema = z.object({
 
 // Tipos para las acciones
 type ProjectActionResult = {
-  id?: number
+  id?: string
   error?: string
   success?: boolean
 }
@@ -38,7 +39,7 @@ export async function createProject(formData: FormData): Promise<ProjectActionRe
     const rawData = {
       name: formData.get("name"),
       status: formData.get("status"),
-      clientId: formData.get("clientId"),
+      clientId: formData.get("clientId") === "none" ? null : formData.get("clientId"),
       startDate: formData.get("startDate") ? new Date(formData.get("startDate") as string) : undefined,
       endDate: formData.get("endDate") ? new Date(formData.get("endDate") as string) : undefined,
       contract: formData.get("contract"),
@@ -48,23 +49,23 @@ export async function createProject(formData: FormData): Promise<ProjectActionRe
     const validatedData = projectSchema.parse(rawData)
 
     // 3. Crear el proyecto en la BD (sin la URL del contrato todavía)
-    const result = await db
+    const projectId = uuidv4()
+    await db
       .insert(projects)
       .values({
+        id: projectId,
         name: validatedData.name,
         status: validatedData.status,
         clientId: validatedData.clientId,
         startDate: validatedData.startDate,
         endDate: validatedData.endDate,
-        businessId: parseInt(businessId),
+        businessId: businessId,
       })
-
-    const projectId = result[0].insertId
 
     // 4. Subir el archivo si existe
     let contractUrl: string | undefined = undefined
     if (validatedData.contract && validatedData.contract.size > 0) {
-      contractUrl = await uploadContract(validatedData.contract, projectId.toString())
+      contractUrl = await uploadContract(validatedData.contract, projectId)
       // 5. Actualizar el proyecto con la URL del contrato
       await db.update(projects).set({ contractUrl }).where(eq(projects.id, projectId))
     }
@@ -81,7 +82,7 @@ export async function createProject(formData: FormData): Promise<ProjectActionRe
 }
 
 // Actualizar un proyecto existente
-export async function updateProject(projectId: number, formData: FormData): Promise<ProjectActionResult> {
+export async function updateProject(projectId: string, formData: FormData): Promise<ProjectActionResult> {
   const db = await getDb()
   try {
     const rawData = {
@@ -102,7 +103,7 @@ export async function updateProject(projectId: number, formData: FormData): Prom
     const updatePayload: { [key: string]: any } = { ...dataForDb }
 
     if (contract instanceof File && contract.size > 0) {
-      const contractUrl = await uploadContract(contract, projectId.toString())
+      const contractUrl = await uploadContract(contract, projectId)
       updatePayload.contractUrl = contractUrl
     }
 
@@ -123,7 +124,7 @@ export async function updateProject(projectId: number, formData: FormData): Prom
 }
 
 // Eliminar un proyecto (borrado lógico)
-export async function deleteProject(projectId: number): Promise<ProjectActionResult> {
+export async function deleteProject(projectId: string): Promise<ProjectActionResult> {
   const db = await getDb()
   try {
     await db.update(projects).set({ isDeleted: true }).where(eq(projects.id, projectId))
@@ -136,18 +137,20 @@ export async function deleteProject(projectId: number): Promise<ProjectActionRes
 }
 
 // Cambiar el estado de un proyecto
-export async function changeProjectStatus(id: number, status: "won" | "lost" | "pending"): Promise<ProjectActionResult> {
+export async function changeProjectStatus(id: string, status: "won" | "lost" | "pending"): Promise<ProjectActionResult> {
   const db = await getDb()
-  const businessId = await getActiveBusiness()
-  if (!businessId) {
+  const activeBusiness = await getActiveBusiness()
+  if (!activeBusiness) {
     return { error: "No hay negocio activo" }
   }
+
+  const businessId = activeBusiness
 
   try {
     await db
       .update(projects)
       .set({ status })
-      .where(and(eq(projects.id, id), eq(projects.businessId, parseInt(businessId))))
+      .where(and(eq(projects.id, id), eq(projects.businessId, businessId)))
     revalidatePath(`/projects/${id}`)
     revalidatePath("/projects")
     return { success: true }
@@ -172,14 +175,16 @@ export async function getProjects({
   search?: string
 } = {}) {
   const db = await getDb()
-  const businessId = await getActiveBusiness()
-  if (!businessId) {
+  const activeBusiness = await getActiveBusiness()
+  if (!activeBusiness) {
     return []
   }
 
+  const businessId = activeBusiness
+
   try {
     const conditions = [
-      eq(projects.businessId, parseInt(businessId)),
+      eq(projects.businessId, businessId),
       eq(projects.isDeleted, false),
     ]
 
@@ -187,7 +192,7 @@ export async function getProjects({
       conditions.push(eq(projects.status, status as "won" | "lost" | "pending"))
     }
     if (clientId) {
-      conditions.push(eq(projects.clientId, parseInt(clientId)))
+      conditions.push(eq(projects.clientId, clientId))
     }
     if (startDate) {
       conditions.push(gte(projects.startDate, new Date(startDate)))
@@ -220,18 +225,20 @@ export async function getProjects({
 }
 
 // Obtener un proyecto por su ID
-export async function getProjectById(projectId: number) {
+export async function getProjectById(projectId: string) {
   const db = await getDb()
-  const businessId = await getActiveBusiness()
-  if (!businessId) {
+  const activeBusiness = await getActiveBusiness()
+  if (!activeBusiness) {
     return null
   }
+
+  const businessId = activeBusiness
 
   try {
     const [project] = await db
       .select()
       .from(projects)
-      .where(and(eq(projects.id, projectId), eq(projects.businessId, parseInt(businessId))))
+      .where(and(eq(projects.id, projectId), eq(projects.businessId, businessId)))
     return project || null
   } catch (error) {
     console.error("Error obteniendo proyecto por ID:", error)
@@ -240,7 +247,7 @@ export async function getProjectById(projectId: number) {
 }
 
 // Obtener las facturas asociadas a un proyecto
-export async function getProjectInvoices(projectId: number) {
+export async function getProjectInvoices(projectId: string) {
   const db = await getDb()
   try {
     return await db

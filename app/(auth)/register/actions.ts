@@ -1,5 +1,6 @@
 "use server"
 import { z } from "zod"
+import { v4 as uuidv4 } from "uuid"
 
 import { getDb, schema } from "@/lib/db"
 import { hashPassword } from "@/lib/auth"
@@ -43,6 +44,7 @@ export async function registerUser(formData: z.infer<typeof registerSchema>): Pr
 
     // Crear el nuevo usuario en la base de datos
     await db.insert(schema.users).values({
+      id: uuidv4(),
       email: validatedData.email,
       passwordHash,
       name: validatedData.name || null,

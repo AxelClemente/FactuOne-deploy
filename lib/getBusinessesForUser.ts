@@ -2,7 +2,7 @@ import { getDb } from "@/lib/db"
 import { businesses, businessUsers, users } from "@/app/db/schema"
 import { eq } from "drizzle-orm"
 
-export async function getBusinessesForUser(userId: number | undefined) {
+export async function getBusinessesForUser(userId: string | undefined) {
   if (!userId) {
     console.warn("[getBusinessesForUser] No se proporcionó userId. Devolviendo array vacío.")
     return []

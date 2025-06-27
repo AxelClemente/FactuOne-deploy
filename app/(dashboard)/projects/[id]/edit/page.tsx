@@ -18,11 +18,7 @@ export default async function EditProjectPage({ params }: EditProjectPageProps) 
   // El error de Next.js 15 sugiere esperar los params. Lo hacemos aquí.
   // const awaitedParams = await params;
   const businessId = await getActiveBusiness()
-  const projectId = parseInt(params.id, 10)
-
-  if (isNaN(projectId)) {
-    notFound()
-  }
+  const projectId = params.id // Usar como string (UUID)
 
   const project = (await getProjectById(projectId)) as Project | null
 
@@ -36,7 +32,7 @@ export default async function EditProjectPage({ params }: EditProjectPageProps) 
     ? await db
         .select({ id: clientsSchema.id, name: clientsSchema.name })
         .from(clientsSchema)
-        .where(eq(clientsSchema.businessId, parseInt(businessId)))
+        .where(eq(clientsSchema.businessId, businessId)) // Usar businessId como string
     : []
 
   // Mapear el id a string para el componente Select del formulario

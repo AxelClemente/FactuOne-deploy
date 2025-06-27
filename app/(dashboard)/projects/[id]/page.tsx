@@ -25,10 +25,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     redirect("/select-business")
   }
 
-  const projectId = parseInt(resolvedParams.id, 10)
-  if (isNaN(projectId)) {
-    return notFound()
-  }
+  const projectId = resolvedParams.id
 
   const [projectData] = await db
     .select({
@@ -46,7 +43,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     })
     .from(projects)
     .leftJoin(clients, eq(projects.clientId, clients.id))
-    .where(and(eq(projects.id, projectId), eq(projects.businessId, parseInt(businessId))))
+    .where(and(eq(projects.id, projectId), eq(projects.businessId, businessId)))
 
   if (!projectData) {
     return notFound()

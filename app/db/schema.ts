@@ -3,9 +3,9 @@ import { mysqlTable as table } from "drizzle-orm/mysql-core";
 import * as t from "drizzle-orm/mysql-core";
 import { sql, relations } from "drizzle-orm";
 
-// Utilidades comunes
-const autoincrementId = {
-  id: t.int("id").primaryKey().autoincrement(),
+// Utilidades comunes - Volver a UUIDs como la base de datos real
+const stringId = {
+  id: t.varchar("id", { length: 36 }).primaryKey(),
 };
 
 const timestamps = {
@@ -21,7 +21,7 @@ export const userRoles = ["admin", "accountant", "user"] as const;
 
 // Users
 export const users = table("users", {
-  ...autoincrementId,
+  ...stringId,
   email: t.varchar("email", { length: 255 }).notNull(),
   passwordHash: t.varchar("password_hash", { length: 255 }).notNull(),
   name: t.varchar("name", { length: 255 }),
@@ -31,7 +31,7 @@ export const users = table("users", {
 
 // Businesses
 export const businesses = table("businesses", {
-  ...autoincrementId,
+  ...stringId,
   name: t.varchar("name", { length: 255 }).notNull(),
   nif: t.varchar("nif", { length: 20 }).notNull(),
   fiscalAddress: t.varchar("fiscal_address", { length: 500 }).notNull(),
@@ -43,17 +43,17 @@ export const businesses = table("businesses", {
 
 // BusinessUsers (Relación Usuario-Negocio)
 export const businessUsers = table("business_users", {
-  ...autoincrementId,
-  userId: t.int("user_id").notNull().references(() => users.id),
-  businessId: t.int("business_id").notNull().references(() => businesses.id),
+  ...stringId,
+  userId: t.varchar("user_id", { length: 36 }).notNull().references(() => users.id),
+  businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
   role: t.mysqlEnum("role", userRoles).notNull(),
   ...timestamps,
 }, (table) => [t.unique().on(table.userId, table.businessId)]);
 
 // Clients
 export const clients = table("clients", {
-  ...autoincrementId,
-  businessId: t.int("business_id").notNull().references(() => businesses.id),
+  ...stringId,
+  businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
   name: t.varchar("name", { length: 255 }).notNull(),
   nif: t.varchar("nif", { length: 20 }).notNull(),
   address: t.varchar("address", { length: 500 }).notNull(),
@@ -68,8 +68,8 @@ export const clients = table("clients", {
 
 // InvoiceTypes
 export const invoiceTypes = table("invoice_types", {
-  ...autoincrementId,
-  businessId: t.int("business_id").notNull().references(() => businesses.id),
+  ...stringId,
+  businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
   name: t.varchar("name", { length: 255 }).notNull(),
   code: t.varchar("code", { length: 50 }).notNull(),
   isDeleted: t.boolean("is_deleted").default(false).notNull(),
@@ -78,10 +78,10 @@ export const invoiceTypes = table("invoice_types", {
 
 // Invoices (Facturas Emitidas)
 export const invoices = table("invoices", {
-  ...autoincrementId,
-  businessId: t.int("business_id").notNull().references(() => businesses.id),
-  clientId: t.int("client_id").notNull().references(() => clients.id),
-  invoiceTypeId: t.int("invoice_type_id").references(() => invoiceTypes.id),
+  ...stringId,
+  businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
+  clientId: t.varchar("client_id", { length: 36 }).notNull().references(() => clients.id),
+  invoiceTypeId: t.varchar("invoice_type_id", { length: 36 }).references(() => invoiceTypes.id),
   number: t.varchar("number", { length: 50 }).notNull(),
   date: t.datetime("date").notNull(),
   dueDate: t.datetime("due_date").notNull(),
@@ -97,8 +97,8 @@ export const invoices = table("invoices", {
 
 // InvoiceLines (Líneas de Factura)
 export const invoiceLines = table("invoice_lines", {
-  ...autoincrementId,
-  invoiceId: t.int("invoice_id").notNull().references(() => invoices.id),
+  ...stringId,
+  invoiceId: t.varchar("invoice_id", { length: 36 }).notNull().references(() => invoices.id),
   description: t.text("description").notNull(),
   quantity: t.int("quantity").notNull(),
   unitPrice: t.decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
@@ -109,8 +109,8 @@ export const invoiceLines = table("invoice_lines", {
 
 // ReceivedInvoiceTypes
 export const receivedTypes = table("received_invoice_types", {
-  ...autoincrementId,
-  businessId: t.int("business_id").notNull().references(() => businesses.id),
+  ...stringId,
+  businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
   name: t.varchar("name", { length: 255 }).notNull(),
   isDeleted: t.boolean("is_deleted").default(false).notNull(),
   ...timestamps,
@@ -118,9 +118,9 @@ export const receivedTypes = table("received_invoice_types", {
 
 // ReceivedInvoices (Facturas Recibidas)
 export const receivedInvoices = table("received_invoices", {
-  ...autoincrementId,
-  businessId: t.int("business_id").notNull().references(() => businesses.id),
-  typeId: t.int("received_invoice_type_id").references(() => receivedTypes.id),
+  ...stringId,
+  businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
+  typeId: t.varchar("received_invoice_type_id", { length: 36 }).references(() => receivedTypes.id),
   number: t.varchar("number", { length: 50 }).notNull(),
   date: t.datetime("date").notNull(),
   dueDate: t.datetime("due_date").notNull(),
@@ -138,9 +138,9 @@ export const receivedInvoices = table("received_invoices", {
 
 // Projects
 export const projects = table("projects", {
-  ...autoincrementId,
-  businessId: t.int("business_id").notNull().references(() => businesses.id),
-  clientId: t.int("client_id").references(() => clients.id),
+  ...stringId,
+  businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
+  clientId: t.varchar("client_id", { length: 36 }).references(() => clients.id),
   name: t.varchar("name", { length: 255 }).notNull(),
   description: t.text("description"),
   status: t.mysqlEnum("status", projectStatus).notNull().default("pending"),

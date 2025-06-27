@@ -24,11 +24,6 @@ export default async function ReceivedInvoicesPage({
   if (!activeBusinessId) {
     redirect("/businesses")
   }
-  const businessIdNumber = Number(activeBusinessId)
-  if (isNaN(businessIdNumber)) {
-    console.error("El ID del negocio activo no es un número válido:", activeBusinessId)
-    redirect("/businesses")
-  }
 
   const resolvedSearchParams = await searchParams
 
@@ -42,7 +37,7 @@ export default async function ReceivedInvoicesPage({
   const searchTerm = typeof resolvedSearchParams.search === "string" ? resolvedSearchParams.search : undefined
 
   const initialInvoices = await getReceivedInvoices({
-    businessId: businessIdNumber,
+    businessId: activeBusinessId,
     status,
     category,
     startDate,
@@ -72,7 +67,7 @@ export default async function ReceivedInvoicesPage({
         {/* Lista de facturas */}
         <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
           <ReceivedInvoiceList
-            businessId={businessIdNumber}
+            businessId={activeBusinessId}
             initialInvoices={initialInvoices}
             categories={categories}
           />

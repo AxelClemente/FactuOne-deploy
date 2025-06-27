@@ -6,6 +6,7 @@ import { and, eq, gte, like, lte, or } from "drizzle-orm"
 import { getDb } from "@/lib/db"
 import { receivedInvoices } from "@/app/db/schema"
 import { getActiveBusiness } from "@/lib/getActiveBusiness"
+import { v4 as uuidv4 } from "uuid"
 
 // Esquemas de validación
 const receivedInvoiceSchema = z.object({
@@ -24,7 +25,7 @@ type ReceivedInvoiceFormData = z.infer<typeof receivedInvoiceSchema>
 type ReceivedInvoiceActionResult = {
   success: boolean
   error?: string
-  invoiceId?: number
+  invoiceId?: string
 }
 
 // Acción para crear una nueva factura recibida
@@ -42,9 +43,12 @@ export async function createReceivedInvoice(formData: ReceivedInvoiceFormData): 
     const dueDate = new Date(validatedData.date)
     dueDate.setDate(dueDate.getDate() + 30)
 
-    const [newInvoice] = await db.insert(receivedInvoices).values({
+    const id = uuidv4(); // Genera el UUID aquí
+
+    await db.insert(receivedInvoices).values({
+      id, // Usa el UUID aquí
       ...validatedData,
-      businessId: parseInt(activeBusinessId),
+      businessId: activeBusinessId,
       number: validatedData.number || `G-${Date.now()}`,
       taxAmount: 0,
       total: validatedData.amount,
@@ -52,7 +56,7 @@ export async function createReceivedInvoice(formData: ReceivedInvoiceFormData): 
     })
 
     revalidatePath("/received-invoices")
-    return { success: true, invoiceId: newInvoice.insertId }
+    return { success: true, invoiceId: id } // Devuelve el UUID aquí
   } catch (error) {
     console.error("Error al crear factura recibida:", error)
     return { success: false, error: "Error al crear la factura recibida" }
@@ -61,7 +65,7 @@ export async function createReceivedInvoice(formData: ReceivedInvoiceFormData): 
 
 // Acción para actualizar una factura recibida existente
 export async function updateReceivedInvoice(
-  invoiceId: number,
+  invoiceId: string,
   formData: ReceivedInvoiceFormData,
 ): Promise<ReceivedInvoiceActionResult> {
   const db = await getDb()
@@ -81,7 +85,7 @@ export async function updateReceivedInvoice(
 
 // Acción para cambiar el estado de una factura recibida
 export async function updateReceivedInvoiceStatus(
-  invoiceId: number,
+  invoiceId: string,
   status: "pending" | "recorded" | "rejected" | "paid",
 ): Promise<ReceivedInvoiceActionResult> {
   const db = await getDb()
@@ -98,7 +102,7 @@ export async function updateReceivedInvoiceStatus(
 }
 
 // Acción para eliminar una factura recibida
-export async function deleteReceivedInvoice(invoiceId: number): Promise<ReceivedInvoiceActionResult> {
+export async function deleteReceivedInvoice(invoiceId: string): Promise<ReceivedInvoiceActionResult> {
   const db = await getDb()
   try {
     await db.update(receivedInvoices).set({ isDeleted: true }).where(eq(receivedInvoices.id, invoiceId))
@@ -131,7 +135,7 @@ export async function getReceivedInvoices({
     // Si businessId es string y es numérico, conviértelo; si no, úsalo como string
     let businessIdValue: any = businessId
     if (typeof businessId === 'string' && !isNaN(Number(businessId))) {
-      businessIdValue = Number(businessId)
+      businessIdValue = Number(businessId).toString()
     }
     const conditions = [eq(receivedInvoices.businessId, businessIdValue), eq(receivedInvoices.isDeleted, false)]
 
@@ -166,7 +170,7 @@ export async function getReceivedInvoices({
 }
 
 // Función para obtener una factura recibida por su ID
-export async function getReceivedInvoiceById(invoiceId: number) {
+export async function getReceivedInvoiceById(invoiceId: string) {
   const db = await getDb()
   try {
     const [invoice] = await db.select().from(receivedInvoices).where(eq(receivedInvoices.id, invoiceId))
@@ -187,7 +191,7 @@ export async function getExpenseCategories() {
     // Permitir string o número
     let businessIdValue: any = activeBusinessId
     if (typeof activeBusinessId === 'string' && !isNaN(Number(activeBusinessId))) {
-      businessIdValue = Number(activeBusinessId)
+      businessIdValue = Number(activeBusinessId).toString()
     }
 
     const categories = await db

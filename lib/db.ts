@@ -45,7 +45,7 @@ export async function getBusinessesForUser(userId: string) {
     
     // Primero, obtenemos las relaciones usuario-negocio
     const businessUsers = await db.query.businessUsers.findMany({
-      where: (businessUsers, { eq }) => eq(businessUsers.userId, parseInt(userId)),
+      where: (businessUsers, { eq }) => eq(businessUsers.userId, userId),
     });
 
     console.log(`[getBusinessesForUser] Relaciones encontradas: ${businessUsers.length}`);

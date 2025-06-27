@@ -14,27 +14,34 @@ export default async function EditReceivedInvoicePage({ params }: { params: { id
     redirect("/login")
   }
 
-  // Obtener el negocio activo
-  const businessId = await getActiveBusiness()
-  if (!businessId) {
+  // Obtener el negocio activo (como objeto)
+  const business = await getActiveBusiness()
+  if (!business) {
     redirect("/businesses")
   }
 
+  const resolvedParams = await params;
+
   try {
     // Obtener la factura recibida
-    const invoice = await getReceivedInvoiceById(params.id)
+    const invoice = await getReceivedInvoiceById(resolvedParams.id)
+
+    // Verificar que la factura existe
+    if (!invoice) {
+      notFound()
+    }
 
     // Verificar que la factura pertenece al negocio activo
-    if (invoice.businessId !== businessId) {
+    if (invoice.businessId !== business.id) {
       redirect("/received-invoices")
     }
 
-    // Obtener las categorías de gastos
-   const categories = await getExpenseCategories();
+    // Obtener las categorías de gastos y mapearlas correctamente
+    const categories = (await getExpenseCategories()).map(cat => ({ id: cat, name: cat }));
     return (
       <div className="container mx-auto px-4 py-8">
         <Button variant="ghost" size="sm" asChild className="mb-6">
-          <Link href={`/received-invoices/${params.id}`}>
+          <Link href={`/received-invoices/${resolvedParams.id}`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Volver a detalles
           </Link>

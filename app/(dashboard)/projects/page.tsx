@@ -15,23 +15,23 @@ export default async function ProjectsPage({
 }) {
   const activeBusinessId = await getActiveBusiness()
 
-  let clients: { id: number; name: string }[] = []
+  let clients: { id: string; name: string }[] = []
   if (activeBusinessId) {
-    const businessIdNumber = parseInt(activeBusinessId, 10)
-    if (!isNaN(businessIdNumber)) {
-      const db = await getDb()
-      clients = await db
-        .select({
-          id: clientsTable.id,
-          name: clientsTable.name,
-        })
-        .from(clientsTable)
-        .where(eq(clientsTable.businessId, businessIdNumber))
-    }
-  }
+    const db = await getDb()
+    const clientsData = await db
+      .select({
+        id: clientsTable.id,
+        name: clientsTable.name,
+      })
+      .from(clientsTable)
+      .where(eq(clientsTable.businessId, activeBusinessId))
 
-  // Los filtros probablemente esperan el id como string
-  const clientFilters = clients.map((c) => ({ ...c, id: c.id.toString() }))
+    // Convertir IDs a string para los filtros
+    clients = clientsData.map((c) => ({ 
+      id: c.id.toString(), 
+      name: c.name 
+    }))
+  }
 
   return (
     <div className="w-full space-y-5">
@@ -48,7 +48,7 @@ export default async function ProjectsPage({
         </Button>
       </div>
 
-      <ProjectFilters clients={clientFilters} />
+      <ProjectFilters clients={clients} />
       <ProjectList />
     </div>
   )

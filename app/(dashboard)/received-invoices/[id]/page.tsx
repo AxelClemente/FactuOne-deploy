@@ -21,10 +21,7 @@ export default async function ReceivedInvoiceDetailPage({ params }: { params: { 
     redirect("/businesses")
   }
 
-  const invoiceId = parseInt(resolvedParams.id, 10)
-  if (isNaN(invoiceId)) {
-    notFound()
-  }
+  const invoiceId = resolvedParams.id
 
   try {
     const invoice = await getReceivedInvoiceById(invoiceId)
@@ -33,7 +30,7 @@ export default async function ReceivedInvoiceDetailPage({ params }: { params: { 
       notFound()
     }
 
-    if (invoice.businessId !== parseInt(activeBusinessId, 10)) {
+    if (invoice.businessId !== activeBusinessId) {
       redirect("/received-invoices")
     }
 

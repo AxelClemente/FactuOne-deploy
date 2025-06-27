@@ -81,6 +81,6 @@ export async function getCurrentUser() {
   if (!userId) return null;
 
   const db = await getDb();
-  const user = await db.select().from(schema.users).where(eq(schema.users.id, parseInt(userId))).limit(1);
+  const user = await db.select().from(schema.users).where(eq(schema.users.id, userId)).limit(1);
   return user[0] || null;
 }
