@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { Building2, FileText, FolderKanban, Home, Menu, Receipt, Users, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { LogoutButton } from "@/components/layout/logout-button"
 import { useIsMobile } from "@/hooks/use-mobile"
 
@@ -112,14 +112,12 @@ export function AppSidebar() {
 
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetContent side="left" className="p-0 w-[280px]">
+            <SheetTitle className="sr-only">Menú principal</SheetTitle>
             <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
               <div className="flex h-14 items-center px-4 border-b border-sidebar-border justify-between">
                 <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
                   <span>CRM Facturación</span>
                 </Link>
-                <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
-                  <X className="h-5 w-5" />
-                </Button>
               </div>
 
               <div className="flex-1 overflow-auto py-2">

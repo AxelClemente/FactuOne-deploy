@@ -18,14 +18,6 @@ export function TopBar({ businesses, activeBusiness }: TopBarProps) {
 
   return (
     <div className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6">
-      {/* Botón de menú para móvil */}
-      {isMobile && (
-        <Button variant="ghost" size="icon" className="md:hidden">
-          <Menu className="h-5 w-5" />
-          <span className="sr-only">Abrir menú</span>
-        </Button>
-      )}
-
       {/* Espaciador para empujar elementos a la derecha */}
       <div className="flex-1" />
 
