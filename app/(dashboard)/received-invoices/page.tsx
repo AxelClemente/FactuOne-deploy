@@ -24,9 +24,7 @@ export default async function ReceivedInvoicesPage({
   if (!activeBusinessId) {
     redirect("/businesses")
   }
-
-  const businessIdNumber = parseInt(activeBusinessId)
-
+  const businessIdNumber = Number(activeBusinessId)
   if (isNaN(businessIdNumber)) {
     console.error("El ID del negocio activo no es un número válido:", activeBusinessId)
     redirect("/businesses")
@@ -74,7 +72,7 @@ export default async function ReceivedInvoicesPage({
         {/* Lista de facturas */}
         <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
           <ReceivedInvoiceList
-            businessId={activeBusinessId}
+            businessId={businessIdNumber}
             initialInvoices={initialInvoices}
             categories={categories}
           />

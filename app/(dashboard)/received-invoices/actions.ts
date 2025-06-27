@@ -119,7 +119,7 @@ export async function getReceivedInvoices({
   endDate,
   searchTerm,
 }: {
-  businessId: number
+  businessId: string | number
   status?: string
   category?: string
   startDate?: Date
@@ -128,7 +128,12 @@ export async function getReceivedInvoices({
 }) {
   const db = await getDb()
   try {
-    const conditions = [eq(receivedInvoices.businessId, businessId), eq(receivedInvoices.isDeleted, false)]
+    // Si businessId es string y es numérico, conviértelo; si no, úsalo como string
+    let businessIdValue: any = businessId
+    if (typeof businessId === 'string' && !isNaN(Number(businessId))) {
+      businessIdValue = Number(businessId)
+    }
+    const conditions = [eq(receivedInvoices.businessId, businessIdValue), eq(receivedInvoices.isDeleted, false)]
 
     if (status && status !== "all") {
       conditions.push(eq(receivedInvoices.status, status as any))
@@ -179,16 +184,16 @@ export async function getExpenseCategories() {
     const activeBusinessId = await getActiveBusiness()
     if (!activeBusinessId) return []
 
-    const businessIdNumber = parseInt(activeBusinessId)
-    if (isNaN(businessIdNumber)) {
-      console.error("El ID del negocio activo para categorías no es un número válido:", activeBusinessId)
-      return []
+    // Permitir string o número
+    let businessIdValue: any = activeBusinessId
+    if (typeof activeBusinessId === 'string' && !isNaN(Number(activeBusinessId))) {
+      businessIdValue = Number(activeBusinessId)
     }
 
     const categories = await db
       .selectDistinct({ category: receivedInvoices.category })
       .from(receivedInvoices)
-      .where(and(eq(receivedInvoices.businessId, businessIdNumber), eq(receivedInvoices.isDeleted, false)))
+      .where(and(eq(receivedInvoices.businessId, businessIdValue), eq(receivedInvoices.isDeleted, false)))
       .orderBy(receivedInvoices.category)
 
     return categories.map((c) => c.category).filter(Boolean) as string[]

@@ -17,7 +17,7 @@ import { ReceivedInvoiceStatusBadge } from "@/components/received-invoices/recei
 import { useToast } from "@/hooks/use-toast"
 
 interface ReceivedInvoiceListProps {
-  businessId: string
+  businessId: string | number
   initialInvoices: any[]
   categories: { id: string; name: string }[]
 }
