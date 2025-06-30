@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getDashboardData, type DashboardData } from "@/app/(dashboard)/dashboard/actions"
 
 interface DashboardStatsProps {
+  businessId: string | null
   searchParams: {
     startDate?: string
     endDate?: string
@@ -13,21 +14,26 @@ interface DashboardStatsProps {
   }
 }
 
-export function DashboardStats({ searchParams }: DashboardStatsProps) {
+export function DashboardStats({ businessId, searchParams }: DashboardStatsProps) {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function fetchData() {
+      if (!businessId) {
+        setData(null)
+        setLoading(false)
+        return
+      }
       try {
         // Convertir parámetros de fecha
         const startDate = searchParams.startDate ? new Date(searchParams.startDate) : undefined
         const endDate = searchParams.endDate ? new Date(searchParams.endDate) : undefined
 
-        console.log("Cargando datos del dashboard con filtros:", { startDate, endDate })
+        console.log("Cargando datos del dashboard con filtros:", { businessId, startDate, endDate })
 
-        // En una implementación real, obtendríamos el ID del negocio activo
-        const dashboardData = await getDashboardData("clb1234567890", startDate, endDate)
+        // Usar el businessId real
+        const dashboardData = await getDashboardData(businessId, startDate, endDate)
         setData(dashboardData)
       } catch (error) {
         console.error("Error al cargar datos del dashboard:", error)
@@ -37,7 +43,7 @@ export function DashboardStats({ searchParams }: DashboardStatsProps) {
     }
 
     fetchData()
-  }, [searchParams.startDate, searchParams.endDate, searchParams.period])
+  }, [businessId, searchParams.startDate, searchParams.endDate, searchParams.period])
 
   if (loading) {
     return (

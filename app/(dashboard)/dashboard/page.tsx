@@ -34,8 +34,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       <BusinessSelector businesses={businesses} activeBusinessId={activeBusinessId} />
       <DashboardFilters />
       <Suspense fallback={<DashboardSkeleton />}>
-        <DashboardStats searchParams={searchParams} />
-        <DashboardCharts searchParams={searchParams} />
+        <DashboardStats businessId={activeBusinessId} searchParams={searchParams} />
+        <DashboardCharts businessId={activeBusinessId} searchParams={searchParams} />
       </Suspense>
     </div>
   )
