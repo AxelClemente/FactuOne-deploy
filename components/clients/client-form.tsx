@@ -109,8 +109,13 @@ export function ClientForm({ businessId, client }: ClientFormProps) {
             title: "Cliente creado",
             description: "El nuevo cliente ha sido creado correctamente",
           })
-          router.push("/clients")
-          router.refresh()
+          if (typeof window !== "undefined" && window.refreshNotifications) {
+            window.refreshNotifications()
+          }
+          setTimeout(() => {
+            router.push("/clients")
+            router.refresh()
+          }, 200)
         } else {
           toast({
             variant: "destructive",

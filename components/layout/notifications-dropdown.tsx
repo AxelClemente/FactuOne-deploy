@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import useSWR from "swr"
+import { useEffect } from "react"
 import { Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from "@/components/ui/dropdown-menu"
@@ -17,34 +18,25 @@ function timeAgo(dateString: string) {
   return date.toLocaleDateString("es-ES")
 }
 
+const fetcher = (url: string) => fetch(url).then(res => res.json())
+
 export function NotificationsDropdown() {
-  const [notifications, setNotifications] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data, isLoading, mutate } = useSWR("/api/notifications", fetcher, { refreshInterval: 0 })
+  const notifications = data?.notifications || []
+  const unreadCount = notifications.filter((n: any) => !n.is_read).length
 
+  // Exponer función global para refrescar notificaciones desde cualquier parte
   useEffect(() => {
-    async function fetchNotifications() {
-      setLoading(true)
-      try {
-        const res = await fetch("/api/notifications")
-        const data = await res.json()
-        setNotifications(data.notifications || [])
-      } catch (e) {
-        setNotifications([])
-      } finally {
-        setLoading(false)
-      }
+    (window as any).refreshNotifications = mutate
+    return () => {
+      (window as any).refreshNotifications = undefined
     }
-    fetchNotifications()
-  }, [])
-
-  const unreadCount = notifications.filter((n) => !n.is_read).length
+  }, [mutate])
 
   async function markAsRead(id: string) {
     try {
       await fetch(`/api/notifications/${id}/read`, { method: "PATCH" })
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
-      )
+      mutate()
     } catch {}
   }
 
@@ -67,12 +59,12 @@ export function NotificationsDropdown() {
         <div className="p-4">
           <h3 className="font-semibold text-sm mb-3">Notificaciones</h3>
           <div className="space-y-2">
-            {loading ? (
+            {isLoading ? (
               <div className="text-xs text-muted-foreground">Cargando...</div>
             ) : notifications.length === 0 ? (
               <div className="text-xs text-muted-foreground">No hay notificaciones</div>
             ) : (
-              notifications.map((notification) => (
+              notifications.map((notification: any) => (
                 <DropdownMenuItem
                   key={notification.id}
                   className={`p-3 h-auto cursor-pointer transition-colors ${notification.is_read ? "bg-muted text-muted-foreground" : "bg-white"}`}
