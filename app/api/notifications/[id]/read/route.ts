@@ -1,36 +1,15 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { getCurrentUser } from "@/lib/auth"
+import { NextRequest, NextResponse } from "next/server"
+import { getDb } from "@/lib/db"
+import { notifications } from "@/app/db/schema"
+import { eq } from "drizzle-orm"
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    // Verificar autenticación
-    const user = await getCurrentUser()
-    if (!user) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-
-    const notificationId = params.id
-
-    // En una aplicación real, aquí actualizarías la base de datos
-    // await db.notification.update({
-    //   where: {
-    //     id: notificationId,
-    //     userId: user.id // Asegurar que solo puede marcar sus propias notificaciones
-    //   },
-    //   data: { isRead: true, readAt: new Date() }
-    // })
-
-    console.log(`Marcando notificación ${notificationId} como leída para usuario ${user.id}`)
-
-    // Simular un pequeño delay
-    await new Promise((resolve) => setTimeout(resolve, 200))
-
-    return NextResponse.json({
-      success: true,
-      message: "Notificación marcada como leída",
-    })
+    const db = await getDb()
+    const { id } = params
+    await db.update(notifications).set({ is_read: true }).where(eq(notifications.id, id))
+    return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("Error marcando notificación como leída:", error)
-    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 })
+    return NextResponse.json({ error: String(error) }, { status: 500 })
   }
 }

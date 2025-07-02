@@ -39,6 +39,15 @@ export function NotificationsDropdown() {
 
   const unreadCount = notifications.filter((n) => !n.is_read).length
 
+  async function markAsRead(id: string) {
+    try {
+      await fetch(`/api/notifications/${id}/read`, { method: "PATCH" })
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+      )
+    } catch {}
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -64,10 +73,14 @@ export function NotificationsDropdown() {
               <div className="text-xs text-muted-foreground">No hay notificaciones</div>
             ) : (
               notifications.map((notification) => (
-                <DropdownMenuItem key={notification.id} className="p-3 h-auto">
+                <DropdownMenuItem
+                  key={notification.id}
+                  className={`p-3 h-auto cursor-pointer transition-colors ${notification.is_read ? "bg-muted text-muted-foreground" : "bg-white"}`}
+                  onClick={() => !notification.is_read && markAsRead(notification.id)}
+                >
                   <div className="flex items-start justify-between w-full">
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium ${!notification.is_read ? "text-blue-900" : "text-foreground"}`}>
+                      <p className={`text-sm font-medium ${!notification.is_read ? "text-blue-900" : "text-muted-foreground"}`}>
                         {notification.title}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">{notification.message}</p>
