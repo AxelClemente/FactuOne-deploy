@@ -34,18 +34,21 @@ export async function getDashboardData(businessId: string, startDate?: Date, end
     
     // Obtener facturas emitidas del negocio
     let invoices = await db.query.invoices.findMany({
-      where: (invoices, { eq }) => eq(invoices.businessId, businessId),
+      where: (invoices, { eq, and }) => and(eq(invoices.businessId, businessId), eq(invoices.isDeleted, false)),
     })
+    console.log("Facturas emitidas encontradas:", invoices)
 
     // Obtener facturas recibidas del negocio
     let receivedInvoices = await db.query.receivedInvoices.findMany({
-      where: (receivedInvoices, { eq }) => eq(receivedInvoices.businessId, businessId),
+      where: (receivedInvoices, { eq, and }) => and(eq(receivedInvoices.businessId, businessId), eq(receivedInvoices.isDeleted, false)),
     })
+    console.log("Facturas recibidas encontradas:", receivedInvoices)
 
     // Obtener proyectos del negocio
     let projects = await db.query.projects.findMany({
-      where: (projects, { eq }) => eq(projects.businessId, businessId),
+      where: (projects, { eq, and }) => and(eq(projects.businessId, businessId), eq(projects.isDeleted, false)),
     })
+    console.log("Proyectos encontrados:", projects)
 
     // Aplicar filtros de fecha si se proporcionan
     if (startDate || endDate) {
@@ -111,10 +114,14 @@ export async function getDashboardData(businessId: string, startDate?: Date, end
 
     // Calcular totales de facturas por estado
     const totalInvoices = invoices.length
+    const paidInvoices = invoices.filter((inv) => inv.status === "paid")
     const pendingInvoices = invoices.filter((inv) => inv.status === "pending" || inv.status === "overdue").length
+    console.log("Facturas pagadas:", paidInvoices)
 
     // Calcular totales de facturas recibidas
     const totalReceivedInvoices = receivedInvoices.length
+    const recordedReceived = receivedInvoices.filter((inv) => inv.status === "recorded")
+    console.log("Facturas recibidas contabilizadas:", recordedReceived)
 
     // Calcular totales de proyectos por estado
     const wonProjects = projects.filter((proj) => proj.status === "won").length
@@ -123,13 +130,11 @@ export async function getDashboardData(businessId: string, startDate?: Date, end
 
     // Generar datos mensuales para el período filtrado o los últimos 12 meses
     const monthlyData = generateMonthlyData(invoices, receivedInvoices, startDate, endDate)
+    console.log("monthlyData generado:", monthlyData)
 
     // Calcular ingresos y gastos del período
-    const totalIncome = invoices.filter((inv) => inv.status === "paid").reduce((sum, inv) => sum + inv.total, 0)
-
-    const totalExpenses = receivedInvoices
-      .filter((inv) => inv.status === "recorded")
-      .reduce((sum, inv) => sum + inv.total, 0)
+    const totalIncome = paidInvoices.reduce((sum, inv) => sum + Number(inv.total), 0)
+    const totalExpenses = recordedReceived.reduce((sum, inv) => sum + Number(inv.total), 0)
 
     // Para el mes actual, usar los datos del último mes en monthlyData
     const currentMonthData = monthlyData[monthlyData.length - 1] || { income: 0, expenses: 0 }
@@ -208,7 +213,7 @@ function generateMonthlyData(
 
       const monthData = months.find((m) => m.month === monthKey)
       if (monthData) {
-        monthData.income += invoice.total
+        monthData.income += Number(invoice.total)
       }
     }
   })
@@ -221,11 +226,12 @@ function generateMonthlyData(
 
       const monthData = months.find((m) => m.month === monthKey)
       if (monthData) {
-        monthData.expenses += invoice.total
+        monthData.expenses += Number(invoice.total)
       }
     }
   })
 
+  console.log("[generateMonthlyData] months result:", months)
   return months
 }
 

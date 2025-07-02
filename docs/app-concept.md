@@ -4,13 +4,26 @@
 
 El **CRM de Facturación Electrónica** es una aplicación web desarrollada con Next.js 15 que permite a empresas gestionar de manera integral sus procesos de facturación, clientes, proyectos y análisis financieros. La aplicación está diseñada específicamente para cumplir con las regulaciones de facturación electrónica en España.
 
+---
+
+## 🚦 Estado Actual y Mejoras Recientes
+
+- **Migración a UUIDs:** Toda la base de datos y el código usan identificadores UUID (`varchar(36)`) para las entidades principales, asegurando integridad referencial y consistencia entre entornos de desarrollo y producción.
+- **Recreación de la base de datos:** Se eliminaron y recrearon todas las tablas en producción para garantizar la compatibilidad con el código y evitar errores de integridad.
+- **Dashboard 100% funcional:** Todas las métricas clave (facturas emitidas, recibidas, proyectos, ingresos, gastos, etc.) se calculan y muestran correctamente para el negocio activo, filtradas por período si corresponde.
+- **Obtención dinámica del negocio activo:** El dashboard y sus componentes obtienen el `businessId` activo desde el servidor y lo propagan a los componentes de estadísticas y gráficos, eliminando valores hardcodeados y mejorando la experiencia multi-empresa.
+- **Separación profesional de responsabilidades:** Los componentes server y client están claramente diferenciados; la lógica de negocio y la obtención de datos se realiza en el servidor, mientras que la visualización y la interacción se manejan en el cliente.
+- **Integridad referencial asegurada:** Todas las operaciones de creación de facturas, proyectos y clientes funcionan correctamente, sin errores de claves foráneas.
+
+---
+
 ## 🏗️ Arquitectura de la Aplicación
 
 ### Stack Tecnológico
 
 - **Frontend**: Next.js 15 con React 19
 - **UI Framework**: Radix UI + Tailwind CSS
-- **Base de Datos**: Drizzle ORM con esquema MySQL
+- **Base de Datos**: Drizzle ORM con esquema MySQL (UUIDs como IDs)
 - **Autenticación**: Sistema personalizado con bcrypt
 - **Estado**: React Hooks + Server Actions
 - **Iconos**: Lucide React
@@ -62,18 +75,19 @@ crm-login/
 
 ### Funcionalidades
 
-- **Estadísticas en tiempo real** de ingresos y gastos
-- **Filtros por período** (mes, trimestre, año)
-- **Gráficos interactivos** de flujo de caja
-- **Métricas de proyectos** (ganados, perdidos, pendientes)
-- **Selector de negocio** para usuarios multi-empresa
+- **Estadísticas en tiempo real** de ingresos, gastos, facturas emitidas, facturas recibidas, proyectos ganados, perdidos y pendientes, y balance del período.
+- **Filtros por período** (mes, trimestre, año, rango personalizado).
+- **Gráficos interactivos** de flujo de caja y tendencias.
+- **Selector de negocio** para usuarios multi-empresa.
+- **Obtención dinámica del negocio activo**: El dashboard obtiene el `businessId` activo en el server y lo pasa a los componentes de estadísticas y gráficos.
+- **Integridad referencial**: Todas las métricas reflejan datos reales y consistentes del negocio activo.
 
 ### Componentes Principales
 
-- `DashboardStats`: Tarjetas con métricas clave
-- `DashboardCharts`: Gráficos de flujo de caja
-- `DashboardFilters`: Filtros de fecha y período
-- `BusinessSelector`: Selector de negocio activo
+- `DashboardStats`: Tarjetas con métricas clave (ingresos, gastos, facturas emitidas/recibidas, proyectos, balance).
+- `DashboardCharts`: Gráficos de flujo de caja y tendencias.
+- `DashboardFilters`: Filtros de fecha y período.
+- `BusinessSelector`: Selector de negocio activo.
 
 ## 🏢 Gestión de Negocios
 
@@ -340,13 +354,16 @@ npm run lint     # Linting
 
 ### Próximas Funcionalidades
 
-- [ ] **Integración con bancos** para conciliación
-- [ ] **Facturación electrónica** real con AEAT
-- [ ] **API REST** para integraciones
-- [ ] **App móvil** nativa
-- [ ] **Reportes avanzados** con PowerBI
-- [ ] **Workflow de aprobaciones**
-- [ ] **Integración con CRM** externos
+- [x] Migración a UUIDs y recreación de base de datos.
+- [x] Dashboard funcional con métricas y filtros reales.
+- [x] Integridad referencial asegurada en producción.
+- [ ] Integración con bancos para conciliación.
+- [ ] Facturación electrónica real con AEAT.
+- [ ] API REST para integraciones.
+- [ ] App móvil nativa.
+- [ ] Reportes avanzados con PowerBI.
+- [ ] Workflow de aprobaciones.
+- [ ] Integración con CRM externos.
 
 ### Mejoras Técnicas
 

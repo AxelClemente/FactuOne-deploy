@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getDashboardData, type MonthlyData } from "@/app/(dashboard)/dashboard/actions"
 
 interface DashboardChartsProps {
+  businessId: string
   searchParams: {
     startDate?: string
     endDate?: string
@@ -13,7 +14,7 @@ interface DashboardChartsProps {
   }
 }
 
-export function DashboardCharts({ searchParams }: DashboardChartsProps) {
+export function DashboardCharts({ businessId, searchParams }: DashboardChartsProps) {
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -21,7 +22,7 @@ export function DashboardCharts({ searchParams }: DashboardChartsProps) {
     async function fetchData() {
       try {
         const dashboardData = await getDashboardData(
-          "clb1234567890",
+          businessId,
           searchParams.startDate ? new Date(searchParams.startDate) : undefined,
           searchParams.endDate ? new Date(searchParams.endDate) : undefined,
         )
@@ -34,7 +35,7 @@ export function DashboardCharts({ searchParams }: DashboardChartsProps) {
     }
 
     fetchData()
-  }, [searchParams])
+  }, [businessId, searchParams])
 
   const formattedData = monthlyData.map((item) => {
     const [year, month] = item.month.split("-")
