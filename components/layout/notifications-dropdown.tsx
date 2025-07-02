@@ -1,30 +1,43 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 
-export function NotificationsDropdown() {
-  // Datos mock simples para testing
-  const notifications = [
-    {
-      id: "1",
-      title: "Nueva factura recibida",
-      summary: "Factura #FAC-2024-001 de Proveedor ABC",
-      time: "hace 2 horas",
-      isRead: false,
-    },
-    {
-      id: "2",
-      title: "Pago procesado",
-      summary: "Pago de €1,250.00 procesado correctamente",
-      time: "hace 1 día",
-      isRead: true,
-    },
-  ]
+function timeAgo(dateString: string) {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diff = Math.floor((now.getTime() - date.getTime()) / 1000)
+  if (diff < 60) return "hace unos segundos"
+  if (diff < 3600) return `hace ${Math.floor(diff / 60)} minutos`
+  if (diff < 86400) return `hace ${Math.floor(diff / 3600)} horas`
+  if (diff < 2592000) return `hace ${Math.floor(diff / 86400)} días`
+  return date.toLocaleDateString("es-ES")
+}
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length
+export function NotificationsDropdown() {
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchNotifications() {
+      setLoading(true)
+      try {
+        const res = await fetch("/api/notifications")
+        const data = await res.json()
+        setNotifications(data.notifications || [])
+      } catch (e) {
+        setNotifications([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchNotifications()
+  }, [])
+
+  const unreadCount = notifications.filter((n) => !n.is_read).length
 
   return (
     <DropdownMenu>
@@ -45,20 +58,26 @@ export function NotificationsDropdown() {
         <div className="p-4">
           <h3 className="font-semibold text-sm mb-3">Notificaciones</h3>
           <div className="space-y-2">
-            {notifications.map((notification) => (
-              <DropdownMenuItem key={notification.id} className="p-3 h-auto">
-                <div className="flex items-start justify-between w-full">
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium ${!notification.isRead ? "text-blue-900" : "text-foreground"}`}>
-                      {notification.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">{notification.summary}</p>
-                    <p className="text-xs text-muted-foreground mt-2">{notification.time}</p>
+            {loading ? (
+              <div className="text-xs text-muted-foreground">Cargando...</div>
+            ) : notifications.length === 0 ? (
+              <div className="text-xs text-muted-foreground">No hay notificaciones</div>
+            ) : (
+              notifications.map((notification) => (
+                <DropdownMenuItem key={notification.id} className="p-3 h-auto">
+                  <div className="flex items-start justify-between w-full">
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium ${!notification.is_read ? "text-blue-900" : "text-foreground"}`}>
+                        {notification.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">{notification.message}</p>
+                      <p className="text-xs text-muted-foreground mt-2">{timeAgo(notification.created_at)}</p>
+                    </div>
+                    {!notification.is_read && <div className="w-2 h-2 bg-blue-500 rounded-full ml-2 mt-1 flex-shrink-0" />}
                   </div>
-                  {!notification.isRead && <div className="w-2 h-2 bg-blue-500 rounded-full ml-2 mt-1 flex-shrink-0" />}
-                </div>
-              </DropdownMenuItem>
-            ))}
+                </DropdownMenuItem>
+              ))
+            )}
           </div>
         </div>
       </DropdownMenuContent>

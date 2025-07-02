@@ -7,6 +7,7 @@ import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
 import { invoices, invoiceLines, clients, Client } from "@/app/db/schema"
 import { eq, and, sql, gte, lte, or, like } from "drizzle-orm"
 import { v4 as uuidv4 } from "uuid"
+import { createNotification } from "@/lib/notifications"
 
 // Esquemas de validación
 const invoiceLineSchema = z.object({
@@ -86,6 +87,14 @@ export async function createInvoice(formData: InvoiceFormData): Promise<InvoiceA
         total: (line.quantity * line.unitPrice).toString(),
       })),
     )
+
+    // Crear notificación
+    await createNotification({
+      businessId: business.id,
+      title: "Nueva factura emitida",
+      message: `Factura #${number} · ${validatedData.concept} · ${total.toLocaleString("es-ES", { style: "currency", currency: "EUR" })} · ${validatedData.date.toLocaleDateString("es-ES")}`,
+      type: "action",
+    })
 
     revalidatePath("/invoices")
     return { success: true, invoiceId: invoiceId }

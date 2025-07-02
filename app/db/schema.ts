@@ -18,6 +18,7 @@ export const invoiceStatus = ["draft", "sent", "paid", "overdue", "cancelled"] a
 export const receivedInvoiceStatus = ["pending", "recorded", "rejected", "paid"] as const;
 export const projectStatus = ["won", "lost", "pending"] as const;
 export const userRoles = ["admin", "accountant", "user"] as const;
+export const notificationTypes = ["info", "success", "warning", "error", "update", "action"] as const;
 
 // Users
 export const users = table("users", {
@@ -149,6 +150,19 @@ export const projects = table("projects", {
   contractUrl: t.varchar("contract_url", { length: 500 }),
   isDeleted: t.boolean("is_deleted").default(false).notNull(),
   ...timestamps,
+});
+
+// Notifications
+export const notifications = table("notifications", {
+  id: t.varchar("id", { length: 36 }).primaryKey(),
+  user_id: t.varchar("user_id", { length: 36 }),
+  business_id: t.varchar("business_id", { length: 36 }),
+  type: t.mysqlEnum("type", notificationTypes).notNull().default("info"),
+  title: t.varchar("title", { length: 255 }).notNull(),
+  message: t.text("message").notNull(),
+  is_read: t.boolean("is_read").notNull().default(false),
+  created_at: t.datetime("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  action_url: t.varchar("action_url", { length: 500 }),
 });
 
 // DEFINICIÓN DE RELACIONES
