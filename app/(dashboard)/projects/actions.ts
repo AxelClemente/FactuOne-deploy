@@ -8,6 +8,7 @@ import { projects, clients, invoices } from "@/app/db/schema"
 import { getActiveBusiness } from "@/lib/getActiveBusiness"
 import { uploadContract } from "@/lib/upload"
 import { v4 as uuidv4 } from "uuid"
+import { createNotification } from "@/lib/notifications"
 
 // Esquema de validación para los datos EXTRAÍDOS del FormData
 const projectSchema = z.object({
@@ -61,6 +62,14 @@ export async function createProject(formData: FormData): Promise<ProjectActionRe
         endDate: validatedData.endDate,
         businessId: businessId,
       })
+
+    // Crear notificación
+    await createNotification({
+      businessId,
+      title: "Nuevo proyecto creado",
+      message: `Proyecto: ${validatedData.name} · Estado: ${validatedData.status} · ${new Date().toLocaleDateString("es-ES")}`,
+      type: "action",
+    })
 
     // 4. Subir el archivo si existe
     let contractUrl: string | undefined = undefined

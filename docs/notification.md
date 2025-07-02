@@ -47,3 +47,24 @@
 3. Integra la lógica de creación de notificaciones en los puntos clave del backend.
 4. Modifica el componente para consumir datos reales y permitir interacción.
 5. (Opcional) Añade tiempo real y página de historial.
+
+---
+
+# Implementación y logros actuales
+
+- **Modelo creado en la base de datos**: Se creó la tabla `notifications` con los campos necesarios para soportar notificaciones por usuario, negocio y globales.
+- **Definición Drizzle**: Se añadió la tabla `notifications` al schema de Drizzle para poder operar desde el backend.
+- **Función de inserción**: Se implementó `createNotification` para insertar notificaciones desde cualquier acción relevante (ej: al crear una factura emitida).
+- **Endpoint de consulta**: Se creó `/api/notifications` para obtener las notificaciones recientes del negocio activo, usando la cookie `active_business`.
+- **Endpoint para marcar como leída**: Se implementó `/api/notifications/[id]/read` (PATCH) para actualizar el estado `is_read` de una notificación.
+- **Frontend reactivo**: El componente `NotificationsDropdown` ahora:
+  - Hace fetch de las notificaciones reales.
+  - Muestra el contador de no leídas.
+  - Permite marcar como leída al hacer clic (cambia color y actualiza el contador).
+  - Cambia el color de las notificaciones leídas y oculta el punto azul.
+- **Experiencia profesional**: El sistema es extensible, reactivo y preparado para soportar nuevos tipos de notificaciones y acciones.
+
+**Próximos pasos recomendados:**
+- Añadir redirección al hacer clic si la notificación tiene `action_url`.
+- Añadir página de historial de notificaciones.
+- Soporte para notificaciones en tiempo real (WebSockets/SSE).

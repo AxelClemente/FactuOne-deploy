@@ -5,6 +5,7 @@ import { getDb } from "@/lib/db"
 import { clients, invoices } from "@/app/db/schema"
 import { eq, and, ne } from "drizzle-orm"
 import { v4 as uuidv4 } from "uuid"
+import { createNotification } from "@/lib/notifications"
 
 // Esquema de validación para clientes
 const clientSchema = z.object({
@@ -56,6 +57,14 @@ export async function createClient(businessId: string, formData: ClientFormData)
       address: validatedData.address,
       email: validatedData.email || "",
       phone: validatedData.phone || "",
+    })
+
+    // Crear notificación
+    await createNotification({
+      businessId,
+      title: "Nuevo cliente registrado",
+      message: `Cliente: ${validatedData.name} · NIF: ${validatedData.nif} · ${new Date().toLocaleDateString("es-ES")}`,
+      type: "action",
     })
 
     console.log("Cliente creado:", newClient.insertId)
