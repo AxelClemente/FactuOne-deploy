@@ -218,9 +218,13 @@ export async function getProjects({
         id: projects.id,
         name: projects.name,
         status: projects.status,
-        clientName: clients.name,
         startDate: projects.startDate,
         endDate: projects.endDate,
+        clientId: projects.clientId,
+        client: {
+          id: clients.id,
+          name: clients.name,
+        },
       })
       .from(projects)
       .leftJoin(clients, eq(projects.clientId, clients.id))

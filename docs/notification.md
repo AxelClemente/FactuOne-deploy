@@ -58,10 +58,12 @@
 - **Endpoint de consulta**: Se creó `/api/notifications` para obtener las notificaciones recientes del negocio activo, usando la cookie `active_business`.
 - **Endpoint para marcar como leída**: Se implementó `/api/notifications/[id]/read` (PATCH) para actualizar el estado `is_read` de una notificación.
 - **Frontend reactivo**: El componente `NotificationsDropdown` ahora:
-  - Hace fetch de las notificaciones reales.
+  - Hace fetch de las notificaciones reales usando SWR.
+  - Expone la función global `window.refreshNotifications` para forzar el refetch desde cualquier parte del frontend.
   - Muestra el contador de no leídas.
   - Permite marcar como leída al hacer clic (cambia color y actualiza el contador).
   - Cambia el color de las notificaciones leídas y oculta el punto azul.
+- **Actualización inmediata tras crear un cliente**: Tras crear un cliente, se llama a `window.refreshNotifications()` y se espera un pequeño delay antes de redirigir, asegurando que la notificación aparece al instante en el dropdown.
 - **Experiencia profesional**: El sistema es extensible, reactivo y preparado para soportar nuevos tipos de notificaciones y acciones.
 
 **Próximos pasos recomendados:**
