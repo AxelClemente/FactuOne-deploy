@@ -7,6 +7,7 @@ import { getDb } from "@/lib/db"
 import { receivedInvoices } from "@/app/db/schema"
 import { getActiveBusiness } from "@/lib/getActiveBusiness"
 import { v4 as uuidv4 } from "uuid"
+import { createNotification } from "@/lib/notifications"
 
 // Esquemas de validación
 const receivedInvoiceSchema = z.object({
@@ -53,6 +54,14 @@ export async function createReceivedInvoice(formData: ReceivedInvoiceFormData): 
       taxAmount: 0,
       total: validatedData.amount,
       dueDate: dueDate, // Añadir la fecha de vencimiento
+    })
+
+    // Crear notificación
+    await createNotification({
+      businessId: activeBusinessId,
+      title: "Nueva factura recibida",
+      message: `Factura: ${validatedData.number || `G-${Date.now()}`} · Proveedor: ${validatedData.providerName} · ${new Date().toLocaleDateString("es-ES")}`,
+      type: "action",
     })
 
     revalidatePath("/received-invoices")
