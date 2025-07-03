@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getDashboardData, type MonthlyData } from "@/app/(dashboard)/dashboard/actions"
@@ -14,28 +15,53 @@ interface DashboardChartsProps {
   }
 }
 
-export function DashboardCharts({ businessId, searchParams }: DashboardChartsProps) {
+export function DashboardCharts({ businessId, searchParams: initialSearchParams }: DashboardChartsProps) {
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
   const [loading, setLoading] = useState(true)
 
+  // Usar useSearchParams para reaccionar a cambios de URL en tiempo real
+  const searchParams = useSearchParams()
+  const currentSearchParams = {
+    startDate: searchParams.get("startDate") || undefined,
+    endDate: searchParams.get("endDate") || undefined,
+    period: searchParams.get("period") || undefined,
+  }
+
+  console.log("📊 DashboardCharts renderizado con:", {
+    businessId,
+    initialSearchParams,
+    currentSearchParams,
+    hasData: monthlyData.length > 0,
+    isLoading: loading
+  })
+
   useEffect(() => {
+    console.log("📊 DashboardCharts useEffect ejecutándose con:", {
+      businessId,
+      startDate: currentSearchParams.startDate,
+      endDate: currentSearchParams.endDate,
+      period: currentSearchParams.period
+    })
+
     async function fetchData() {
       try {
         const dashboardData = await getDashboardData(
           businessId,
-          searchParams.startDate ? new Date(searchParams.startDate) : undefined,
-          searchParams.endDate ? new Date(searchParams.endDate) : undefined,
+          currentSearchParams.startDate ? new Date(currentSearchParams.startDate) : undefined,
+          currentSearchParams.endDate ? new Date(currentSearchParams.endDate) : undefined,
+          currentSearchParams.period
         )
+        console.log("📊 DashboardCharts datos obtenidos:", dashboardData.monthlyData)
         setMonthlyData(dashboardData.monthlyData)
       } catch (error) {
-        console.error("Error al cargar datos del dashboard:", error)
+        console.error("❌ Error al cargar datos del dashboard:", error)
       } finally {
         setLoading(false)
       }
     }
 
     fetchData()
-  }, [businessId, searchParams])
+  }, [businessId, currentSearchParams.startDate, currentSearchParams.endDate, currentSearchParams.period])
 
   const formattedData = monthlyData.map((item) => {
     const [year, month] = item.month.split("-")

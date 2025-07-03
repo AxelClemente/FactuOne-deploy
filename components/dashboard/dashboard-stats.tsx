@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { ArrowDown, ArrowUp, FileCheck, FileClock, FileText, Folder } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getDashboardData, type DashboardData } from "@/app/(dashboard)/dashboard/actions"
@@ -14,36 +15,70 @@ interface DashboardStatsProps {
   }
 }
 
-export function DashboardStats({ businessId, searchParams }: DashboardStatsProps) {
+export function DashboardStats({ businessId, searchParams: initialSearchParams }: DashboardStatsProps) {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
+  
+  // Usar useSearchParams para reaccionar a cambios de URL en tiempo real
+  const searchParams = useSearchParams()
+  const currentSearchParams = {
+    startDate: searchParams.get("startDate") || undefined,
+    endDate: searchParams.get("endDate") || undefined,
+    period: searchParams.get("period") || undefined,
+  }
+
+  console.log("🔄 DashboardStats renderizado con props:", {
+    businessId,
+    initialSearchParams,
+    currentSearchParams,
+    hasData: !!data,
+    isLoading: loading
+  })
 
   useEffect(() => {
+    console.log("🔄 DashboardStats useEffect ejecutándose con dependencias:", {
+      businessId,
+      startDate: currentSearchParams.startDate,
+      endDate: currentSearchParams.endDate,
+      period: currentSearchParams.period
+    })
+
     async function fetchData() {
       if (!businessId) {
+        console.log("❌ No hay businessId, limpiando datos")
         setData(null)
         setLoading(false)
         return
       }
       try {
+        console.log("🚀 Iniciando fetchData con parámetros:", {
+          businessId,
+          startDate: currentSearchParams.startDate,
+          endDate: currentSearchParams.endDate,
+          period: currentSearchParams.period
+        })
+
         // Convertir parámetros de fecha
-        const startDate = searchParams.startDate ? new Date(searchParams.startDate) : undefined
-        const endDate = searchParams.endDate ? new Date(searchParams.endDate) : undefined
+        const startDate = currentSearchParams.startDate ? new Date(currentSearchParams.startDate) : undefined
+        const endDate = currentSearchParams.endDate ? new Date(currentSearchParams.endDate) : undefined
 
-        console.log("Cargando datos del dashboard con filtros:", { businessId, startDate, endDate })
+        console.log("📅 Fechas convertidas:", { startDate, endDate })
 
-        // Usar el businessId real
-        const dashboardData = await getDashboardData(businessId, startDate, endDate)
+        // Usar el businessId real y pasar el parámetro period
+        const dashboardData = await getDashboardData(businessId, startDate, endDate, currentSearchParams.period)
+        
+        console.log("✅ Datos obtenidos del dashboard:", dashboardData)
         setData(dashboardData)
       } catch (error) {
-        console.error("Error al cargar datos del dashboard:", error)
+        console.error("❌ Error al cargar datos del dashboard:", error)
       } finally {
         setLoading(false)
+        console.log("🏁 fetchData completado, loading = false")
       }
     }
 
     fetchData()
-  }, [businessId, searchParams.startDate, searchParams.endDate, searchParams.period])
+  }, [businessId, currentSearchParams.startDate, currentSearchParams.endDate, currentSearchParams.period])
 
   if (loading) {
     return (

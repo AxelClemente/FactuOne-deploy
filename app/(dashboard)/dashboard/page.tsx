@@ -22,7 +22,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const businesses = await getBusinessesForUser(user?.id)
   const activeBusinessId = await getActiveBusiness()
 
-  console.log("Renderizando página de dashboard con filtros:", searchParams)
+  console.log("🏠 DashboardPage renderizado con searchParams:", {
+    startDate: searchParams.startDate,
+    endDate: searchParams.endDate,
+    period: searchParams.period,
+    activeBusinessId
+  })
 
   return (
     <div className="w-full py-4 space-y-5">

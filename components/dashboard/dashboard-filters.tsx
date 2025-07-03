@@ -43,7 +43,7 @@ export function DashboardFilters() {
   }, [searchParams])
 
   const updateFilters = (newStartDate?: string, newEndDate?: string, newExactDate?: string, period?: string) => {
-    console.log("🔄 Actualizando filtros:", { newStartDate, newEndDate, newExactDate, period })
+    console.log("🔄 DashboardFilters - updateFilters llamado con:", { newStartDate, newEndDate, newExactDate, period })
 
     const params = new URLSearchParams(searchParams.toString())
 
@@ -55,18 +55,24 @@ export function DashboardFilters() {
 
     if (period) {
       params.set("period", period)
+      console.log("📝 Estableciendo período:", period)
     } else if (newExactDate) {
       params.set("exactDate", newExactDate)
+      console.log("📝 Estableciendo fecha exacta:", newExactDate)
     } else {
       if (newStartDate) {
         params.set("startDate", newStartDate)
+        console.log("📝 Estableciendo fecha de inicio:", newStartDate)
       }
       if (newEndDate) {
         params.set("endDate", newEndDate)
+        console.log("📝 Estableciendo fecha de fin:", newEndDate)
       }
     }
 
-    router.push(`/dashboard?${params.toString()}`, { scroll: false })
+    const newUrl = `/dashboard?${params.toString()}`
+    console.log("🔗 Navegando a nueva URL:", newUrl)
+    router.push(newUrl, { scroll: false })
   }
 
   const formatDateToString = (date: Date): string => {
