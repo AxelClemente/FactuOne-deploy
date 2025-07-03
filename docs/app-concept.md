@@ -2,18 +2,27 @@
 
 ## 📋 Descripción General
 
-El **CRM de Facturación Electrónica** es una aplicación web desarrollada con Next.js 15 que permite a empresas gestionar de manera integral sus procesos de facturación, clientes, proyectos y análisis financieros. La aplicación está diseñada específicamente para cumplir con las regulaciones de facturación electrónica en España.
+El **CRM de Facturación Electrónica** es una aplicación web desarrollada con Next.js 15 que permite a empresas gestionar de manera integral sus procesos de facturación, clientes, proyectos, proveedores y análisis financieros. La aplicación está diseñada específicamente para cumplir con las regulaciones de facturación electrónica en España.
 
 ---
 
 ## 🚦 Estado Actual y Mejoras Recientes
 
+- **Gestión avanzada de proveedores:** Ahora el sistema cuenta con un módulo de proveedores ("Proveedores") completamente funcional, con experiencia de usuario y diseño idénticos al de clientes. Permite:
+  - Listar, crear, editar y eliminar proveedores asociados a cada negocio.
+  - Búsqueda instantánea por nombre, NIF o email.
+  - Filtros por estado: Todos, Con deuda, Top proveedores, Sin facturas.
+  - Ordenación por nombre, total facturado, total pendiente y número de facturas recibidas.
+  - Relación directa con facturas recibidas: cada proveedor puede tener asociadas múltiples facturas recibidas, permitiendo un control total de gastos y pagos.
+  - Validación de datos fiscales y de contacto.
+  - Consistencia multi-empresa: cada usuario solo ve y gestiona los proveedores de su negocio activo.
+  - UI profesional y responsiva, igual que el módulo de clientes.
 - **Migración a UUIDs:** Toda la base de datos y el código usan identificadores UUID (`varchar(36)`) para las entidades principales, asegurando integridad referencial y consistencia entre entornos de desarrollo y producción.
 - **Recreación de la base de datos:** Se eliminaron y recrearon todas las tablas en producción para garantizar la compatibilidad con el código y evitar errores de integridad.
 - **Dashboard 100% funcional:** Todas las métricas clave (facturas emitidas, recibidas, proyectos, ingresos, gastos, etc.) se calculan y muestran correctamente para el negocio activo, filtradas por período si corresponde.
 - **Obtención dinámica del negocio activo:** El dashboard y sus componentes obtienen el `businessId` activo desde el servidor y lo propagan a los componentes de estadísticas y gráficos, eliminando valores hardcodeados y mejorando la experiencia multi-empresa.
 - **Separación profesional de responsabilidades:** Los componentes server y client están claramente diferenciados; la lógica de negocio y la obtención de datos se realiza en el servidor, mientras que la visualización y la interacción se manejan en el cliente.
-- **Integridad referencial asegurada:** Todas las operaciones de creación de facturas, proyectos y clientes funcionan correctamente, sin errores de claves foráneas.
+- **Integridad referencial asegurada:** Todas las operaciones de creación de facturas, proyectos, clientes y proveedores funcionan correctamente, sin errores de claves foráneas.
 
 ---
 
@@ -390,3 +399,56 @@ Para soporte técnico o consultas sobre la aplicación, contactar al equipo de d
 ---
 
 *Esta documentación se actualiza regularmente. Última actualización: Diciembre 2024*
+
+## 🏢 Gestión de Proveedores
+
+### Funcionalidades
+
+- **CRUD completo** de proveedores (crear, leer, actualizar, eliminar lógicamente).
+- **Búsqueda instantánea** por nombre, NIF o email.
+- **Filtros avanzados**: Todos, Con deuda, Top proveedores, Sin facturas.
+- **Ordenación** por nombre, total facturado, total pendiente y número de facturas recibidas.
+- **Relación directa con facturas recibidas**: cada proveedor puede tener asociadas múltiples facturas recibidas, permitiendo un control total de gastos y pagos.
+- **Validación de datos fiscales** (NIF, dirección, email, teléfono).
+- **Consistencia multi-empresa**: cada usuario solo ve y gestiona los proveedores de su negocio activo.
+- **UI profesional y responsiva**, igual que el módulo de clientes.
+
+### Estructura de Datos
+
+```typescript
+// Proveedor
+export type Provider = {
+  id: string
+  businessId: string
+  name: string
+  nif: string
+  address: string
+  postalCode?: string
+  city?: string
+  country?: string
+  phone: string
+  email: string
+  isDeleted: boolean
+}
+
+// Relación con facturas recibidas
+export type ReceivedInvoice = {
+  id: string
+  providerId: string
+  businessId: string
+  number: string
+  date: Date
+  total: number
+  status: 'pending' | 'recorded' | 'rejected' | 'paid'
+  // ...otros campos
+}
+```
+
+### Experiencia de Usuario
+
+- El usuario puede gestionar proveedores con la misma experiencia visual y de interacción que el módulo de clientes.
+- El buscador y los filtros permiten encontrar rápidamente cualquier proveedor.
+- El sistema muestra el estado de cada proveedor (por ejemplo, "Con deuda" si tiene facturas pendientes).
+- Todas las acciones son rápidas y responsivas, con validación y feedback inmediato.
+
+---
