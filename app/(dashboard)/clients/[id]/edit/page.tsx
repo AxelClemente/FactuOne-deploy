@@ -6,6 +6,8 @@ import { getDb } from "@/lib/db"
 import { eq } from "drizzle-orm"
 import { clients } from "@/app/db/schema"
 
+console.log("DEBUG: import clients from schema:", clients)
+
 export default async function EditClientPage({ params }: { params: Promise<{ id: string }> }) {
   // Await params as required by Next.js 15
   const { id } = await params
@@ -24,7 +26,9 @@ export default async function EditClientPage({ params }: { params: Promise<{ id:
 
   // Obtener el cliente a editar
   const db = await getDb()
-  const client = await db.select().from(clients).where(eq(clients.id, parseInt(id))).limit(1)
+  console.log("DEBUG: db instance:", db)
+  const client = await db.select().from(clients).where(eq(clients.id, id)).limit(1)
+  console.log("DEBUG: client query result:", client)
 
   if (!client || client.length === 0) {
     notFound()

@@ -117,10 +117,27 @@ export const receivedTypes = table("received_invoice_types", {
   ...timestamps,
 });
 
+// Providers
+export const providers = table("providers", {
+  ...stringId,
+  businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
+  name: t.varchar("name", { length: 255 }).notNull(),
+  nif: t.varchar("nif", { length: 20 }).notNull(),
+  address: t.varchar("address", { length: 500 }).notNull(),
+  postalCode: t.varchar("postal_code", { length: 10 }),
+  city: t.varchar("city", { length: 100 }),
+  country: t.varchar("country", { length: 100 }).default("España"),
+  phone: t.varchar("phone", { length: 20 }).notNull(),
+  email: t.varchar("email", { length: 255 }).notNull(),
+  isDeleted: t.boolean("is_deleted").default(false).notNull(),
+  ...timestamps,
+});
+
 // ReceivedInvoices (Facturas Recibidas)
 export const receivedInvoices = table("received_invoices", {
   ...stringId,
   businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
+  providerId: t.varchar("provider_id", { length: 36 }).references(() => providers.id),
   typeId: t.varchar("received_invoice_type_id", { length: 36 }).references(() => receivedTypes.id),
   number: t.varchar("number", { length: 50 }).notNull(),
   date: t.datetime("date").notNull(),
@@ -185,6 +202,17 @@ export const invoiceLinesRelations = relations(invoiceLines, ({ one }) => ({
   }),
 }));
 
+export const providersRelations = relations(providers, ({ many }) => ({
+  receivedInvoices: many(receivedInvoices),
+}));
+
+export const receivedInvoicesRelations = relations(receivedInvoices, ({ one }) => ({
+  provider: one(providers, {
+    fields: [receivedInvoices.providerId],
+    references: [providers.id],
+  }),
+}));
+
 // Tipos para TypeScript
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -215,3 +243,6 @@ export type NewReceivedInvoice = typeof receivedInvoices.$inferInsert;
 
 export type Project = typeof projects.$inferSelect;
 export type NewProject = typeof projects.$inferInsert;
+
+export type Provider = typeof providers.$inferSelect;
+export type NewProvider = typeof providers.$inferInsert;

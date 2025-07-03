@@ -64,6 +64,12 @@ export function AppSidebar() {
       onClick: () => handleNavigation("/clients"),
     },
     {
+      name: "Proveedores",
+      path: "/proveedores",
+      icon: Users,
+      onClick: () => handleNavigation("/proveedores"),
+    },
+    {
       name: "Facturas emitidas",
       path: "/invoices",
       icon: FileText,

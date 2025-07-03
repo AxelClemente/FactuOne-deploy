@@ -182,11 +182,37 @@ CREATE TABLE projects (
   FOREIGN KEY (client_id) REFERENCES clients(id)
 );
 ```
+Modelo de Proveedores (providers) y Relación con Facturas Recibidas
+Tabla: providers
 
 5. **Verificamos que todas las tablas y relaciones se crearon correctamente**
    - Usamos MySQL Workbench para inspeccionar la estructura y relaciones.
 
----
+---CREATE TABLE providers (
+  id VARCHAR(36) PRIMARY KEY,
+  business_id VARCHAR(36) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  nif VARCHAR(20) NOT NULL,
+  address VARCHAR(500) NOT NULL,
+  postal_code VARCHAR(10),
+  city VARCHAR(100),
+  country VARCHAR(100) DEFAULT 'España',
+  phone VARCHAR(20) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (business_id) REFERENCES businesses(id)
+);
+
+Relación con Facturas Recibidas
+ALTER TABLE received_invoices
+ADD COLUMN provider_id VARCHAR(36) AFTER business_id;
+
+ALTER TABLE received_invoices
+ADD CONSTRAINT fk_received_invoices_provider
+FOREIGN KEY (provider_id) REFERENCES providers(id);
+
 
 ## Resumen del comando principal usado
 
