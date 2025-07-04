@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
-import bcrypt from "bcrypt"
-import { getDb } from "@/lib/db"
+import bcrypt from "bcryptjs"
+import { getDb, schema } from "@/lib/db"
 import { getCurrentUser } from "@/lib/auth"
-import { users, businessUsers } from "@/app/db/schema"
-import { eq, and } from "drizzle-orm"
+import { eq, and, inArray } from "drizzle-orm"
+import { v4 as uuidv4 } from "uuid"
 
 // Esquema de validación para registro de usuarios
 const registerUserSchema = z.object({
@@ -41,10 +41,20 @@ export async function registerUser(input: RegisterUserInput): Promise<RegisterUs
       }
     }
 
+    const db = await getDb();
+
     // Verificar que el usuario actual es administrador del negocio
-    const currentUserBusiness = await getDb().query.businessUsers.findFirst({
-      where: (businessUsers, { eq }) => eq(businessUsers.userId, currentUser.id) && eq(businessUsers.businessId, validatedData.businessId) && eq(businessUsers.role, "admin"),
-    })
+    const currentUserBusiness = await db
+      .select()
+      .from(schema.businessUsers)
+      .where(
+        and(
+          eq(schema.businessUsers.userId, currentUser.id),
+          eq(schema.businessUsers.businessId, validatedData.businessId),
+          eq(schema.businessUsers.role, "admin")
+        )
+      )
+      .then((rows) => rows[0]);
 
     if (!currentUserBusiness) {
       return {
@@ -54,9 +64,11 @@ export async function registerUser(input: RegisterUserInput): Promise<RegisterUs
     }
 
     // Verificar si el usuario ya existe
-    const existingUser = await getDb().query.users.findFirst({
-      where: (users, { eq }) => eq(users.email, validatedData.email),
-    })
+    const existingUser = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.email, validatedData.email))
+      .then((rows) => rows[0]);
 
     let userId: string
 
@@ -65,9 +77,16 @@ export async function registerUser(input: RegisterUserInput): Promise<RegisterUs
       userId = existingUser.id.toString()
 
       // Verificar si ya está asociado al negocio
-      const existingBusinessUser = await getDb().query.businessUsers.findFirst({
-        where: (businessUsers, { eq }) => eq(businessUsers.userId, existingUser.id) && eq(businessUsers.businessId, validatedData.businessId),
-      })
+      const existingBusinessUser = await db
+        .select()
+        .from(schema.businessUsers)
+        .where(
+          and(
+            eq(schema.businessUsers.userId, existingUser.id),
+            eq(schema.businessUsers.businessId, validatedData.businessId)
+          )
+        )
+        .then((rows) => rows[0]);
 
       if (existingBusinessUser) {
         return {
@@ -78,22 +97,24 @@ export async function registerUser(input: RegisterUserInput): Promise<RegisterUs
     } else {
       // Crear un nuevo usuario
       const passwordHash = await bcrypt.hash(validatedData.password, 10)
-
-      const newUser = await getDb().insert(users).values({
+      const newUserId = uuidv4();
+      await db.insert(schema.users).values({
+        id: newUserId,
         email: validatedData.email,
         passwordHash,
         name: validatedData.name || null,
-      }).returning({ id: users.id })
-
-      userId = newUser.id.toString()
+      });
+      userId = newUserId;
     }
 
     // Asociar el usuario al negocio con el rol especificado
-    await getDb().insert(businessUsers).values({
+    const newBusinessUserId = uuidv4();
+    await db.insert(schema.businessUsers).values({
+      id: newBusinessUserId,
       userId,
       businessId: validatedData.businessId,
       role: validatedData.role,
-    }).returning({ id: businessUsers.id })
+    });
 
     // Revalidar las rutas para actualizar la UI
     revalidatePath("/users")
@@ -127,68 +148,97 @@ export async function getUsersForBusiness(businessId: string | null) {
     return []
   }
   const db = await getDb()
-  const businessIdNumber = parseInt(businessId, 10)
+  console.log("=== NUEVO getUsersForBusiness ===");
+  console.log("businessId recibido:", businessId);
+  // 1. Obtener las relaciones usuario-negocio para el negocio activo
+  const businessUsersRows = await db
+    .select()
+    .from(schema.businessUsers)
+    .where(eq(schema.businessUsers.businessId, businessId));
+  console.log('businessUsersRows:', businessUsersRows);
 
-  const usersInBusiness = await db
-    .select({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-      role: businessUsers.role,
+  if (businessUsersRows.length === 0) return [];
+
+  // 2. Obtener los usuarios por ID
+  const userIds = businessUsersRows.map((bu: any) => bu.userId);
+  console.log('userIds:', userIds);
+  const usersRows = userIds.length
+    ? await db.select().from(schema.users).where(inArray(schema.users.id, userIds))
+    : [];
+  console.log('usersRows:', usersRows);
+
+  // 3. Unir los datos en memoria
+  const usersInBusiness = businessUsersRows
+    .map((bu: any) => {
+      const user = usersRows.find((u: any) => u.id === bu.userId);
+      if (!user) return undefined;
+      return {
+        id: user.id,
+        name: user.name ?? "Sin nombre",
+        email: user.email,
+        role: bu.role,
+      };
     })
-    .from(users)
-    .leftJoin(businessUsers, eq(users.id, businessUsers.userId))
-    .where(eq(businessUsers.businessId, businessIdNumber))
-
-  return usersInBusiness
+    .filter((u): u is { id: string; name: string; email: string; role: any } => u !== undefined);
+  console.log('[getUsersForBusiness] usersInBusiness:', usersInBusiness)
+  return usersInBusiness;
 }
 
 // Obtener un usuario por ID
 export async function getUserById(userId: string) {
   const db = await getDb()
-  const user = await db.query.users.findFirst({
-    where: (users, { eq }) => eq(users.id, parseInt(userId, 10)),
-  })
+  const user = await db
+    .select()
+    .from(schema.users)
+    .where(eq(schema.users.id, userId))
+    .then((rows) => rows[0]);
   return user
 }
 
 // Actualizar un usuario
-export async function updateUser(userId: string, data: { name?: string; email?: string; role?: "admin" | "user" }) {
-  const db = await getDb()
-  const { name, email, role } = data
-  const userIdNumber = parseInt(userId, 10)
+export async function updateUser(userId: string, businessId: string, data: { name?: string; email?: string; role?: "admin" | "accountant" }) {
+  try {
+    const db = await getDb()
+    const { name, email, role } = data
 
-  if (name || email) {
-    await db
-      .update(users)
-      .set({ name, email })
-      .where(eq(users.id, userIdNumber))
+    // Actualizar datos del usuario si se proporcionan
+    if (name || email) {
+      await db
+        .update(schema.users)
+        .set({ name, email })
+        .where(eq(schema.users.id, userId))
+    }
+
+    // Actualizar el rol en la tabla businessUsers si se proporciona
+    if (role) {
+      await db
+        .update(schema.businessUsers)
+        .set({ role })
+        .where(and(eq(schema.businessUsers.userId, userId), eq(schema.businessUsers.businessId, businessId)))
+    }
+
+    revalidatePath("/users")
+    revalidatePath(`/users/${userId}/edit`)
+
+    return {
+      success: true
+    }
+  } catch (error) {
+    console.error("Error al actualizar usuario:", error)
+    return {
+      success: false,
+      error: "Error al actualizar el usuario"
+    }
   }
-
-  // Si se proporciona un rol, actualizamos la tabla de `businessUsers`
-  // Esto asume que tienes un `businessId` activo para contextualizar el rol
-  // Para este ejemplo, vamos a omitir la actualización de rol si no se proporciona un businessId
-  // En una app real, lo obtendrías del estado de la aplicación o de un parámetro
-  // if (role) {
-  //   await db.update(businessUsers)
-  //     .set({ role })
-  //     .where(and(eq(businessUsers.userId, userIdNumber), eq(businessUsers.businessId, CURRENT_BUSINESS_ID)))
-  // }
-
-  revalidatePath("/users")
-  revalidatePath(`/users/${userId}/edit`)
 }
 
 // Eliminar un usuario de un negocio
 export async function deleteUserFromBusiness(userId: string, businessId: string) {
   try {
     const db = await getDb()
-    const userIdNumber = parseInt(userId, 10)
-    const businessIdNumber = parseInt(businessId, 10)
-
     await db
-      .delete(businessUsers)
-      .where(and(eq(businessUsers.userId, userIdNumber), eq(businessUsers.businessId, businessIdNumber)))
+      .delete(schema.businessUsers)
+      .where(and(eq(schema.businessUsers.userId, userId), eq(schema.businessUsers.businessId, businessId)))
 
     revalidatePath("/users")
     

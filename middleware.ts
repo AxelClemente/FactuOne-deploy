@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-import { isAuthenticated } from "@/lib/auth"
+import { isAuthenticated, getCurrentUser } from "@/lib/auth"
 
 // Rutas que no requieren autenticación
 const publicRoutes = ["/login", "/register", "/forgot-password"]
@@ -29,6 +29,13 @@ export async function middleware(request: NextRequest) {
     url.pathname = "/login"
     url.search = `?redirect=${encodeURIComponent(pathname)}`
     return NextResponse.redirect(url)
+  }
+
+  if (pathname.startsWith("/admin/users")) {
+    const user = await getCurrentUser()
+    if (!user || user.role !== "admin") {
+      return NextResponse.redirect(new URL("/", request.url))
+    }
   }
 
   return NextResponse.next()

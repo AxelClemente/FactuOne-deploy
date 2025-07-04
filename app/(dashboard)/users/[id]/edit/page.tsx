@@ -1,8 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { getUserById } from "../../actions"
 import { UserForm } from "@/components/users/user-form"
 import { getActiveBusiness } from "@/lib/getActiveBusiness"
+import { getCurrentUser } from "@/lib/auth"
+import { getDb } from "@/lib/db"
+import { businessUsers } from "@/app/db/schema"
+import { eq, and } from "drizzle-orm"
 
 interface EditUserPageProps {
   params: {
@@ -12,11 +16,48 @@ interface EditUserPageProps {
 
 export default async function EditUserPage({ params }: EditUserPageProps) {
   const { id } = params
-  const user = await getUserById(id)
-  const activeBusinessId = await getActiveBusiness()
+  
+  // Verificar que el usuario está autenticado
+  const currentUser = await getCurrentUser()
+  if (!currentUser) {
+    redirect("/login")
+  }
 
-  if (!user || !activeBusinessId) {
+  const user = await getUserById(id)
+  const activeBusiness = await getActiveBusiness()
+
+  if (!user || !activeBusiness) {
     notFound()
+  }
+
+  // Verificar que el usuario actual es administrador del negocio
+  const db = await getDb()
+  const currentUserBusiness = await db.query.businessUsers.findFirst({
+    where: (businessUsers, { eq }) => 
+      eq(businessUsers.userId, currentUser.id) && 
+      eq(businessUsers.businessId, activeBusiness.id) && 
+      eq(businessUsers.role, "admin"),
+  })
+
+  const isAdmin = !!currentUserBusiness
+
+  // Si no es admin, redirigir al dashboard
+  if (!isAdmin) {
+    redirect("/dashboard")
+  }
+
+  // Obtener el rol del usuario en el negocio activo
+  const userBusiness = await db.query.businessUsers.findFirst({
+    where: (businessUsers, { eq }) => 
+      eq(businessUsers.userId, parseInt(id, 10)) && 
+      eq(businessUsers.businessId, activeBusiness.id),
+  })
+
+  const userWithRole = {
+    id: user.id.toString(),
+    name: user.name || "Sin nombre",
+    email: user.email,
+    role: userBusiness?.role || "accountant",
   }
 
   return (
@@ -29,11 +70,15 @@ export default async function EditUserPage({ params }: EditUserPageProps) {
         <CardHeader>
           <CardTitle>Detalles del Usuario</CardTitle>
           <CardDescription>
-            Estás editando el perfil de <span className="font-semibold">{user.name || user.email}</span>.
+            Estás editando el perfil de <span className="font-semibold">{userWithRole.name}</span>.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <UserForm user={user} businessId={activeBusinessId} />
+          <UserForm 
+            user={userWithRole} 
+            businessId={activeBusiness} 
+            currentUserIsAdmin={isAdmin}
+          />
         </CardContent>
       </Card>
     </div>

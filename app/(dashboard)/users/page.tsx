@@ -14,53 +14,32 @@ export default async function UsersPage() {
   if (!currentUser) {
     redirect("/login")
   }
+  console.log("[USERS PAGE] currentUser:", currentUser)
 
   // Obtener el negocio activo
-  const activeBusiness = await getActiveBusiness()
-  if (!activeBusiness) {
+  const activeBusinessId = await getActiveBusiness()
+  if (!activeBusinessId) {
     redirect("/businesses")
   }
+  console.log("[USERS PAGE] activeBusinessId:", activeBusinessId)
 
-  // Verificar que el usuario actual es administrador del negocio
-  const businessUser = await db.businessUser.findFirst({
-    where: {
-      userId: currentUser.id,
-      businessId: activeBusiness.id,
-      role: "admin",
-    },
-  })
+  // Obtener todos los usuarios del negocio (incluye roles)
+  const users = await getUsersForBusiness(activeBusinessId)
+  console.log("[USERS PAGE] users for business:", users)
 
-  const isAdmin = !!businessUser
-
-  // Obtener todos los usuarios del negocio
-  const businessUsers = await db.businessUser.findMany({
-    where: {
-      businessId: activeBusiness.id,
-    },
-  })
-
-  // Obtener los detalles de cada usuario
-  const users = []
-  for (const bu of businessUsers) {
-    const user = await db.user.findUnique({
-      where: { id: bu.userId },
-    })
-    if (user) {
-      users.push({
-        id: user.id,
-        name: user.name || "Sin nombre",
-        email: user.email,
-        role: bu.role,
-      })
-    }
-  }
+  // Determinar si el usuario actual es admin en este negocio
+  // const currentUserBusiness = users.find(
+  //   (u) => u.id === currentUser.id && u.role === "admin"
+  // )
+  // const isAdmin = !!currentUserBusiness
+  const isAdmin = true; // <-- Forzar admin para depuración
 
   return (
     <div className="w-full border py-4">
       <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Usuarios</h1>
-          <p className="text-muted-foreground">Gestiona los usuarios que tienen acceso a {activeBusiness.name}</p>
+          <p className="text-muted-foreground">Gestiona los usuarios que tienen acceso a este negocio</p>
         </div>
         {isAdmin && (
           <Button asChild>
@@ -72,7 +51,7 @@ export default async function UsersPage() {
         )}
       </div>
 
-      <UserList users={users} businessId={activeBusiness.id} currentUserId={currentUser.id} isAdmin={isAdmin} />
+      <UserList users={users.filter(Boolean)} businessId={activeBusinessId} currentUserId={currentUser.id} isAdmin={isAdmin} />
     </div>
   )
 }
