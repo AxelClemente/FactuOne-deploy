@@ -199,7 +199,12 @@ export async function getReceivedInvoices({
 export async function getReceivedInvoiceById(invoiceId: string) {
   const db = await getDb()
   try {
-    const [invoice] = await db.select().from(receivedInvoices).where(eq(receivedInvoices.id, invoiceId))
+    const invoice = await db.query.receivedInvoices.findFirst({
+      where: eq(receivedInvoices.id, invoiceId),
+      with: {
+        project: true,
+      },
+    })
     return invoice
   } catch (error) {
     console.error(`Error al obtener la factura recibida ${invoiceId}:`, error)
