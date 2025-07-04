@@ -22,6 +22,9 @@ export function InvoiceDetail({ invoice, client, lines }: InvoiceDetailProps) {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
 
+  // DEBUG: Mostrar el proyecto asociado en consola
+  console.log('[InvoiceDetail] invoice.project:', invoice.project)
+
   // Cambiar estado de factura
   const handleStatusChange = async (status: "draft" | "paid" | "overdue" | "cancelled") => {
     setIsLoading(true)
@@ -211,6 +214,21 @@ export function InvoiceDetail({ invoice, client, lines }: InvoiceDetailProps) {
                 <dt className="text-sm font-medium text-muted-foreground">Concepto</dt>
                 <dd className="text-base">{invoice.concept}</dd>
               </div>
+              {invoice.project && (
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">Proyecto asociado</dt>
+                  <dd className="text-base">
+                    <a
+                      href={`/projects/${invoice.project.id}`}
+                      className="text-blue-600 hover:underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {invoice.project.name}
+                    </a>
+                  </dd>
+                </div>
+              )}
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Estado</dt>
                 <dd className="text-base">

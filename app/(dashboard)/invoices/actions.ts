@@ -256,6 +256,7 @@ export async function getInvoiceWithLines(invoiceId: string) {
       with: {
         lines: true,
         client: true,
+        project: true,
       },
     })
     
