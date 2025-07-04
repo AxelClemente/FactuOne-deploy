@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { CalendarRange, Edit, ExternalLink, Trash, User } from "lucide-react"
@@ -21,6 +21,10 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { ProjectStatusBadge } from "@/components/projects/project-status-badge"
 import { deleteProject } from "@/app/(dashboard)/projects/actions"
+import { getInvoicesForProject } from "@/app/(dashboard)/invoices/actions"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
 
 interface Client {
   id: string

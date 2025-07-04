@@ -304,3 +304,46 @@ export async function getProjectsForBusiness(businessId: string): Promise<Projec
     throw new Error("No se pudieron obtener los proyectos")
   }
 }
+
+// Obtener facturas asociadas a un proyecto con filtro
+export async function getInvoicesForProject({
+  projectId,
+  search = "",
+  filterBy = "number",
+}: {
+  projectId: string
+  search?: string
+  filterBy?: "number" | "concept" | "total"
+}) {
+  const db = await getDb()
+  try {
+    let whereClause = eq(invoices.projectId, projectId)
+    let filter = undefined
+    if (search) {
+      if (filterBy === "number") {
+        filter = like(invoices.number, `%${search}%`)
+      } else if (filterBy === "concept") {
+        filter = like(invoices.concept, `%${search}%`)
+      } else if (filterBy === "total") {
+        filter = like(invoices.total, `%${search}%`)
+      }
+    }
+    const where = filter ? and(whereClause, filter) : whereClause
+    const result = await db
+      .select({
+        id: invoices.id,
+        number: invoices.number,
+        concept: invoices.concept,
+        total: invoices.total,
+        date: invoices.date,
+        status: invoices.status,
+      })
+      .from(invoices)
+      .where(where)
+      .orderBy(sql`${invoices.date} desc`)
+    return result
+  } catch (error) {
+    console.error("Error al obtener facturas del proyecto:", error)
+    throw new Error("No se pudieron obtener las facturas del proyecto")
+  }
+}

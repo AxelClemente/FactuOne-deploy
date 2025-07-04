@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { ProjectStatusBadge } from "@/components/projects/project-status-badge"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
+import { ProjectInvoicesCard } from "@/components/projects/project-invoices-card"
 
 interface ProjectPageProps {
   params: {
@@ -140,15 +141,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-md border p-4">
-            <h3 className="text-lg font-medium mb-2">Facturas relacionadas</h3>
-            <p className="text-muted-foreground">Este proyecto aún no tiene facturas asociadas.</p>
-            <div className="mt-4">
-              <Button size="sm" asChild>
-                <Link href={`/invoices/new?projectId=${project.id}`}>Crear factura</Link>
-              </Button>
-            </div>
-          </div>
+          <ProjectInvoicesCard projectId={project.id} />
         </div>
       </div>
     </div>
