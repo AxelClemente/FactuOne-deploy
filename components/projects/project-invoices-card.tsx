@@ -30,12 +30,27 @@ export function ProjectInvoicesCard({ projectId }: ProjectInvoicesCardProps) {
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (tab === "number" && e.key === "Enter") {
+      console.log('[ProjectInvoicesCard] Enter pressed. Search:', search)
+      console.log('[ProjectInvoicesCard] Invoices:', invoices)
       const exact = invoices.find(inv => inv.number.toLowerCase() === search.trim().toLowerCase())
+      console.log('[ProjectInvoicesCard] Exact match:', exact)
       if (exact) {
         setNotFound(false)
         router.push(`/invoices/${exact.id}`)
       } else {
         setNotFound(true)
+      }
+    }
+    if (tab === "total" && e.key === "Enter") {
+      console.log('[ProjectInvoicesCard] Enter pressed (total). Search:', search)
+      console.log('[ProjectInvoicesCard] Invoices:', invoices)
+      if (invoices.length === 1) {
+        setNotFound(false)
+        console.log('[ProjectInvoicesCard] Redirecting to invoice:', invoices[0])
+        router.push(`/invoices/${invoices[0].id}`)
+      } else if (invoices.length === 0) {
+        setNotFound(true)
+        console.log('[ProjectInvoicesCard] No invoice found for total')
       }
     }
   }
@@ -48,7 +63,7 @@ export function ProjectInvoicesCard({ projectId }: ProjectInvoicesCardProps) {
       <Tabs value={tab} onValueChange={v => setTab(v as any)} className="mb-4">
         <TabsList>
           <TabsTrigger value="number">Número</TabsTrigger>
-          <TabsTrigger value="concept">Concepto</TabsTrigger>
+          {/* <TabsTrigger value="concept">Concepto</TabsTrigger> */}
           <TabsTrigger value="total">Monto</TabsTrigger>
         </TabsList>
       </Tabs>

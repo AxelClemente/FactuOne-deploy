@@ -214,11 +214,12 @@ export async function getInvoices({
     if (startDate) whereClauses.push(gte(invoices.date, startDate))
     if (endDate) whereClauses.push(lte(invoices.date, endDate))
     if (searchTerm) {
+      const searchValue = `%${searchTerm.toLowerCase()}%`
       whereClauses.push(
         or(
-          like(invoices.number, `%${searchTerm}%`),
-          like(invoices.concept, `%${searchTerm}%`),
-          like(clients.name, `%${searchTerm}%`),
+          like(invoices.number, searchValue),
+          like(invoices.concept, searchValue),
+          like(clients.name, searchValue),
         ),
       )
     }
@@ -322,11 +323,14 @@ export async function getInvoicesForProject({
     if (search) {
       const searchValue = `%${search.toLowerCase()}%`
       if (filterBy === "number") {
-        filter = sql`LOWER(${invoices.number}) LIKE ${searchValue}`
+        filter = sql`LOWER(${invoices.number}) = ${search.toLowerCase().trim()}`
       } else if (filterBy === "concept") {
         filter = sql`LOWER(${invoices.concept}) LIKE ${searchValue}`
       } else if (filterBy === "total") {
-        filter = like(invoices.total, searchValue)
+        // Normaliza el input: quita espacios, cambia coma por punto
+        const normalized = search.replace(/,/g, ".").replace(/\s/g, "")
+        const totalSearch = `%${normalized}%`
+        filter = sql`CAST(${invoices.total} AS CHAR) LIKE ${totalSearch}`
       }
     }
     const where = filter ? and(whereClause, filter) : whereClause
