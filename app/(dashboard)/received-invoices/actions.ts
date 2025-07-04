@@ -8,12 +8,12 @@ import { receivedInvoices } from "@/app/db/schema"
 import { getActiveBusiness } from "@/lib/getActiveBusiness"
 import { v4 as uuidv4 } from "uuid"
 import { createNotification } from "@/lib/notifications"
+import { providers } from "@/app/db/schema"
 
 // Esquemas de validación
 const receivedInvoiceSchema = z.object({
   date: z.date(),
-  providerName: z.string().min(1, { message: "El nombre del proveedor es obligatorio" }),
-  providerNIF: z.string().min(1, { message: "El NIF del proveedor es obligatorio" }),
+  providerId: z.string().min(1, { message: "Selecciona un proveedor" }),
   amount: z.coerce.number().min(0, { message: "El importe debe ser positivo" }),
   status: z.enum(["pending", "recorded", "rejected", "paid"]),
   category: z.string().optional(),
@@ -40,6 +40,12 @@ export async function createReceivedInvoice(formData: ReceivedInvoiceFormData): 
       return { success: false, error: "No hay un negocio activo seleccionado" }
     }
 
+    // Obtener datos del proveedor seleccionado
+    const [provider] = await db.select().from(providers).where(eq(providers.id, validatedData.providerId))
+    if (!provider) {
+      return { success: false, error: "Proveedor no encontrado" }
+    }
+
     // Calcular la fecha de vencimiento (30 días después de la fecha de emisión)
     const dueDate = new Date(validatedData.date)
     dueDate.setDate(dueDate.getDate() + 30)
@@ -48,8 +54,15 @@ export async function createReceivedInvoice(formData: ReceivedInvoiceFormData): 
 
     await db.insert(receivedInvoices).values({
       id, // Usa el UUID aquí
-      ...validatedData,
+      providerId: validatedData.providerId,
+      providerName: provider.name,
+      providerNIF: provider.nif,
       businessId: activeBusinessId,
+      date: validatedData.date,
+      amount: validatedData.amount,
+      status: validatedData.status,
+      category: validatedData.category,
+      documentUrl: validatedData.documentUrl,
       number: validatedData.number || `G-${Date.now()}`,
       taxAmount: 0,
       total: validatedData.amount,
@@ -60,7 +73,7 @@ export async function createReceivedInvoice(formData: ReceivedInvoiceFormData): 
     await createNotification({
       businessId: activeBusinessId,
       title: "Nueva factura recibida",
-      message: `Factura: ${validatedData.number || `G-${Date.now()}`} · Proveedor: ${validatedData.providerName} · ${new Date().toLocaleDateString("es-ES")}`,
+      message: `Factura: ${validatedData.number || `G-${Date.now()}`} · Proveedor: ${provider.name} · ${new Date().toLocaleDateString("es-ES")}`,
       type: "action",
     })
 
@@ -163,8 +176,7 @@ export async function getReceivedInvoices({
     if (searchTerm) {
       conditions.push(
         or(
-          like(receivedInvoices.providerName, `%${searchTerm}%`),
-          like(receivedInvoices.providerNIF, `%${searchTerm}%`),
+          like(receivedInvoices.providerId, `%${searchTerm}%`),
           like(receivedInvoices.number, `%${searchTerm}%`),
         ),
       )

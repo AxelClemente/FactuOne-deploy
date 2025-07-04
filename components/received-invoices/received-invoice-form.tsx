@@ -21,11 +21,10 @@ import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { CriticalChangeNotice } from "@/components/ui/critical-change-notice"
 
-// Esquema de validación
+// Esquema de validación actualizado
 const receivedInvoiceFormSchema = z.object({
   date: z.date({ required_error: "La fecha es obligatoria" }),
-  providerName: z.string().min(1, { message: "El nombre del proveedor es obligatorio" }),
-  providerNIF: z.string().min(1, { message: "El NIF del proveedor es obligatorio" }),
+  providerId: z.string().min(1, { message: "Selecciona un proveedor" }),
   amount: z.coerce.number().min(0, { message: "El importe debe ser positivo" }),
   status: z.enum(["pending", "recorded", "rejected"], {
     required_error: "El estado es obligatorio",
@@ -38,10 +37,11 @@ type ReceivedInvoiceFormValues = z.infer<typeof receivedInvoiceFormSchema>
 
 interface ReceivedInvoiceFormProps {
   categories: { id: string; name: string }[]
+  providers: { id: string; name: string; nif: string }[]
   invoice?: any
 }
 
-export function ReceivedInvoiceForm({ categories, invoice }: ReceivedInvoiceFormProps) {
+export function ReceivedInvoiceForm({ categories, providers, invoice }: ReceivedInvoiceFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -54,15 +54,13 @@ export function ReceivedInvoiceForm({ categories, invoice }: ReceivedInvoiceForm
 
   // Guardar los valores originales para comparación
   const [originalValues, setOriginalValues] = useState({
-    providerNIF: invoice?.providerNIF || "",
-    providerName: invoice?.providerName || "",
+    providerId: invoice?.providerId || "",
   })
 
   // Valores por defecto para el formulario
   const defaultValues: Partial<ReceivedInvoiceFormValues> = {
     date: invoice ? new Date(invoice.date) : new Date(),
-    providerName: invoice?.providerName || "",
-    providerNIF: invoice?.providerNIF || "",
+    providerId: invoice?.providerId || "",
     amount: invoice?.amount || 0,
     status: invoice?.status || "pending",
     category: invoice?.category || "",
@@ -76,8 +74,7 @@ export function ReceivedInvoiceForm({ categories, invoice }: ReceivedInvoiceForm
   })
 
   // Detectar cambios en campos críticos
-  const watchProviderNIF = form.watch("providerNIF")
-  const watchProviderName = form.watch("providerName")
+  const watchProviderId = form.watch("providerId")
 
   // Simular subida de archivo
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -107,7 +104,7 @@ export function ReceivedInvoiceForm({ categories, invoice }: ReceivedInvoiceForm
     // Verificar si hay cambios en campos críticos
     if (
       isEditing &&
-      (data.providerNIF !== originalValues.providerNIF || data.providerName !== originalValues.providerName)
+      (data.providerId !== originalValues.providerId)
     ) {
       setPendingFormData(data)
       setShowCriticalNotice(true)
@@ -238,40 +235,33 @@ export function ReceivedInvoiceForm({ categories, invoice }: ReceivedInvoiceForm
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
-            {/* Nombre del proveedor */}
+            {/* Proveedor */}
             <FormField
               control={form.control}
-              name="providerName"
+              name="providerId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nombre del proveedor</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Empresa S.L." {...field} />
-                  </FormControl>
-                  <FormDescription>Nombre o razón social del proveedor</FormDescription>
+                  <FormLabel>Proveedor</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar proveedor" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {providers.map((provider) => (
+                        <SelectItem key={provider.id} value={provider.id}>
+                          {provider.name} ({provider.nif})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>Selecciona el proveedor de la factura</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* NIF del proveedor */}
-            <FormField
-              control={form.control}
-              name="providerNIF"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>NIF/CIF del proveedor</FormLabel>
-                  <FormControl>
-                    <Input placeholder="B12345678" {...field} />
-                  </FormControl>
-                  <FormDescription>NIF o CIF del proveedor</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2">
             {/* Categoría */}
             <FormField
               control={form.control}
@@ -399,7 +389,7 @@ export function ReceivedInvoiceForm({ categories, invoice }: ReceivedInvoiceForm
         onClose={() => setShowCriticalNotice(false)}
         onConfirm={handleConfirmCriticalChange}
         entityType="provider"
-        fieldName={watchProviderNIF !== originalValues.providerNIF ? "nif" : "fiscalName"}
+        fieldName={watchProviderId !== originalValues.providerId ? "id" : ""}
       />
     </>
   )
