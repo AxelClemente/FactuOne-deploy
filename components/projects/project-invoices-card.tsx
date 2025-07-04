@@ -1,6 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
 import { getInvoicesForProject } from "@/app/(dashboard)/invoices/actions"
+import { getReceivedInvoicesForProject } from "@/app/(dashboard)/projects/actions"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
@@ -11,6 +12,7 @@ interface ProjectInvoicesCardProps {
 }
 
 export function ProjectInvoicesCard({ projectId }: ProjectInvoicesCardProps) {
+  const [invoiceType, setInvoiceType] = useState<"emitidas" | "recibidas">("emitidas")
   const [tab, setTab] = useState<"number" | "concept" | "total">("number")
   const [search, setSearch] = useState("")
   const [invoices, setInvoices] = useState<any[]>([])
@@ -20,37 +22,33 @@ export function ProjectInvoicesCard({ projectId }: ProjectInvoicesCardProps) {
   useEffect(() => {
     async function fetchInvoices() {
       setNotFound(false)
-      console.log('[ProjectInvoicesCard] Buscando facturas:', { projectId, search, filterBy: tab })
-      const result = await getInvoicesForProject({ projectId, search, filterBy: tab })
-      console.log('[ProjectInvoicesCard] Resultado de facturas:', result)
-      setInvoices(result)
+      if (invoiceType === "emitidas") {
+        const result = await getInvoicesForProject({ projectId, search, filterBy: tab })
+        setInvoices(result)
+      } else {
+        const result = await getReceivedInvoicesForProject({ projectId, search, filterBy: tab })
+        setInvoices(result)
+      }
     }
     fetchInvoices()
-  }, [projectId, search, tab])
+  }, [projectId, search, tab, invoiceType])
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (tab === "number" && e.key === "Enter") {
-      console.log('[ProjectInvoicesCard] Enter pressed. Search:', search)
-      console.log('[ProjectInvoicesCard] Invoices:', invoices)
       const exact = invoices.find(inv => inv.number.toLowerCase() === search.trim().toLowerCase())
-      console.log('[ProjectInvoicesCard] Exact match:', exact)
       if (exact) {
         setNotFound(false)
-        router.push(`/invoices/${exact.id}`)
+        router.push(invoiceType === "emitidas" ? `/invoices/${exact.id}` : `/received-invoices/${exact.id}`)
       } else {
         setNotFound(true)
       }
     }
     if (tab === "total" && e.key === "Enter") {
-      console.log('[ProjectInvoicesCard] Enter pressed (total). Search:', search)
-      console.log('[ProjectInvoicesCard] Invoices:', invoices)
       if (invoices.length === 1) {
         setNotFound(false)
-        console.log('[ProjectInvoicesCard] Redirecting to invoice:', invoices[0])
-        router.push(`/invoices/${invoices[0].id}`)
+        router.push(invoiceType === "emitidas" ? `/invoices/${invoices[0].id}` : `/received-invoices/${invoices[0].id}`)
       } else if (invoices.length === 0) {
         setNotFound(true)
-        console.log('[ProjectInvoicesCard] No invoice found for total')
       }
     }
   }
@@ -60,6 +58,12 @@ export function ProjectInvoicesCard({ projectId }: ProjectInvoicesCardProps) {
   return (
     <div className="rounded-md border p-4">
       <h3 className="text-lg font-medium mb-2">Facturas relacionadas</h3>
+      <Tabs value={invoiceType} onValueChange={v => setInvoiceType(v as any)} className="mb-2">
+        <TabsList>
+          <TabsTrigger value="emitidas">Emitidas</TabsTrigger>
+          <TabsTrigger value="recibidas">Recibidas</TabsTrigger>
+        </TabsList>
+      </Tabs>
       <Tabs value={tab} onValueChange={v => setTab(v as any)} className="mb-4">
         <TabsList>
           <TabsTrigger value="number">Número</TabsTrigger>
@@ -74,7 +78,7 @@ export function ProjectInvoicesCard({ projectId }: ProjectInvoicesCardProps) {
         onKeyDown={handleInputKeyDown}
         className="mb-4"
       />
-      <Select onValueChange={id => router.push(`/invoices/${id}`)}>
+      <Select onValueChange={id => router.push(invoiceType === "emitidas" ? `/invoices/${id}` : `/received-invoices/${id}`)}>
         <SelectTrigger>
           <SelectValue placeholder="Selecciona una factura" />
         </SelectTrigger>

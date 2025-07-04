@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
-import { and, eq, gte, like, lte } from "drizzle-orm"
+import { and, eq, gte, like, lte, sql } from "drizzle-orm"
 import { getDb } from "@/lib/db"
-import { projects, clients, invoices } from "@/app/db/schema"
+import { projects, clients, invoices, receivedInvoices } from "@/app/db/schema"
 import { getActiveBusiness } from "@/lib/getActiveBusiness"
 import { uploadContract } from "@/lib/upload"
 import { v4 as uuidv4 } from "uuid"
@@ -272,5 +272,52 @@ export async function getProjectInvoices(projectId: string) {
   } catch (error) {
     console.error("Error obteniendo facturas del proyecto:", error)
     return []
+  }
+}
+
+// Obtener facturas recibidas asociadas a un proyecto con filtro
+export async function getReceivedInvoicesForProject({
+  projectId,
+  search = "",
+  filterBy = "number",
+}: {
+  projectId: string
+  search?: string
+  filterBy?: "number" | "concept" | "total"
+}) {
+  const db = await getDb()
+  try {
+    let whereClause = eq(receivedInvoices.projectId, projectId)
+    let filter = undefined
+    if (search) {
+      const searchValue = `%${search.toLowerCase()}%`
+      if (filterBy === "number") {
+        filter = sql`LOWER(${receivedInvoices.number}) = ${search.toLowerCase().trim()}`
+      } else if (filterBy === "concept") {
+        filter = sql`LOWER(${receivedInvoices.category}) LIKE ${searchValue}`
+      } else if (filterBy === "total") {
+        // Normaliza el input: quita espacios, cambia coma por punto
+        const normalized = search.replace(/,/g, ".").replace(/\s/g, "")
+        const totalSearch = `%${normalized}%`
+        filter = sql`CAST(${receivedInvoices.total} AS CHAR) LIKE ${totalSearch}`
+      }
+    }
+    const where = filter ? and(whereClause, filter) : whereClause
+    const result = await db
+      .select({
+        id: receivedInvoices.id,
+        number: receivedInvoices.number,
+        concept: receivedInvoices.category, // No hay campo concept, usamos category
+        total: receivedInvoices.total,
+        date: receivedInvoices.date,
+        status: receivedInvoices.status,
+      })
+      .from(receivedInvoices)
+      .where(where)
+      .orderBy(sql`${receivedInvoices.date} desc`)
+    return result
+  } catch (error) {
+    console.error("Error al obtener facturas recibidas del proyecto:", error)
+    throw new Error("No se pudieron obtener las facturas recibidas del proyecto")
   }
 }
