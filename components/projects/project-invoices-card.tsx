@@ -14,15 +14,33 @@ export function ProjectInvoicesCard({ projectId }: ProjectInvoicesCardProps) {
   const [tab, setTab] = useState<"number" | "concept" | "total">("number")
   const [search, setSearch] = useState("")
   const [invoices, setInvoices] = useState<any[]>([])
+  const [notFound, setNotFound] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
     async function fetchInvoices() {
+      setNotFound(false)
+      console.log('[ProjectInvoicesCard] Buscando facturas:', { projectId, search, filterBy: tab })
       const result = await getInvoicesForProject({ projectId, search, filterBy: tab })
+      console.log('[ProjectInvoicesCard] Resultado de facturas:', result)
       setInvoices(result)
     }
     fetchInvoices()
   }, [projectId, search, tab])
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (tab === "number" && e.key === "Enter") {
+      const exact = invoices.find(inv => inv.number.toLowerCase() === search.trim().toLowerCase())
+      if (exact) {
+        setNotFound(false)
+        router.push(`/invoices/${exact.id}`)
+      } else {
+        setNotFound(true)
+      }
+    }
+  }
+
+  console.log('[ProjectInvoicesCard] Render:', { search, tab, invoices })
 
   return (
     <div className="rounded-md border p-4">
@@ -38,6 +56,7 @@ export function ProjectInvoicesCard({ projectId }: ProjectInvoicesCardProps) {
         placeholder={`Buscar por ${tab === "number" ? "número" : tab === "concept" ? "concepto" : "monto"}`}
         value={search}
         onChange={e => setSearch(e.target.value)}
+        onKeyDown={handleInputKeyDown}
         className="mb-4"
       />
       <Select onValueChange={id => router.push(`/invoices/${id}`)}>
@@ -56,6 +75,9 @@ export function ProjectInvoicesCard({ projectId }: ProjectInvoicesCardProps) {
       </Select>
       {invoices.length === 0 && (
         <div className="text-muted-foreground text-sm mt-2">No hay facturas</div>
+      )}
+      {notFound && (
+        <div className="text-destructive text-sm mt-2">Factura no encontrada</div>
       )}
     </div>
   )

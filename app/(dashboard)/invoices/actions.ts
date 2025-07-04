@@ -320,12 +320,13 @@ export async function getInvoicesForProject({
     let whereClause = eq(invoices.projectId, projectId)
     let filter = undefined
     if (search) {
+      const searchValue = `%${search.toLowerCase()}%`
       if (filterBy === "number") {
-        filter = like(invoices.number, `%${search}%`)
+        filter = sql`LOWER(${invoices.number}) LIKE ${searchValue}`
       } else if (filterBy === "concept") {
-        filter = like(invoices.concept, `%${search}%`)
+        filter = sql`LOWER(${invoices.concept}) LIKE ${searchValue}`
       } else if (filterBy === "total") {
-        filter = like(invoices.total, `%${search}%`)
+        filter = like(invoices.total, searchValue)
       }
     }
     const where = filter ? and(whereClause, filter) : whereClause
