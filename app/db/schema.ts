@@ -140,6 +140,7 @@ export const receivedInvoices = table("received_invoices", {
   businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
   providerId: t.varchar("provider_id", { length: 36 }).references(() => providers.id),
   typeId: t.varchar("received_invoice_type_id", { length: 36 }).references(() => receivedTypes.id),
+  projectId: t.varchar("project_id", { length: 36 }).references(() => projects.id),
   number: t.varchar("number", { length: 50 }).notNull(),
   date: t.datetime("date").notNull(),
   dueDate: t.datetime("due_date").notNull(),
@@ -215,6 +216,10 @@ export const receivedInvoicesRelations = relations(receivedInvoices, ({ one }) =
   provider: one(providers, {
     fields: [receivedInvoices.providerId],
     references: [providers.id],
+  }),
+  project: one(projects, {
+    fields: [receivedInvoices.projectId],
+    references: [projects.id],
   }),
 }));
 

@@ -19,6 +19,7 @@ const receivedInvoiceSchema = z.object({
   category: z.string().optional(),
   documentUrl: z.string().optional(),
   number: z.string().optional(),
+  projectId: z.string().optional(),
 })
 
 type ReceivedInvoiceFormData = z.infer<typeof receivedInvoiceSchema>
@@ -67,6 +68,7 @@ export async function createReceivedInvoice(formData: ReceivedInvoiceFormData): 
       taxAmount: 0,
       total: validatedData.amount,
       dueDate: dueDate, // Añadir la fecha de vencimiento
+      projectId: validatedData.projectId || null,
     })
 
     // Crear notificación
@@ -94,7 +96,10 @@ export async function updateReceivedInvoice(
   try {
     const validatedData = receivedInvoiceSchema.parse(formData)
 
-    await db.update(receivedInvoices).set(validatedData).where(eq(receivedInvoices.id, invoiceId))
+    await db.update(receivedInvoices).set({
+      ...validatedData,
+      projectId: validatedData.projectId || null,
+    }).where(eq(receivedInvoices.id, invoiceId))
 
     revalidatePath(`/received-invoices/${invoiceId}`)
     revalidatePath("/received-invoices")

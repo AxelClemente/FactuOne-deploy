@@ -452,3 +452,48 @@ export type ReceivedInvoice = {
 - Todas las acciones son rápidas y responsivas, con validación y feedback inmediato.
 
 ---
+
+## 🔗 Asociación de Proyectos a Facturas Emitidas y Filtros Avanzados
+
+### Implementación y Mejoras
+
+- **Asociación directa de proyectos a facturas emitidas:**
+  - Se agregó el campo `project_id` (UUID, nullable) a la tabla `invoices` en la base de datos y en el esquema de Drizzle ORM.
+  - El formulario de creación/edición de facturas permite seleccionar un proyecto asociado mediante un dropdown, mostrando solo los proyectos del negocio activo.
+  - El backend y las server actions fueron actualizados para guardar y actualizar correctamente el `projectId` en cada factura.
+
+- **Visualización del proyecto asociado:**
+  - En el detalle de cada factura, se muestra el nombre del proyecto asociado (si existe) y un enlace directo al detalle de ese proyecto.
+  - El enlace permite navegar rápidamente entre facturas y proyectos relacionados, mejorando la trazabilidad y la experiencia de usuario.
+
+- **Página de detalle de proyecto con facturas relacionadas:**
+  - Se creó un componente avanzado de "Facturas relacionadas" en la página de cada proyecto.
+  - Este componente incluye tabs para filtrar las facturas asociadas por **Número** y **Monto** (el filtro por Concepto está preparado para el futuro).
+  - El filtro es flexible y profesional:
+    - **Por número:** Coincidencia exacta, case-insensitive, con redirección directa al detalle de la factura si hay coincidencia única.
+    - **Por monto:** Coincidencia parcial y flexible (soporta decimales, puntos, comas, espacios), con redirección directa si hay una sola coincidencia.
+    - Si no hay coincidencia, se muestra un mensaje de "Factura no encontrada".
+  - El dropdown muestra todas las facturas asociadas al proyecto y se actualiza dinámicamente según el filtro.
+
+- **Mejoras técnicas y de UX:**
+  - El componente de filtrado y dropdown fue desacoplado en un archivo cliente para evitar problemas de imports entre server/client.
+  - Se agregaron logs y validaciones para asegurar la robustez de la experiencia.
+  - El sistema es completamente multi-tenant: cada usuario solo ve y filtra facturas de su negocio y proyectos activos.
+
+### Resumen de cambios técnicos
+
+- **Base de datos:**
+  - `ALTER TABLE invoices ADD COLUMN project_id VARCHAR(36) NULL, ADD CONSTRAINT fk_invoices_project FOREIGN KEY (project_id) REFERENCES projects(id);`
+  - Actualización del esquema Drizzle para reflejar el nuevo campo y las relaciones.
+
+- **Backend:**
+  - Nuevas server actions para obtener facturas por proyecto y filtrar por número/monto.
+  - Lógica de búsqueda flexible y case-insensitive usando SQL (`LOWER`, `CAST`, `LIKE`).
+
+- **Frontend:**
+  - Dropdown de proyectos en el formulario de facturas.
+  - Visualización del proyecto asociado en el detalle de factura.
+  - Componente de tabs y dropdown para filtrar y navegar facturas desde la página de proyecto.
+  - Redirección automática al detalle de factura al pulsar Enter en los filtros.
+
+---

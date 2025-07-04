@@ -191,6 +191,21 @@ export function ReceivedInvoiceDetail({ invoice, categories }: ReceivedInvoiceDe
                 <dt className="text-sm font-medium text-muted-foreground">Categoría</dt>
                 <dd className="text-base">{getCategoryName(invoice.category)}</dd>
               </div>
+              {invoice.projectId && invoice.project && (
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">Proyecto asociado</dt>
+                  <dd className="text-base">
+                    <a
+                      href={`/projects/${invoice.project.id}`}
+                      className="text-blue-600 hover:underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {invoice.project.name}
+                    </a>
+                  </dd>
+                </div>
+              )}
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Estado</dt>
                 <dd className="text-base">

@@ -31,6 +31,7 @@ const receivedInvoiceFormSchema = z.object({
   }),
   category: z.string().optional(),
   fileUrl: z.string().optional(),
+  projectId: z.string().optional(),
 })
 
 type ReceivedInvoiceFormValues = z.infer<typeof receivedInvoiceFormSchema>
@@ -38,10 +39,11 @@ type ReceivedInvoiceFormValues = z.infer<typeof receivedInvoiceFormSchema>
 interface ReceivedInvoiceFormProps {
   categories: { id: string; name: string }[]
   providers: { id: string; name: string; nif: string }[]
+  projects?: { id: string; name: string }[]
   invoice?: any
 }
 
-export function ReceivedInvoiceForm({ categories, providers, invoice }: ReceivedInvoiceFormProps) {
+export function ReceivedInvoiceForm({ categories, providers, projects = [], invoice }: ReceivedInvoiceFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -65,6 +67,7 @@ export function ReceivedInvoiceForm({ categories, providers, invoice }: Received
     status: invoice?.status || "pending",
     category: invoice?.category || "",
     fileUrl: invoice?.fileUrl || "",
+    projectId: invoice?.projectId || undefined,
   }
 
   // Inicializar el formulario
@@ -257,6 +260,38 @@ export function ReceivedInvoiceForm({ categories, providers, invoice }: Received
                     </SelectContent>
                   </Select>
                   <FormDescription>Selecciona el proveedor de la factura</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Proyecto (opcional) */}
+            <FormField
+              control={form.control}
+              name="projectId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Proyecto (opcional)</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value && field.value !== "" ? field.value : undefined}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sin proyecto asociado" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {projects
+                        .filter((project) => !!project.id && project.id !== "")
+                        .map((project) => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>Asocia esta factura a un proyecto si corresponde.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
