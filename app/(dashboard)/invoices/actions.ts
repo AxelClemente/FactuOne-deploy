@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { getDb } from "@/lib/db"
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
-import { invoices, invoiceLines, clients, Client } from "@/app/db/schema"
+import { invoices, invoiceLines, clients, projects, Client, Project } from "@/app/db/schema"
 import { eq, and, sql, gte, lte, or, like } from "drizzle-orm"
 import { v4 as uuidv4 } from "uuid"
 import { createNotification } from "@/lib/notifications"
@@ -21,6 +21,7 @@ const invoiceLineSchema = z.object({
 
 const invoiceSchema = z.object({
   clientId: z.string().min(1, { message: "El cliente es obligatorio" }),
+  projectId: z.string().optional(),
   date: z.date({ required_error: "La fecha es obligatoria" }),
   dueDate: z.date({ required_error: "La fecha de vencimiento es obligatoria" }),
   concept: z.string().min(1, { message: "El concepto es obligatorio" }),
@@ -66,6 +67,7 @@ export async function createInvoice(formData: InvoiceFormData): Promise<InvoiceA
         id: invoiceId,
         businessId: business.id,
         clientId: validatedData.clientId,
+        projectId: validatedData.projectId || null,
         date: validatedData.date,
         dueDate: validatedData.dueDate,
         concept: validatedData.concept,
@@ -127,6 +129,7 @@ export async function updateInvoice(invoiceId: string, formData: InvoiceFormData
       .update(invoices)
       .set({
         clientId: validatedData.clientId,
+        projectId: validatedData.projectId || null,
         date: validatedData.date,
         dueDate: validatedData.dueDate,
         concept: validatedData.concept,
@@ -283,5 +286,20 @@ export async function getClientsForBusiness(businessId: string): Promise<Client[
   } catch (error) {
     console.error("Error al obtener clientes:", error)
     throw new Error("No se pudieron obtener los clientes")
+  }
+}
+
+// Obtener proyectos de un negocio
+export async function getProjectsForBusiness(businessId: string): Promise<Project[]> {
+  const db = await getDb()
+  try {
+    const projectList = await db.query.projects.findMany({
+      where: eq(projects.businessId, businessId),
+      orderBy: sql`${projects.name} asc`,
+    })
+    return projectList
+  } catch (error) {
+    console.error("Error al obtener proyectos:", error)
+    throw new Error("No se pudieron obtener los proyectos")
   }
 }

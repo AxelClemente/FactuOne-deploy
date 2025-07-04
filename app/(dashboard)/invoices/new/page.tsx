@@ -2,8 +2,8 @@ import { redirect } from "next/navigation"
 import { InvoiceForm } from "@/components/invoices/invoice-form"
 import { getCurrentUser } from "@/lib/auth"
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
-import { getClientsForBusiness } from "@/app/(dashboard)/invoices/actions"
-import { Client } from "@/app/db/schema"
+import { getClientsForBusiness, getProjectsForBusiness } from "@/app/(dashboard)/invoices/actions"
+import { Client, Project } from "@/app/db/schema"
 
 export default async function NewInvoicePage() {
   // Obtener el usuario actual
@@ -28,6 +28,16 @@ export default async function NewInvoicePage() {
   }))
   console.log("[NewInvoicePage] Clientes pasados al formulario:", clients)
 
+  // Obtener los proyectos del negocio y transformar los IDs a string
+  const projectsFromDb = await getProjectsForBusiness(activeBusiness.id)
+  console.log("[NewInvoicePage] Proyectos desde la BD:", projectsFromDb)
+
+  const projects = projectsFromDb.map((project: Project) => ({
+    id: project.id.toString(),
+    name: project.name,
+  }))
+  console.log("[NewInvoicePage] Proyectos pasados al formulario:", projects)
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
@@ -35,7 +45,7 @@ export default async function NewInvoicePage() {
         <p className="text-muted-foreground">Crea una nueva factura para un cliente</p>
       </div>
 
-      <InvoiceForm clients={clients} />
+      <InvoiceForm clients={clients} projects={projects} />
     </div>
   )
 }

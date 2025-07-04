@@ -33,6 +33,7 @@ const invoiceFormSchema = z.object({
   date: z.date({ required_error: "La fecha es obligatoria." }),
   dueDate: z.date({ required_error: "La fecha de vencimiento es obligatoria." }),
   clientId: z.string().min(1, { message: "El cliente es obligatorio." }),
+  projectId: z.string().optional(),
   concept: z.string().min(1, { message: "El concepto es obligatorio." }),
   lines: z.array(invoiceLineSchema).min(1, { message: "Debe incluir al menos una línea." }),
 })
@@ -42,6 +43,7 @@ type InvoiceFormValues = z.infer<typeof invoiceFormSchema>
 // Props del componente con tipos estrictos
 interface InvoiceFormProps {
   clients: (Omit<Client, "id"> & { id: string })[]
+  projects?: { id: string; name: string }[]
   invoice?: Invoice & { lines: InvoiceLine[] }
 }
 
@@ -52,9 +54,9 @@ const getDueDate = (date: Date): Date => {
   return newDueDate
 }
 
-export function InvoiceForm({ clients, invoice }: InvoiceFormProps) {
+export function InvoiceForm({ clients, projects = [], invoice }: InvoiceFormProps) {
   // DEBUG: Ver las props que recibe el componente
-  console.log("[InvoiceForm] Props recibidas:", { clients, invoice })
+  console.log("[InvoiceForm] Props recibidas:", { clients, projects, invoice })
 
   const router = useRouter()
   const { toast } = useToast()
@@ -70,6 +72,7 @@ export function InvoiceForm({ clients, invoice }: InvoiceFormProps) {
     date: invoice ? new Date(invoice.date) : new Date(),
     dueDate: invoice ? new Date(invoice.dueDate) : getDueDate(new Date()),
     clientId: invoice?.clientId?.toString() || "",
+    projectId: invoice?.projectId?.toString() || undefined,
     concept: invoice?.concept || "",
     lines:
       invoice?.lines && invoice.lines.length > 0
@@ -261,6 +264,41 @@ export function InvoiceForm({ clients, invoice }: InvoiceFormProps) {
                 <FormMessage />
               </FormItem>
             )}
+          />
+
+          {/* Proyecto (opcional) */}
+          <FormField
+            control={form.control}
+            name="projectId"
+            render={({ field }) => {
+              console.log("[InvoiceForm] Valor actual de projectId:", field.value)
+              return (
+                <FormItem>
+                  <FormLabel>Proyecto (opcional)</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value && field.value !== "" ? field.value : undefined}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sin proyecto asociado" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {projects
+                        .filter((project) => !!project.id && project.id !== "")
+                        .map((project) => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>Asocia esta factura a un proyecto si corresponde.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
           />
         </div>
 

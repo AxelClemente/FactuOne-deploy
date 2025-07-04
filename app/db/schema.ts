@@ -82,6 +82,7 @@ export const invoices = table("invoices", {
   ...stringId,
   businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
   clientId: t.varchar("client_id", { length: 36 }).notNull().references(() => clients.id),
+  projectId: t.varchar("project_id", { length: 36 }).references(() => projects.id),
   invoiceTypeId: t.varchar("invoice_type_id", { length: 36 }).references(() => invoiceTypes.id),
   number: t.varchar("number", { length: 50 }).notNull(),
   date: t.datetime("date").notNull(),
@@ -192,6 +193,10 @@ export const invoicesRelations = relations(invoices, ({ one, many }) => ({
     fields: [invoices.clientId],
     references: [clients.id],
   }),
+  project: one(projects, {
+    fields: [invoices.projectId],
+    references: [projects.id],
+  }),
   lines: many(invoiceLines),
 }));
 
@@ -211,6 +216,14 @@ export const receivedInvoicesRelations = relations(receivedInvoices, ({ one }) =
     fields: [receivedInvoices.providerId],
     references: [providers.id],
   }),
+}));
+
+export const projectsRelations = relations(projects, ({ one, many }) => ({
+  client: one(clients, {
+    fields: [projects.clientId],
+    references: [clients.id],
+  }),
+  invoices: many(invoices),
 }));
 
 // Tipos para TypeScript
