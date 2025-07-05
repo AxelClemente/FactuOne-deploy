@@ -1,7 +1,11 @@
 import { NextRequest } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
 import { getReceivedInvoiceById } from "@/app/(dashboard)/received-invoices/actions"
-// import { create } from "xmlbuilder2" // Instalar xmlbuilder2
+import { getActiveBusiness } from "@/lib/getActiveBusiness"
+import { getDb } from "@/lib/db"
+import { businesses } from "@/app/db/schema"
+import { eq } from "drizzle-orm"
+import { generateFacturaeXML, validateFacturaeXML, convertInvoiceToFacturaeFormat } from "@/lib/facturae-xml"
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   // 1. Validar usuario
@@ -16,48 +20,63 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return new Response("Factura recibida no encontrada", { status: 404 })
   }
 
-  // 3. (Opcional) Validar permisos y pertenencia al negocio
-  // TODO: Validar que el usuario puede acceder a esta factura
+  // 3. Validar que pertenece al negocio activo
+  const activeBusinessId = await getActiveBusiness()
+  if (!activeBusinessId || invoice.businessId !== activeBusinessId) {
+    return new Response("Forbidden", { status: 403 })
+  }
 
-  // 4. Generar XML Facturae mínimo (estructura base)
-  // TODO: Completar todos los campos y namespaces según XSD oficial
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<Facturae xmlns="http://www.facturae.es/Facturae/2009/v3.2/Facturae">
-  <FileHeader>
-    <SchemaVersion>3.2.1</SchemaVersion>
-    <Modality>I</Modality>
-    <InvoiceIssuerType>EM</InvoiceIssuerType>
-  </FileHeader>
-  <Parties>
-    <SellerParty>
-      <TaxIdentification>
-        <PersonTypeCode>J</PersonTypeCode>
-        <ResidenceTypeCode>R</ResidenceTypeCode>
-        <TaxIdentificationNumber>${invoice.provider?.nif || ""}</TaxIdentificationNumber>
-      </TaxIdentification>
-      <LegalEntity>
-        <CorporateName>${invoice.provider?.name || ""}</CorporateName>
-        <AddressInSpain>
-          <Address>${invoice.provider?.address || ""}</Address>
-        </AddressInSpain>
-      </LegalEntity>
-    </SellerParty>
-    <BuyerParty>
-      <TaxIdentification>
-        <PersonTypeCode>J</PersonTypeCode>
-        <ResidenceTypeCode>R</ResidenceTypeCode>
-        <TaxIdentificationNumber>${invoice.business?.nif || ""}</TaxIdentificationNumber>
-      </TaxIdentification>
-      <LegalEntity>
-        <CorporateName>${invoice.business?.name || ""}</CorporateName>
-        <AddressInSpain>
-          <Address>${invoice.business?.fiscalAddress || ""}</Address>
-        </AddressInSpain>
-      </LegalEntity>
-    </BuyerParty>
-  </Parties>
-  <!-- ... más nodos según XSD ... -->
-</Facturae>`
+  // 4. Obtener datos del negocio para el XML
+  const db = await getDb()
+  const [business] = await db.select().from(businesses).where(eq(businesses.id, activeBusinessId))
+  if (!business) {
+    return new Response("Negocio no encontrado", { status: 404 })
+  }
+
+  // 5. Preparar datos para Facturae (para facturas recibidas, el proveedor es el vendedor)
+  const facturaeInvoice = {
+    number: invoice.number,
+    date: new Date(invoice.date),
+    dueDate: new Date(invoice.dueDate),
+    concept: invoice.category || "Factura recibida",
+    subtotal: parseFloat(invoice.amount || '0'),
+    taxAmount: parseFloat(invoice.taxAmount || '0'),
+    total: parseFloat(invoice.total || '0'),
+    lines: [{
+      description: invoice.category || "Servicio recibido",
+      quantity: 1,
+      unitPrice: parseFloat(invoice.amount || '0'),
+      taxRate: parseFloat(invoice.taxAmount || '0') > 0 ? 21 : 0, // IVA por defecto
+      total: parseFloat(invoice.total || '0')
+    }],
+    seller: {
+      nif: invoice.provider?.nif || invoice.providerNIF || "",
+      name: invoice.provider?.name || invoice.providerName || "",
+      address: invoice.provider?.address || "",
+      postalCode: invoice.provider?.postalCode,
+      city: invoice.provider?.city,
+      country: invoice.provider?.country || 'ESP'
+    },
+    buyer: {
+      nif: business.nif,
+      name: business.name,
+      address: business.fiscalAddress,
+      postalCode: undefined, // No disponible en el modelo actual
+      city: undefined, // No disponible en el modelo actual
+      country: 'ESP'
+    },
+    projectId: invoice.projectId
+  }
+
+  // 6. Generar XML Facturae 3.2.x completo y profesional
+  const xml = generateFacturaeXML(facturaeInvoice)
+
+  // 7. Validar el XML generado
+  const validation = validateFacturaeXML(xml)
+  if (!validation.isValid) {
+    console.error('Error validando XML Facturae:', validation.errors)
+    return new Response('Error generando XML Facturae válido', { status: 500 })
+  }
 
   return new Response(xml, {
     headers: {
