@@ -97,7 +97,7 @@ export default async function UsersPage() {
   }
 
   return (
-    <div className="w-full border py-4">
+    <div className="w-full">
       <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Usuarios</h1>
@@ -112,7 +112,6 @@ export default async function UsersPage() {
           </Button>
         )}
       </div>
-
       <UserList users={users.filter(Boolean)} businessId={activeBusiness.id} currentUserId={currentUser.id} isAdmin={isAdmin} />
     </div>
   )

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Building2, FileText, FolderKanban, Home, Menu, Receipt, Users, X, Activity } from "lucide-react"
+import { Building2, FileText, FolderKanban, Home, Menu, Receipt, Users, X, Activity, Shield } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
@@ -93,6 +93,12 @@ export function AppSidebar() {
       icon: Activity,
       onClick: () => handleNavigation("/audit"),
     },
+    {
+      name: "Permissions",
+      path: "/users",
+      icon: Shield,
+      onClick: () => handleNavigation("/users"),
+    },
   ]
 
   // Prevent hydration mismatch by showing a skeleton until mounted
@@ -156,7 +162,7 @@ export function AppSidebar() {
               </div>
 
               <div className="p-4 border-t border-sidebar-border">
-                <LogoutButton className="w-full" />
+                <LogoutButton />
               </div>
             </div>
           </SheetContent>
@@ -198,7 +204,7 @@ export function AppSidebar() {
       </div>
 
       <div className="p-4 border-t border-sidebar-border">
-        <LogoutButton className="w-full" />
+        <LogoutButton />
       </div>
     </div>
   )
