@@ -3,14 +3,27 @@ import { eq } from "drizzle-orm"
 import { getDb } from "@/lib/db"
 import { clients as clientsTable } from "@/app/db/schema"
 import { getActiveBusiness } from "@/lib/getActiveBusiness"
+import { getCurrentUser, hasPermission } from "@/lib/auth"
 import { ProjectForm } from "@/components/projects/project-form"
 
 export const dynamic = 'force-dynamic'
 
 export default async function NewProjectPage() {
+  // Obtener el usuario actual
+  const user = await getCurrentUser()
+  if (!user) {
+    redirect("/login")
+  }
+
   const activeBusinessId = await getActiveBusiness()
   if (!activeBusinessId) {
     redirect("/select-business")
+  }
+
+  // Comprobar permiso granular para crear proyectos
+  const canCreate = await hasPermission(user.id, activeBusinessId.toString(), "projects", "create");
+  if (!canCreate) {
+    redirect("/projects");
   }
 
   // Usar el businessId como string (UUID)

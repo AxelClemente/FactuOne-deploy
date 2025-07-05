@@ -6,8 +6,8 @@ import { ReceivedInvoiceFilters } from "@/components/received-invoices/received-
 import { ReceivedInvoiceList } from "@/components/received-invoices/received-invoice-list"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getCurrentUser } from "@/lib/auth"
-import { getActiveBusiness } from "@/lib/getActiveBusiness"
+import { getCurrentUser, hasPermission } from "@/lib/auth"
+import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
 import { getReceivedInvoices, getExpenseCategories } from "./actions"
 
 export default async function ReceivedInvoicesPage({
@@ -20,10 +20,18 @@ export default async function ReceivedInvoicesPage({
     redirect("/login")
   }
 
-  const activeBusinessId = await getActiveBusiness()
-  if (!activeBusinessId) {
+  const activeBusiness = await getActiveBusiness()
+  if (!activeBusiness) {
     redirect("/businesses")
   }
+
+  // Comprobar permiso granular para crear facturas recibidas
+  const canCreateReceivedInvoice = await hasPermission(user.id, activeBusiness.id.toString(), "received_invoices", "create")
+  console.log("[RECEIVED INVOICES PAGE] user.id:", user.id)
+  console.log("[RECEIVED INVOICES PAGE] activeBusiness.id:", activeBusiness.id)
+  console.log("[RECEIVED INVOICES PAGE] canCreateReceivedInvoice:", canCreateReceivedInvoice)
+  console.log("[RECEIVED INVOICES PAGE] user.id type:", typeof user.id)
+  console.log("[RECEIVED INVOICES PAGE] activeBusiness.id type:", typeof activeBusiness.id)
 
   const resolvedSearchParams = await searchParams
 
@@ -37,7 +45,7 @@ export default async function ReceivedInvoicesPage({
   const searchTerm = typeof resolvedSearchParams.search === "string" ? resolvedSearchParams.search : undefined
 
   const initialInvoices = await getReceivedInvoices({
-    businessId: activeBusinessId,
+    businessId: activeBusiness.id,
     status,
     category,
     startDate,
@@ -52,12 +60,7 @@ export default async function ReceivedInvoicesPage({
           <h1 className="text-3xl font-bold tracking-tight">Facturas recibidas</h1>
           <p className="text-muted-foreground">Gestiona las facturas de tus proveedores y gastos</p>
         </div>
-        <Button asChild>
-          <Link href="/received-invoices/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Registrar factura
-          </Link>
-        </Button>
+        {/* El botón de Registrar factura se gestiona en ReceivedInvoiceList según el permiso */}
       </div>
 
       <div className="space-y-5">
@@ -67,9 +70,10 @@ export default async function ReceivedInvoicesPage({
         {/* Lista de facturas */}
         <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
           <ReceivedInvoiceList
-            businessId={activeBusinessId}
+            businessId={activeBusiness.id}
             initialInvoices={initialInvoices}
             categories={categories}
+            canCreateReceivedInvoice={canCreateReceivedInvoice}
           />
         </Suspense>
       </div>

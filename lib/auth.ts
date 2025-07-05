@@ -90,6 +90,8 @@ export async function getCurrentUser() {
  * Comprueba si el usuario tiene permiso granular para una acción en un módulo y negocio
  */
 export async function hasPermission(userId: string, businessId: string, module: string, action: "view" | "create" | "edit" | "delete") {
+  console.log("[hasPermission] Checking permission:", { userId, businessId, module, action })
+  
   const db = await getDb();
   const perm = await db
     .select()
@@ -102,8 +104,19 @@ export async function hasPermission(userId: string, businessId: string, module: 
       )
     )
     .then(rows => rows[0]);
-  if (!perm) return false;
+  
+  console.log("[hasPermission] Found permission record:", perm)
+  
+  if (!perm) {
+    console.log("[hasPermission] No permission record found, returning false")
+    return false;
+  }
+  
   // Type guard para acceso seguro
   const key = `can${capitalize(action)}` as keyof typeof perm;
-  return perm[key] === true;
+  const hasAction = perm[key] === true;
+  
+  console.log("[hasPermission] Permission key:", key, "Value:", perm[key], "Result:", hasAction)
+  
+  return hasAction;
 }

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { ReceivedInvoiceForm } from "@/components/received-invoices/received-invoice-form"
-import { getCurrentUser } from "@/lib/auth"
+import { getCurrentUser, hasPermission } from "@/lib/auth"
 import { getActiveBusiness } from "@/lib/getActiveBusiness"
 import { getExpenseCategories } from "@/app/(dashboard)/received-invoices/actions"
 import { getProviders } from "@/app/(dashboard)/proveedores/actions"
@@ -17,6 +17,12 @@ export default async function NewReceivedInvoicePage() {
   const businessId = await getActiveBusiness()
   if (!businessId) {
     redirect("/businesses")
+  }
+
+  // Comprobar permiso granular para crear facturas recibidas
+  const canCreate = await hasPermission(user.id, businessId.toString(), "received_invoices", "create");
+  if (!canCreate) {
+    redirect("/received-invoices");
   }
 
   // Obtener las categorías de gastos

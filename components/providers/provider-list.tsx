@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react"
 import Link from "next/link"
-import { Plus, Search, ArrowUp, ArrowDown } from "lucide-react"
+import { Plus, Search, ArrowUp, ArrowDown, PlusCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -23,7 +23,15 @@ type SortField = "name" | "totalInvoiced" | "totalPending" | "invoiceCount"
 type SortOrder = "asc" | "desc"
 type FilterTab = "all" | "overdue" | "top" | "noInvoices"
 
-export default function ProviderList({ providers = [], businessId }: { providers: Provider[], businessId: string }) {
+export default function ProviderList({ 
+  providers = [], 
+  businessId, 
+  canCreateProvider 
+}: { 
+  providers: Provider[], 
+  businessId: string,
+  canCreateProvider: boolean 
+}) {
   const [searchTerm, setSearchTerm] = useState("")
   const [sortField, setSortField] = useState<SortField>("name")
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc")
@@ -91,23 +99,33 @@ export default function ProviderList({ providers = [], businessId }: { providers
     <div className="space-y-6">
       {/* Filtros y búsqueda */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nombre, NIF o email..."
-            className="pl-8"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="flex flex-col gap-4 md:flex-row md:items-center">
+          <div className="relative w-full md:w-96">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nombre, NIF o email..."
+              className="pl-8"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <Tabs defaultValue="all" value={activeTab} onValueChange={(value) => setActiveTab(value as FilterTab)}>
+            <TabsList>
+              <TabsTrigger value="all">Todos</TabsTrigger>
+              <TabsTrigger value="overdue">Con deuda</TabsTrigger>
+              <TabsTrigger value="top">Top proveedores</TabsTrigger>
+              <TabsTrigger value="noInvoices">Sin facturas</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
-        <Tabs defaultValue="all" value={activeTab} onValueChange={(value) => setActiveTab(value as FilterTab)}>
-          <TabsList>
-            <TabsTrigger value="all">Todos</TabsTrigger>
-            <TabsTrigger value="overdue">Con deuda</TabsTrigger>
-            <TabsTrigger value="top">Top proveedores</TabsTrigger>
-            <TabsTrigger value="noInvoices">Sin facturas</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {canCreateProvider && (
+          <Button asChild>
+            <Link href="/proveedores/new">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Nuevo Proveedor
+            </Link>
+          </Button>
+        )}
       </div>
       {/* Ordenación */}
       <div className="flex flex-wrap gap-2 mb-4">

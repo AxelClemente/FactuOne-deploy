@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { getDb } from "@/lib/db"
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
+import { getCurrentUser, hasPermission } from "@/lib/auth"
 import { invoices, invoiceLines, clients, projects, Client, Project } from "@/app/db/schema"
 import { eq, and, sql, gte, lte, or, like } from "drizzle-orm"
 import { v4 as uuidv4 } from "uuid"
@@ -38,13 +39,25 @@ type InvoiceActionResult = {
 
 // Acción para crear una nueva factura
 export async function createInvoice(formData: InvoiceFormData): Promise<InvoiceActionResult> {
-  const db = await getDb()
   try {
-    const validatedData = invoiceSchema.parse(formData)
+    // Obtener usuario actual y comprobar permiso
+    const user = await getCurrentUser();
+    if (!user) {
+      return { success: false, error: "No has iniciado sesión" };
+    }
+    
     const business = await getActiveBusiness()
     if (!business) {
       return { success: false, error: "No hay un negocio activo seleccionado" }
     }
+
+    const canCreate = await hasPermission(user.id, business.id.toString(), "invoices", "create");
+    if (!canCreate) {
+      return { success: false, error: "No tienes permisos para crear facturas" };
+    }
+
+    const validatedData = invoiceSchema.parse(formData)
+    const db = await getDb()
 
     const subtotal = validatedData.lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0)
     const taxAmount = validatedData.lines.reduce((sum, line) => {

@@ -6,6 +6,7 @@ import { and, eq, gte, like, lte, or } from "drizzle-orm"
 import { getDb } from "@/lib/db"
 import { receivedInvoices } from "@/app/db/schema"
 import { getActiveBusiness } from "@/lib/getActiveBusiness"
+import { getCurrentUser, hasPermission } from "@/lib/auth"
 import { v4 as uuidv4 } from "uuid"
 import { createNotification } from "@/lib/notifications"
 import { providers } from "@/app/db/schema"
@@ -32,14 +33,25 @@ type ReceivedInvoiceActionResult = {
 
 // Acción para crear una nueva factura recibida
 export async function createReceivedInvoice(formData: ReceivedInvoiceFormData): Promise<ReceivedInvoiceActionResult> {
-  const db = await getDb()
   try {
-    const validatedData = receivedInvoiceSchema.parse(formData)
+    // Obtener usuario actual y comprobar permiso
+    const user = await getCurrentUser();
+    if (!user) {
+      return { success: false, error: "No has iniciado sesión" };
+    }
+    
     const activeBusinessId = await getActiveBusiness()
-
     if (!activeBusinessId) {
       return { success: false, error: "No hay un negocio activo seleccionado" }
     }
+
+    const canCreate = await hasPermission(user.id, activeBusinessId.toString(), "received_invoices", "create");
+    if (!canCreate) {
+      return { success: false, error: "No tienes permisos para crear facturas recibidas" };
+    }
+
+    const validatedData = receivedInvoiceSchema.parse(formData)
+    const db = await getDb()
 
     // Obtener datos del proveedor seleccionado
     const [provider] = await db.select().from(providers).where(eq(providers.id, validatedData.providerId))

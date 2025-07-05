@@ -49,7 +49,7 @@ export default async function EditUserPage({ params }: EditUserPageProps) {
   // Obtener el rol del usuario en el negocio activo
   const userBusiness = await db.query.businessUsers.findFirst({
     where: (businessUsers, { eq }) => 
-      eq(businessUsers.userId, parseInt(id, 10)) && 
+      eq(businessUsers.userId, id) && 
       eq(businessUsers.businessId, activeBusiness.id),
   })
 

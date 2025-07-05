@@ -6,6 +6,7 @@ import { and, eq, gte, like, lte, sql } from "drizzle-orm"
 import { getDb } from "@/lib/db"
 import { projects, clients, invoices, receivedInvoices } from "@/app/db/schema"
 import { getActiveBusiness } from "@/lib/getActiveBusiness"
+import { getCurrentUser, hasPermission } from "@/lib/auth"
 import { uploadContract } from "@/lib/upload"
 import { v4 as uuidv4 } from "uuid"
 import { createNotification } from "@/lib/notifications"
@@ -29,13 +30,25 @@ type ProjectActionResult = {
 
 // Crear un nuevo proyecto
 export async function createProject(formData: FormData): Promise<ProjectActionResult> {
-  const db = await getDb()
-  const businessId = await getActiveBusiness()
-  if (!businessId) {
-    return { error: "No hay un negocio activo seleccionado" }
-  }
-
   try {
+    // Obtener usuario actual y comprobar permiso
+    const user = await getCurrentUser();
+    if (!user) {
+      return { error: "No has iniciado sesión" };
+    }
+    
+    const businessId = await getActiveBusiness()
+    if (!businessId) {
+      return { error: "No hay un negocio activo seleccionado" }
+    }
+
+    const canCreate = await hasPermission(user.id, businessId.toString(), "projects", "create");
+    if (!canCreate) {
+      return { error: "No tienes permisos para crear proyectos" };
+    }
+
+    const db = await getDb()
+
     // 1. Extraer y preparar datos del FormData
     const rawData = {
       name: formData.get("name"),

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { InvoiceForm } from "@/components/invoices/invoice-form"
-import { getCurrentUser } from "@/lib/auth"
+import { getCurrentUser, hasPermission } from "@/lib/auth"
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
 import { getClientsForBusiness, getProjectsForBusiness } from "@/app/(dashboard)/invoices/actions"
 import { Client, Project } from "@/app/db/schema"
@@ -16,6 +16,12 @@ export default async function NewInvoicePage() {
   const activeBusiness = await getActiveBusiness()
   if (!activeBusiness) {
     redirect("/businesses")
+  }
+
+  // Comprobar permiso granular para crear facturas emitidas
+  const canCreate = await hasPermission(user.id, activeBusiness.id.toString(), "invoices", "create");
+  if (!canCreate) {
+    redirect("/invoices");
   }
 
   // Obtener los clientes del negocio y transformar los IDs a string

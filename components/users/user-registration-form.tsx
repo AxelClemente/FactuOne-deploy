@@ -192,7 +192,7 @@ export function UserRegistrationForm({ businessId }: UserRegistrationFormProps) 
           render={({ field }) => (
             <FormItem>
               <FormLabel>Rol en el negocio</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={true}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar rol" />

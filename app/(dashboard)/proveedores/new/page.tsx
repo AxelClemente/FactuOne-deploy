@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { getCurrentUser } from "@/lib/auth"
+import { getCurrentUser, hasPermission } from "@/lib/auth"
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
 import NewProviderForm from "@/components/providers/new-provider-form"
 
@@ -12,6 +12,12 @@ export default async function NewProviderPage() {
   const activeBusiness = await getActiveBusiness()
   if (!activeBusiness || !activeBusiness.id) {
     redirect("/businesses")
+  }
+
+  // Comprobar permiso granular para crear proveedores
+  const canCreate = await hasPermission(user.id, activeBusiness.id.toString(), "providers", "create");
+  if (!canCreate) {
+    redirect("/proveedores");
   }
 
   return (

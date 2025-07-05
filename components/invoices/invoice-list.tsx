@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Edit, Eye, FileCheck, FileText, MoreHorizontal, Plus, Trash } from "lucide-react"
+import { Edit, Eye, FileCheck, FileText, MoreHorizontal, Plus, Trash, PlusCircle } from "lucide-react"
 import { getInvoices, updateInvoiceStatus, deleteInvoice } from "@/app/(dashboard)/invoices/actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,9 +15,10 @@ import { useToast } from "@/hooks/use-toast"
 interface InvoiceListProps {
   businessId: string
   initialInvoices: any[]
+  canCreateInvoice: boolean
 }
 
-export function InvoiceList({ businessId, initialInvoices }: InvoiceListProps) {
+export function InvoiceList({ businessId, initialInvoices, canCreateInvoice }: InvoiceListProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
@@ -156,20 +157,30 @@ export function InvoiceList({ businessId, initialInvoices }: InvoiceListProps) {
         <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
         <h2 className="mt-4 text-xl font-semibold">No hay facturas</h2>
         <p className="mt-2 text-muted-foreground">No se encontraron facturas con los filtros seleccionados.</p>
-        <Button asChild className="mt-4">
-          <Link href="/invoices/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Crear factura
-          </Link>
-        </Button>
+        {canCreateInvoice && (
+          <Button asChild className="mt-4">
+            <Link href="/invoices/new">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Crear factura
+            </Link>
+          </Button>
+        )}
       </div>
     )
   }
 
   return (
     <div className="space-y-4">
-      {/* Selector de vista */}
-      <div className="flex justify-end">
+      {/* Selector de vista y botón de crear */}
+      <div className="flex justify-between items-center">
+        {canCreateInvoice && (
+          <Button asChild>
+            <Link href="/invoices/new">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Crear factura
+            </Link>
+          </Button>
+        )}
         <div className="inline-flex rounded-md shadow-sm">
           <Button
             variant={view === "table" ? "default" : "outline"}

@@ -6,7 +6,7 @@ import { InvoiceFilters } from "@/components/invoices/invoice-filters"
 import { InvoiceList } from "@/components/invoices/invoice-list"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getCurrentUser } from "@/lib/auth"
+import { getCurrentUser, hasPermission } from "@/lib/auth"
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
 import { getInvoices, getClientsForBusiness } from "@/app/(dashboard)/invoices/actions"
 
@@ -28,6 +28,14 @@ export default async function InvoicesPage({
   if (!activeBusiness) {
     redirect("/businesses")
   }
+
+  // Comprobar permiso granular para crear facturas emitidas
+  const canCreateInvoice = await hasPermission(user.id, activeBusiness.id.toString(), "invoices", "create")
+  console.log("[INVOICES PAGE] user.id:", user.id)
+  console.log("[INVOICES PAGE] activeBusiness.id:", activeBusiness.id)
+  console.log("[INVOICES PAGE] canCreateInvoice:", canCreateInvoice)
+  console.log("[INVOICES PAGE] user.id type:", typeof user.id)
+  console.log("[INVOICES PAGE] activeBusiness.id type:", typeof activeBusiness.id)
 
   // Obtener los clientes del negocio
   const clients = await getClientsForBusiness(activeBusiness.id)
@@ -77,12 +85,7 @@ export default async function InvoicesPage({
           <h1 className="text-3xl font-bold tracking-tight">Facturas emitidas</h1>
           <p className="text-muted-foreground">Gestiona las facturas emitidas a tus clientes</p>
         </div>
-        <Button asChild>
-          <Link href="/invoices/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Crear factura
-          </Link>
-        </Button>
+        {/* El botón de Crear factura se gestiona en InvoiceList según el permiso */}
       </div>
 
       <div className="space-y-5">
@@ -91,7 +94,11 @@ export default async function InvoicesPage({
 
         {/* Lista de facturas */}
         <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
-          <InvoiceList businessId={activeBusiness.id} initialInvoices={initialInvoices} />
+          <InvoiceList 
+            businessId={activeBusiness.id} 
+            initialInvoices={initialInvoices} 
+            canCreateInvoice={canCreateInvoice}
+          />
         </Suspense>
       </div>
     </div>

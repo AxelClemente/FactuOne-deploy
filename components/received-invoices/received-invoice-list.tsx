@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { ArrowDown, ArrowUp, Edit, Eye, FileCheck, FileX, MoreHorizontal, Plus, Trash } from "lucide-react"
+import { ArrowDown, ArrowUp, Edit, Eye, FileCheck, FileX, MoreHorizontal, Plus, Trash, PlusCircle } from "lucide-react"
 import {
   getReceivedInvoices,
   updateReceivedInvoiceStatus,
@@ -20,9 +20,10 @@ interface ReceivedInvoiceListProps {
   businessId: string | number
   initialInvoices: any[]
   categories: { id: string; name: string }[]
+  canCreateReceivedInvoice: boolean
 }
 
-export function ReceivedInvoiceList({ businessId, initialInvoices, categories }: ReceivedInvoiceListProps) {
+export function ReceivedInvoiceList({ businessId, initialInvoices, categories, canCreateReceivedInvoice }: ReceivedInvoiceListProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
@@ -257,50 +258,62 @@ export function ReceivedInvoiceList({ businessId, initialInvoices, categories }:
         <FileX className="mx-auto h-10 w-10 text-muted-foreground" />
         <h2 className="mt-4 text-xl font-semibold">No hay facturas recibidas</h2>
         <p className="mt-2 text-muted-foreground">No se encontraron facturas con los filtros seleccionados.</p>
-        <Button asChild className="mt-4">
-          <Link href="/received-invoices/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Registrar factura recibida
-          </Link>
-        </Button>
+        {canCreateReceivedInvoice && (
+          <Button asChild className="mt-4">
+            <Link href="/received-invoices/new">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Registrar factura recibida
+            </Link>
+          </Button>
+        )}
       </div>
     )
   }
 
   return (
     <div className="space-y-4">
-      {/* Botones de ordenación */}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => toggleSort("date")}
-          className={sortField === "date" ? "border-primary" : ""}
-        >
-          Fecha
-          {sortField === "date" &&
-            (sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />)}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => toggleSort("amount")}
-          className={sortField === "amount" ? "border-primary" : ""}
-        >
-          Importe
-          {sortField === "amount" &&
-            (sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />)}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => toggleSort("providerName")}
-          className={sortField === "providerName" ? "border-primary" : ""}
-        >
-          Proveedor
-          {sortField === "providerName" &&
-            (sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />)}
-        </Button>
+      {/* Botones de ordenación y crear */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => toggleSort("date")}
+            className={sortField === "date" ? "border-primary" : ""}
+          >
+            Fecha
+            {sortField === "date" &&
+              (sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />)}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => toggleSort("amount")}
+            className={sortField === "amount" ? "border-primary" : ""}
+          >
+            Importe
+            {sortField === "amount" &&
+              (sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />)}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => toggleSort("providerName")}
+            className={sortField === "providerName" ? "border-primary" : ""}
+          >
+            Proveedor
+            {sortField === "providerName" &&
+              (sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />)}
+          </Button>
+        </div>
+        {canCreateReceivedInvoice && (
+          <Button asChild>
+            <Link href="/received-invoices/new">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Registrar factura
+            </Link>
+          </Button>
+        )}
       </div>
 
       {/* Selector de vista */}

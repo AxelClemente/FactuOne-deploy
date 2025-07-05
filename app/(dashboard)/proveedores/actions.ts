@@ -3,7 +3,7 @@
 import { z } from "zod"
 import { v4 as uuidv4 } from "uuid"
 import { getDb } from "@/lib/db"
-import { getCurrentUser } from "@/lib/auth"
+import { getCurrentUser, hasPermission } from "@/lib/auth"
 import { providers } from "@/app/db/schema"
 import { eq, and } from "drizzle-orm"
 
@@ -37,6 +37,17 @@ export async function getProviders(businessId: string) {
 
 export async function createProvider(data: z.infer<typeof providerSchema>, businessId: string) {
   try {
+    // Obtener usuario actual y comprobar permiso
+    const user = await getCurrentUser();
+    if (!user) {
+      return { success: false, error: "No has iniciado sesión" };
+    }
+
+    const canCreate = await hasPermission(user.id, businessId, "providers", "create");
+    if (!canCreate) {
+      return { success: false, error: "No tienes permisos para crear proveedores" };
+    }
+
     const validatedData = providerSchema.parse(data)
     const db = await getDb()
     await db.insert(providers).values({

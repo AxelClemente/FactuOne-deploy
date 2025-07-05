@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Edit, Eye, MoreHorizontal, Trash } from "lucide-react"
+import { Edit, Eye, MoreHorizontal, Trash, PlusCircle } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -32,7 +32,7 @@ interface Project {
   clientId: string | null
 }
 
-export function ProjectList() {
+export function ProjectList({ canCreateProject }: { canCreateProject: boolean }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
@@ -270,7 +270,15 @@ export function ProjectList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center">
+        {canCreateProject && (
+          <Button asChild>
+            <Link href="/projects/new">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Nuevo Proyecto
+            </Link>
+          </Button>
+        )}
         <Tabs value={view} onValueChange={(v) => setView(v as "table" | "cards")}>
           <TabsList>
             <TabsTrigger value="table">Tabla</TabsTrigger>
