@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Building2, FileText, FolderKanban, Home, Menu, Receipt, Users, X, Activity, Shield } from "lucide-react"
+import { Building2, FileText, FolderKanban, Home, Menu, Receipt, Users, X, Activity, Shield, Repeat } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
@@ -98,6 +98,12 @@ export function AppSidebar() {
       path: "/users",
       icon: Shield,
       onClick: () => handleNavigation("/users"),
+    },
+    {
+      name: "Automatizaciones",
+      path: "/automations",
+      icon: Repeat,
+      onClick: () => handleNavigation("/automations"),
     },
   ]
 

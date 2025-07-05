@@ -5,6 +5,7 @@ import { TopBar } from "@/components/layout/top-bar"
 import { getCurrentUser } from "@/lib/auth"
 import { getBusinessesForUser } from "@/lib/db"
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
+import { Repeat } from "lucide-react"
 
 export const dynamic = 'force-dynamic'
 

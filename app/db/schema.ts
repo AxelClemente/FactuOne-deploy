@@ -212,6 +212,25 @@ export const auditLogs = table("audit_logs", {
   ...timestamps,
 });
 
+// Automatización de emisión de facturas recurrentes
+export const invoiceAutomations = table("invoice_automations", {
+  id: t.varchar("id", { length: 36 }).primaryKey().notNull(),
+  businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
+  clientId: t.varchar("client_id", { length: 36 }).notNull().references(() => clients.id),
+  amount: t.decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  concept: t.varchar("concept", { length: 255 }).notNull(),
+  frequency: t.mysqlEnum("frequency", ["day", "month", "year"]).notNull(),
+  interval: t.int("interval").notNull().default(1), // cada X días/meses/años
+  startDate: t.date("start_date").notNull(),
+  timeOfDay: t.time("time_of_day").notNull(),
+  maxOccurrences: t.int("max_occurrences"), // null = indefinido
+  occurrences: t.int("occurrences").notNull().default(0),
+  isActive: t.boolean("is_active").notNull().default(true),
+  lastRunAt: t.datetime("last_run_at"),
+  createdAt: t.datetime("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: t.datetime("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`).$onUpdate(() => sql`CURRENT_TIMESTAMP`),
+});
+
 // DEFINICIÓN DE RELACIONES
 export const clientsRelations = relations(clients, ({ many }) => ({
   invoices: many(invoices),
