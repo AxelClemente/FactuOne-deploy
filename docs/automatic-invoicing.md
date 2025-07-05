@@ -5,6 +5,15 @@ Permitir a los usuarios programar la emisión automática de facturas a clientes
 
 ---
 
+## Logros recientes
+
+- Sección de automatizaciones implementada en el dashboard, con listado, creación y edición de automatizaciones.
+- Formulario unificado para crear y editar automatizaciones, con validación y guardado en base de datos.
+- Menú de acciones en cada automatización para editar (y próximamente eliminar o pausar).
+- Diseño consistente y experiencia de usuario alineada con el resto del sistema.
+
+---
+
 ## Roadmap de Implementación
 
 ### 1. Nueva sección: "Automatizaciones"
@@ -54,11 +63,13 @@ Permitir a los usuarios programar la emisión automática de facturas a clientes
 ---
 
 ## Siguientes pasos
-1. Crear la tabla y modelo de automatizaciones en la base de datos.
-2. Implementar la sección y formulario en el dashboard.
-3. Desarrollar la lógica backend y el cron job.
-4. Integrar notificaciones y logs de auditoría.
-5. Mejorar la UX y añadir atajos desde facturas.
+1. Implementar la lógica real de eliminación de automatizaciones.
+2. Añadir opción de pausar/reanudar automatizaciones.
+3. Mostrar historial de ejecuciones y facturas generadas por cada automatización.
+4. Integrar el botón "Automatizar" en la edición de facturas.
+5. Desarrollar el cron job backend para emisión automática.
+6. Integrar notificaciones y logs de auditoría.
+7. Mejorar la UX y cumplimiento legal (origen de factura, exportación, etc.).
 
 ---
 

@@ -1,10 +1,13 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Repeat } from "lucide-react";
+import { Repeat, PlusCircle, MoreHorizontal, Edit, Trash } from "lucide-react";
 import { getDb } from "@/lib/db";
 import { invoiceAutomations, clients } from "@/app/db/schema";
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions";
 import { eq, inArray } from "drizzle-orm";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { AutomationList } from "@/components/automations/automation-list";
 
 export default async function AutomationsPage() {
   const activeBusiness = await getActiveBusiness();
@@ -20,11 +23,18 @@ export default async function AutomationsPage() {
     : [];
   const clientMap = Object.fromEntries(clientsList.map(c => [c.id, c]));
 
+  // --- Funciones de acción ---
+  // Eliminar automatización (deberás implementar la lógica real en un client component)
+  const handleDelete = (id: string) => {
+    // Aquí deberías llamar a una acción server/client para eliminar
+    alert(`Eliminar automatización ${id} (implementa la lógica real)`);
+  };
+
   return (
-    <div className="w-full">
-      <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+    <div className="w-full space-y-4">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
             <Repeat className="w-6 h-6" />
             Automatizaciones
           </h1>
@@ -32,46 +42,12 @@ export default async function AutomationsPage() {
         </div>
         <Button asChild>
           <Link href="/automations/new">
+            <PlusCircle className="mr-2 h-4 w-4" />
             Nueva automatización
           </Link>
         </Button>
       </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full border text-sm">
-          <thead>
-            <tr>
-              <th className="border px-2 py-1">Cliente</th>
-              <th className="border px-2 py-1">Concepto</th>
-              <th className="border px-2 py-1">Importe</th>
-              <th className="border px-2 py-1">Frecuencia</th>
-              <th className="border px-2 py-1">Próxima emisión</th>
-              <th className="border px-2 py-1">Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {automations.length === 0 && (
-              <tr>
-                <td colSpan={6} className="text-center py-8 text-muted-foreground">No hay automatizaciones registradas.</td>
-              </tr>
-            )}
-            {automations.map(auto => {
-              const cliente = clientMap[auto.clientId];
-              // Calcular próxima emisión (simplificado)
-              const prox = auto.startDate + ' ' + auto.timeOfDay;
-              return (
-                <tr key={auto.id}>
-                  <td className="border px-2 py-1 font-medium">{cliente ? cliente.name : auto.clientId}</td>
-                  <td className="border px-2 py-1">{auto.concept}</td>
-                  <td className="border px-2 py-1">{Number(auto.amount).toFixed(2)} €</td>
-                  <td className="border px-2 py-1">Cada {auto.interval} {auto.frequency === 'day' ? 'día(s)' : auto.frequency === 'month' ? 'mes(es)' : 'año(s)'}</td>
-                  <td className="border px-2 py-1">{prox}</td>
-                  <td className="border px-2 py-1">{auto.isActive ? 'Activa' : 'Pausada'}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <AutomationList automations={automations} clientMap={clientMap} />
     </div>
   );
 } 
