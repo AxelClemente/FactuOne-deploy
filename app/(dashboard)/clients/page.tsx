@@ -27,8 +27,11 @@ export default async function ClientsPage() {
     redirect("/businesses")
   }
 
+  console.log("[DEBUG] user.id:", user.id)
+  console.log("[DEBUG] activeBusiness.id:", activeBusiness.id)
   // Comprobar permiso granular para crear clientes
   const canCreateClient = await hasPermission(user.id, activeBusiness.id.toString(), "clients", "create")
+  console.log("[DEBUG] canCreateClient:", canCreateClient)
 
   return (
     <div className="w-full px-4 py-4 md:px-6">

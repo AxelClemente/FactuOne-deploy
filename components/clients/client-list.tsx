@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { AlertCircle, ArrowDown, ArrowUp, Building2, CreditCard, Edit, Search, User } from "lucide-react"
+import { AlertCircle, ArrowDown, ArrowUp, Building2, CreditCard, Edit, Search, User, PlusCircle } from "lucide-react"
 import { getClientsWithStats, getClientInvoices } from "@/app/(dashboard)/clients/actions"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -180,7 +180,7 @@ export function ClientList({ businessId, canCreateClient = false }: { businessId
 
   return (
     <div className="space-y-6">
-      {/* Filtros y búsqueda */}
+      {/* Filtros, búsqueda y botón de nuevo cliente */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="relative w-full md:w-96">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -191,15 +191,24 @@ export function ClientList({ businessId, canCreateClient = false }: { businessId
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-
-        <Tabs defaultValue="all" value={activeTab} onValueChange={(value) => setActiveTab(value as FilterTab)}>
-          <TabsList>
-            <TabsTrigger value="all">Todos</TabsTrigger>
-            <TabsTrigger value="overdue">Con deuda</TabsTrigger>
-            <TabsTrigger value="top">Top clientes</TabsTrigger>
-            <TabsTrigger value="noInvoices">Sin facturas</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex gap-2 items-center">
+          <Tabs defaultValue="all" value={activeTab} onValueChange={(value) => setActiveTab(value as FilterTab)}>
+            <TabsList>
+              <TabsTrigger value="all">Todos</TabsTrigger>
+              <TabsTrigger value="overdue">Con deuda</TabsTrigger>
+              <TabsTrigger value="top">Top clientes</TabsTrigger>
+              <TabsTrigger value="noInvoices">Sin facturas</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          {canCreateClient && (
+            <Button asChild>
+              <a href="/clients/new">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Nuevo Cliente
+              </a>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Botones de ordenación */}
@@ -257,11 +266,6 @@ export function ClientList({ businessId, canCreateClient = false }: { businessId
                 ? "No hay clientes que cumplan con el filtro seleccionado."
                 : "Aún no has registrado ningún cliente."}
           </p>
-          {canCreateClient && (
-            <Button asChild>
-              <a href="/clients/new">Crear nuevo cliente</a>
-            </Button>
-          )}
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
