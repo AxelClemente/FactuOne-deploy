@@ -99,6 +99,20 @@ export function ReceivedInvoiceDetail({ invoice, categories }: ReceivedInvoiceDe
         <div className="flex flex-wrap items-center gap-2">
           <ReceivedInvoiceStatusBadge status={invoice.status} />
 
+          {/* Botones de descarga */}
+          <Button variant="outline" size="sm" asChild>
+            <a href={`/api/received-invoices/${invoice.id}/pdf`} target="_blank" rel="noopener noreferrer">
+              <Download className="mr-2 h-4 w-4" />
+              Descargar PDF
+            </a>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <a href={`/api/received-invoices/${invoice.id}/xml`} target="_blank" rel="noopener noreferrer">
+              <Download className="mr-2 h-4 w-4" />
+              Descargar XML
+            </a>
+          </Button>
+
           {/* Botones de acción */}
           {invoice.fileUrl && (
             <>

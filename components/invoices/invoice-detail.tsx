@@ -107,15 +107,24 @@ export function InvoiceDetail({ invoice, client, lines }: InvoiceDetailProps) {
         <div className="flex flex-wrap items-center gap-2">
           <InvoiceStatusBadge status={invoice.status} />
 
+          {/* Botones de descarga */}
+          <Button variant="outline" size="sm" asChild>
+            <a href={`/api/invoices/${invoice.id}/pdf`} target="_blank" rel="noopener noreferrer">
+              <Download className="mr-2 h-4 w-4" />
+              Descargar PDF
+            </a>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <a href={`/api/invoices/${invoice.id}/xml`} target="_blank" rel="noopener noreferrer">
+              <Download className="mr-2 h-4 w-4" />
+              Descargar XML
+            </a>
+          </Button>
+
           {/* Botones de acción */}
           <Button variant="outline" size="sm" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" />
             Imprimir
-          </Button>
-
-          <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
-            <Download className="mr-2 h-4 w-4" />
-            Descargar PDF
           </Button>
 
           {invoice.status !== "paid" && invoice.status !== "cancelled" && (

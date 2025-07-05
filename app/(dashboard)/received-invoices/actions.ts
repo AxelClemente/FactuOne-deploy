@@ -214,6 +214,7 @@ export async function getReceivedInvoiceById(invoiceId: string) {
     const invoice = await db.query.receivedInvoices.findFirst({
       where: eq(receivedInvoices.id, invoiceId),
       with: {
+        provider: true,
         project: true,
       },
     })
