@@ -6,6 +6,7 @@ import { clients, invoices } from "@/app/db/schema"
 import { eq, and, ne } from "drizzle-orm"
 import { v4 as uuidv4 } from "uuid"
 import { createNotification } from "@/lib/notifications"
+import { getCurrentUser, hasPermission } from "@/lib/auth"
 
 // Esquema de validación para clientes
 const clientSchema = z.object({
@@ -29,6 +30,16 @@ export async function createClient(businessId: string, formData: ClientFormData)
   console.log("Creando nuevo cliente para el negocio:", businessId)
 
   try {
+    // Obtener usuario actual y comprobar permiso
+    const user = await getCurrentUser();
+    if (!user) {
+      return { success: false, error: "No has iniciado sesión" };
+    }
+    const canCreate = await hasPermission(user.id, businessId, "clients", "create");
+    if (!canCreate) {
+      return { success: false, error: "No tienes permisos para crear clientes" };
+    }
+
     // Validar los datos del formulario
     const validatedData = clientSchema.parse(formData)
     const db = await getDb()

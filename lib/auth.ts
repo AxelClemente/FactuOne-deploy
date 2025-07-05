@@ -1,7 +1,7 @@
 import { compare, hash } from "bcryptjs"
 import { cookies } from "next/headers"
 import { getDb, schema, userPermissions } from "@/lib/db"
-import { eq } from "drizzle-orm"
+import { eq, and } from "drizzle-orm"
 import { capitalize } from "@/lib/utils"
 
 /**
@@ -95,13 +95,15 @@ export async function hasPermission(userId: string, businessId: string, module: 
     .select()
     .from(userPermissions)
     .where(
-      schema.and(
-        schema.eq(userPermissions.userId, userId),
-        schema.eq(userPermissions.businessId, businessId),
-        schema.eq(userPermissions.module, module)
+      and(
+        eq(userPermissions.userId, userId),
+        eq(userPermissions.businessId, businessId),
+        eq(userPermissions.module, module)
       )
     )
     .then(rows => rows[0]);
   if (!perm) return false;
-  return perm[`can${capitalize(action)}`] === true;
+  // Type guard para acceso seguro
+  const key = `can${capitalize(action)}` as keyof typeof perm;
+  return perm[key] === true;
 }

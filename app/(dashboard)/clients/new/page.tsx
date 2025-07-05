@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { ClientForm } from "@/components/clients/client-form"
-import { getCurrentUser } from "@/lib/auth"
+import { getCurrentUser, hasPermission } from "@/lib/auth"
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
 
 export const dynamic = 'force-dynamic'
@@ -16,6 +16,11 @@ export default async function NewClientPage() {
   const activeBusiness = await getActiveBusiness()
   if (!activeBusiness) {
     redirect("/businesses")
+  }
+
+  const canCreate = await hasPermission(user.id, activeBusiness.id.toString(), "clients", "create");
+  if (!canCreate) {
+    redirect("/clients");
   }
 
   return (

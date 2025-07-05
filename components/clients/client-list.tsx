@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ClientInvoiceList } from "@/components/clients/client-invoice-list"
 import { useToast } from "@/hooks/use-toast"
+import { getCurrentUser, hasPermission } from "@/lib/auth"
 
 type ClientWithStats = {
   id: string
@@ -33,7 +34,7 @@ type SortField = "name" | "totalInvoiced" | "totalPending" | "invoiceCount"
 type SortOrder = "asc" | "desc"
 type FilterTab = "all" | "overdue" | "top" | "noInvoices"
 
-export function ClientList({ businessId }: { businessId: string }) {
+export function ClientList({ businessId, canCreateClient = false }: { businessId: string, canCreateClient?: boolean }) {
   const router = useRouter()
   const { toast } = useToast()
   const [clients, setClients] = useState<ClientWithStats[]>([])
@@ -256,9 +257,11 @@ export function ClientList({ businessId }: { businessId: string }) {
                 ? "No hay clientes que cumplan con el filtro seleccionado."
                 : "Aún no has registrado ningún cliente."}
           </p>
-          <Button asChild>
-            <a href="/clients/new">Crear nuevo cliente</a>
-          </Button>
+          {canCreateClient && (
+            <Button asChild>
+              <a href="/clients/new">Crear nuevo cliente</a>
+            </Button>
+          )}
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

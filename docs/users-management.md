@@ -156,3 +156,31 @@ La página `/users` muestra:
 *Este histórico se irá actualizando con cada mejora o resolución relevante.*
 
 *Última actualización: Julio 2024*
+
+---
+
+## 9. Permisos granulares por usuario y módulo
+
+Desde julio 2024, la plataforma soporta permisos granulares por usuario, negocio y módulo (clientes, facturas, proyectos, etc). Estos permisos se almacenan en la tabla `user_permissions` y se gestionan desde la UI de creación y edición de usuarios.
+
+- Cada usuario puede tener permisos independientes para ver, crear, editar y eliminar en cada módulo.
+- Los permisos se consultan en backend usando el helper `hasPermission`.
+- Es responsabilidad de las server actions y páginas sensibles comprobar los permisos antes de ejecutar acciones.
+
+### Ejemplo de comprobación de permisos en una server action
+
+```typescript
+import { hasPermission } from "@/lib/auth"
+
+const canCreate = await hasPermission(user.id, businessId, "clients", "create")
+if (!canCreate) {
+  return { success: false, error: "No tienes permisos para crear clientes" }
+}
+```
+
+### Recomendaciones de integración
+- Comprobar permisos en todas las server actions de creación, edición y borrado.
+- Ocultar botones y acciones en la UI si el usuario no tiene permiso.
+- Mostrar mensajes claros de "No tienes permisos suficientes" si se deniega una acción.
+
+---
