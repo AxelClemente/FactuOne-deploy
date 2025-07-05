@@ -171,16 +171,8 @@ export function InvoiceList({ businessId, initialInvoices, canCreateInvoice }: I
 
   return (
     <div className="space-y-4">
-      {/* Selector de vista y botón de crear */}
-      <div className="flex justify-between items-center">
-        {canCreateInvoice && (
-          <Button asChild>
-            <Link href="/invoices/new">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Crear factura
-            </Link>
-          </Button>
-        )}
+      {/* Tabs a la izquierda y botón a la derecha en la misma línea */}
+      <div className="flex items-center justify-between">
         <div className="inline-flex rounded-md shadow-sm">
           <Button
             variant={view === "table" ? "default" : "outline"}
@@ -199,6 +191,14 @@ export function InvoiceList({ businessId, initialInvoices, canCreateInvoice }: I
             Tarjetas
           </Button>
         </div>
+        {canCreateInvoice && (
+          <Button asChild>
+            <Link href="/invoices/new">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Crear factura
+            </Link>
+          </Button>
+        )}
       </div>
 
       {/* Vista de tabla */}

@@ -80,12 +80,11 @@ export default async function InvoicesPage({
 
   return (
     <div className="w-full">
-      <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Facturas emitidas</h1>
           <p className="text-muted-foreground">Gestiona las facturas emitidas a tus clientes</p>
         </div>
-        {/* El botón de Crear factura se gestiona en InvoiceList según el permiso */}
       </div>
 
       <div className="space-y-5">

@@ -184,3 +184,49 @@ if (!canCreate) {
 - Mostrar mensajes claros de "No tienes permisos suficientes" si se deniega una acción.
 
 ---
+
+## 10. Modelo profesional de roles y permisos (actualización Julio 2024)
+
+### Resumen del modelo actual
+- **Solo el admin/owner de cada negocio** puede gestionar usuarios y asignar roles/permisos.
+- El resto de usuarios (rol `accountant` u operativo) solo puede operar en los módulos para los que tenga permisos granulares.
+- **La UI y el backend dependen exclusivamente de los permisos granulares** para mostrar/permitir acciones operativas (crear, editar, eliminar en clientes, facturas, proyectos, proveedores, etc).
+- El rol solo se usa para la gestión de usuarios y permisos.
+- El sistema es multi-tenant real: cada usuario puede ser admin en un negocio y accountant en otro.
+
+### Flujo de comprobación de permisos
+- **Acciones de gestión de usuarios:**
+  - Solo accesibles para el admin/owner del negocio (rol `admin` en `business_users`).
+  - El resto de usuarios no ve ni puede acceder a `/users`, `/users/new`, `/users/[id]/edit`.
+- **Acciones operativas (clientes, facturas, etc):**
+  - Se comprueba el permiso granular con el helper `hasPermission`.
+  - Si el permiso es `false`, la UI oculta el botón y el backend deniega la acción.
+
+### Troubleshooting real y mejores prácticas
+- **Si no ves un botón de acción (ej: "Nuevo Cliente") y tienes permisos en la base de datos:**
+  1. Verifica que el campo correspondiente (`canCreate`, `canEdit`, etc) esté en `1` para tu usuario, negocio y módulo en la tabla `user_permissions`.
+  2. Revisa los logs de la función `hasPermission` en el backend para ver el valor real leído.
+  3. Si el valor es `false`, actualiza el registro en la base de datos.
+  4. Haz un reload completo de la página para descartar problemas de caché/hydration.
+- **El sistema solo muestra los botones si el permiso granular es `true`.**
+- **El admin/owner debe tener todos los permisos granulares a `true` para operar sin restricciones.**
+
+### Recomendaciones finales
+- Mantener un solo admin/owner por negocio con todos los permisos y gestión de usuarios/permisos.
+- El resto de usuarios deben ser accountant (u otro rol operativo) y tener permisos granulares.
+- La UI y el backend deben depender solo de los permisos granulares para acciones operativas.
+- El rol solo debe usarse para gestión de usuarios y permisos.
+- Auditar periódicamente los permisos y roles en la base de datos para evitar inconsistencias.
+
+### Histórico de depuración y logros (Julio 2024)
+- Se implementó y depuró un sistema robusto de permisos granulares multi-tenant, con protección en backend y frontend.
+- Se corrigió el error de visibilidad de botones de creación, asegurando que dependan solo del permiso granular.
+- Se eliminaron rutas y componentes legacy de gestión de usuarios global.
+- Se documentó el flujo y se reforzó la importancia de la coincidencia exacta de valores en la base de datos.
+- El sistema sigue el patrón SaaS profesional: solo un admin/owner por negocio puede gestionar usuarios y permisos, el resto son operativos con permisos granulares.
+
+---
+
+*Última actualización: Julio 2024 (modelo profesional de permisos granulares y roles SaaS)*
+
+---

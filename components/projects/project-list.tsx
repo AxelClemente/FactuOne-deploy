@@ -128,27 +128,25 @@ export function ProjectList({ canCreateProject }: { canCreateProject: boolean })
 
   // Renderizar la vista de tabla
   const renderTableView = () => (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nombre</TableHead>
-            <TableHead>Cliente</TableHead>
-            <TableHead>Estado</TableHead>
-            <TableHead>Fecha inicio</TableHead>
-            <TableHead>Fecha fin</TableHead>
-            <TableHead className="text-right">Acciones</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {projects.length === 0 ? (
+    projects.length === 0 ? (
+      <div className="rounded-lg border border-dashed p-8 text-center">
+        <h2 className="mb-2 text-xl font-semibold">No hay proyectos que coincidan con los filtros</h2>
+      </div>
+    ) : (
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={6} className="text-center">
-                No hay proyectos que coincidan con los filtros
-              </TableCell>
+              <TableHead>Nombre</TableHead>
+              <TableHead>Cliente</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead>Fecha inicio</TableHead>
+              <TableHead>Fecha fin</TableHead>
+              <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
-          ) : (
-            projects.map((project) => (
+          </TableHeader>
+          <TableBody>
+            {projects.map((project) => (
               <TableRow key={project.id}>
                 <TableCell className="font-medium">{project.name}</TableCell>
                 <TableCell>{project.client?.name || "Sin cliente"}</TableCell>
@@ -192,11 +190,11 @@ export function ProjectList({ canCreateProject }: { canCreateProject: boolean })
                   </DropdownMenu>
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </div>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    )
   )
 
   // Renderizar la vista de tarjetas
@@ -269,8 +267,20 @@ export function ProjectList({ canCreateProject }: { canCreateProject: boolean })
   )
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6">
+      {/* Filtros, tabs y botón de nuevo proyecto en la misma línea */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        {/* Tabs y search bar/filtros a la izquierda */}
+        <div className="flex flex-1 gap-2 items-center">
+          <Tabs value={view} onValueChange={(v) => setView(v as "table" | "cards")}> 
+            <TabsList>
+              <TabsTrigger value="table">Tabla</TabsTrigger>
+              <TabsTrigger value="cards">Tarjetas</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          {/* Aquí puedes agregar un search bar o filtros adicionales si lo deseas */}
+        </div>
+        {/* Botón de nuevo proyecto a la derecha */}
         {canCreateProject && (
           <Button asChild>
             <Link href="/projects/new">
@@ -279,12 +289,6 @@ export function ProjectList({ canCreateProject }: { canCreateProject: boolean })
             </Link>
           </Button>
         )}
-        <Tabs value={view} onValueChange={(v) => setView(v as "table" | "cards")}>
-          <TabsList>
-            <TabsTrigger value="table">Tabla</TabsTrigger>
-            <TabsTrigger value="cards">Tarjetas</TabsTrigger>
-          </TabsList>
-        </Tabs>
       </div>
 
       {loading ? (

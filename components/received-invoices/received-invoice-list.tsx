@@ -272,52 +272,8 @@ export function ReceivedInvoiceList({ businessId, initialInvoices, categories, c
 
   return (
     <div className="space-y-4">
-      {/* Botones de ordenación y crear */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => toggleSort("date")}
-            className={sortField === "date" ? "border-primary" : ""}
-          >
-            Fecha
-            {sortField === "date" &&
-              (sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />)}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => toggleSort("amount")}
-            className={sortField === "amount" ? "border-primary" : ""}
-          >
-            Importe
-            {sortField === "amount" &&
-              (sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />)}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => toggleSort("providerName")}
-            className={sortField === "providerName" ? "border-primary" : ""}
-          >
-            Proveedor
-            {sortField === "providerName" &&
-              (sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />)}
-          </Button>
-        </div>
-        {canCreateReceivedInvoice && (
-          <Button asChild>
-            <Link href="/received-invoices/new">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Registrar factura
-            </Link>
-          </Button>
-        )}
-      </div>
-
-      {/* Selector de vista */}
-      <div className="flex justify-end">
+      {/* Tabs a la izquierda y botón a la derecha en la misma línea */}
+      <div className="flex items-center justify-between">
         <div className="inline-flex rounded-md shadow-sm">
           <Button
             variant={view === "table" ? "default" : "outline"}
@@ -336,6 +292,48 @@ export function ReceivedInvoiceList({ businessId, initialInvoices, categories, c
             Tarjetas
           </Button>
         </div>
+        {canCreateReceivedInvoice && (
+          <Button asChild>
+            <Link href="/received-invoices/new">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Registrar factura
+            </Link>
+          </Button>
+        )}
+      </div>
+
+      {/* Botones de ordenación */}
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => toggleSort("date")}
+          className={sortField === "date" ? "border-primary" : ""}
+        >
+          Fecha
+          {sortField === "date" &&
+            (sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />)}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => toggleSort("amount")}
+          className={sortField === "amount" ? "border-primary" : ""}
+        >
+          Importe
+          {sortField === "amount" &&
+            (sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />)}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => toggleSort("providerName")}
+          className={sortField === "providerName" ? "border-primary" : ""}
+        >
+          Proveedor
+          {sortField === "providerName" &&
+            (sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />)}
+        </Button>
       </div>
 
       {/* Vista de tabla */}

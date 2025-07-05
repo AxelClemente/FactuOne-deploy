@@ -58,6 +58,21 @@ export async function createBusiness(data: z.infer<typeof businessSchema>, userI
       role: "admin",
     });
 
+    // Insertar permisos granulares para el admin/owner
+    const MODULES = ["clients", "invoices", "received_invoices", "projects", "providers"];
+    await db.insert(schema.userPermissions).values(
+      MODULES.map((module) => ({
+        id: uuidv4(),
+        userId: userId,
+        businessId: newBusiness.id,
+        module,
+        canView: true,
+        canCreate: true,
+        canEdit: true,
+        canDelete: true,
+      }))
+    );
+
     const cookieStore = await cookies();
     cookieStore.set("active_business", newBusiness.id.toString())
     return { success: true, businessId: newBusiness.id }
