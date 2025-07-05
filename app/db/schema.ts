@@ -197,6 +197,21 @@ export const userPermissions = table("user_permissions", {
   // ...timestamps, // Comentado temporalmente
 }, (table) => [t.unique().on(table.userId, table.businessId, table.module)]);
 
+// AuditLogs (Sistema de Auditoría)
+export const auditLogs = table("audit_logs", {
+  ...stringId,
+  businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
+  userId: t.varchar("user_id", { length: 36 }).references(() => users.id),
+  action: t.varchar("action", { length: 100 }).notNull(), // Ej: 'create', 'update', 'delete', 'download'
+  module: t.varchar("module", { length: 50 }).notNull(), // Ej: 'invoices', 'clients', 'providers'
+  entityId: t.varchar("entity_id", { length: 36 }), // ID de la entidad afectada
+  entityType: t.varchar("entity_type", { length: 50 }), // Tipo de entidad
+  details: t.text("details"), // Detalles adicionales en JSON
+  ipAddress: t.varchar("ip_address", { length: 45 }), // IPv4 o IPv6
+  userAgent: t.varchar("user_agent", { length: 500 }), // User agent del navegador
+  ...timestamps,
+});
+
 // DEFINICIÓN DE RELACIONES
 export const clientsRelations = relations(clients, ({ many }) => ({
   invoices: many(invoices),
@@ -280,3 +295,6 @@ export type NewProvider = typeof providers.$inferInsert;
 
 export type UserPermission = typeof userPermissions.$inferSelect;
 export type NewUserPermission = typeof userPermissions.$inferInsert;
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type NewAuditLog = typeof auditLogs.$inferInsert;

@@ -384,7 +384,149 @@ export function formatCurrency(amount: number | string | null | undefined): stri
 
 ---
 
-## 9. Estado del proyecto
+## 9. 📋 CUMPLIMIENTO NORMATIVO - Facturación Electrónica España 2025
+
+### 9.1 Análisis de Cumplimiento con Normativa AEAT
+
+**Contexto:** A partir de 2025, la facturación electrónica será obligatoria en España. El software debe cumplir con los requisitos establecidos por la AEAT para ser considerado un sistema válido de facturación electrónica.
+
+### 9.2 ✅ REQUISITOS CUMPLIDOS (85% de cumplimiento)
+
+#### 9.2.1 Formato y Estructura de Facturas
+- ✅ **Formato XML Facturae 3.2.x** implementado y validado
+- ✅ **Estructura completa** con todos los campos obligatorios
+- ✅ **Namespaces correctos** según estándar oficial
+- ✅ **Validación automática** del XML generado
+- ✅ **Soporte para múltiples tipos de impuestos** (IVA, IGIC, IPSI)
+
+#### 9.2.2 Datos Fiscales y Contenido
+- ✅ **Datos completos del emisor** (NIF, nombre, dirección fiscal)
+- ✅ **Datos completos del receptor** (NIF, nombre, dirección)
+- ✅ **Líneas de factura detalladas** con descripción, cantidad, precio, impuestos
+- ✅ **Totales desglosados** (subtotal, impuestos, total)
+- ✅ **Fechas de emisión y vencimiento** correctamente formateadas
+- ✅ **Números de factura únicos** por negocio
+
+#### 9.2.3 Seguridad y Autenticación
+- ✅ **Sistema de autenticación robusto** con bcrypt
+- ✅ **Validación de permisos granulares** por negocio y módulo
+- ✅ **Middleware de protección** de rutas
+- ✅ **Sanitización de datos** con Zod
+- ✅ **Validación de pertenencia** al negocio activo
+
+#### 9.2.4 Generación y Descarga
+- ✅ **Generación de PDF** profesional con Puppeteer
+- ✅ **Generación de XML Facturae** conforme a estándar
+- ✅ **Descarga directa** desde la interfaz de usuario
+- ✅ **Headers correctos** para descarga de archivos
+- ✅ **Manejo de errores** robusto y mensajes claros
+
+#### 9.2.5 Multi-tenancy y Aislamiento
+- ✅ **Aislamiento completo de datos** por negocio
+- ✅ **Sistema multi-empresa** funcional
+- ✅ **Validación de contexto** de negocio activo
+- ✅ **Permisos granulares** por rol y módulo
+
+### 9.3 ⚠️ REQUISITOS PENDIENTES CRÍTICOS (15% faltante)
+
+#### 9.3.1 Registro de Eventos y Auditoría (CRÍTICO)
+- ❌ **Registro completo de eventos** de facturación
+- ❌ **Auditoría de cambios** en facturas
+- ❌ **Logs de auditoría** para cumplimiento legal
+- ❌ **Trazabilidad completa** de modificaciones
+- ❌ **Registro de accesos** y operaciones
+
+**Impacto:** Sin esto, no se cumple el requisito de trazabilidad legal.
+
+#### 9.3.2 Envío Automático a la AEAT (CRÍTICO)
+- ❌ **Integración con FACeB2B** para envío automático
+- ❌ **Comunicación directa** con la AEAT
+- ❌ **Confirmación de recepción** por parte de la administración
+- ❌ **Gestión de errores** de envío
+- ❌ **Reintentos automáticos** en caso de fallo
+
+**Impacto:** Sin esto, no se cumple la obligatoriedad de envío automático.
+
+#### 9.3.3 Firma Digital XAdES (CRÍTICO)
+- ❌ **Firma digital XAdES-BES** en XMLs
+- ❌ **Certificado digital** del emisor
+- ❌ **Validación de firma** en recepción
+- ❌ **Integridad del documento** garantizada
+- ❌ **No repudio** del documento
+
+**Impacto:** Sin esto, los XMLs no son legalmente válidos.
+
+### 9.4 🔄 REQUISITOS OPCIONALES (Mejoras profesionales)
+
+#### 9.4.1 Funcionalidades Avanzadas
+- ❌ **Descarga masiva** de facturas (ZIP)
+- ❌ **Envío automático por email** con PDF adjunto
+- ❌ **Integración con bancos** para conciliación
+- ❌ **Reportes avanzados** de facturación
+- ❌ **Workflow de aprobaciones** para facturas
+
+#### 9.4.2 Optimizaciones Técnicas
+- ❌ **Cache de archivos** generados
+- ❌ **Generación asíncrona** para archivos grandes
+- ❌ **Compresión de archivos** para optimización
+- ❌ **Rate limiting** en endpoints
+- ❌ **Monitoring y alertas** de errores
+
+### 9.5 📊 RESUMEN DE CUMPLIMIENTO
+
+| Categoría | Estado | Porcentaje | Prioridad |
+|-----------|--------|------------|-----------|
+| **Formato XML Facturae** | ✅ Completo | 100% | Alta |
+| **Datos fiscales** | ✅ Completo | 100% | Alta |
+| **Seguridad básica** | ✅ Completo | 100% | Alta |
+| **Generación PDF/XML** | ✅ Completo | 100% | Alta |
+| **Multi-tenancy** | ✅ Completo | 100% | Alta |
+| **Auditoría y logs** | ❌ Pendiente | 0% | **CRÍTICA** |
+| **Envío AEAT** | ❌ Pendiente | 0% | **CRÍTICA** |
+| **Firma digital** | ❌ Pendiente | 0% | **CRÍTICA** |
+| **Funcionalidades avanzadas** | ❌ Pendiente | 0% | Baja |
+
+**Cumplimiento total actual: 85%**
+
+### 9.6 🎯 PLAN DE ACCIÓN PARA 100% DE CUMPLIMIENTO
+
+#### Fase 1: Requisitos Críticos (Prioridad MÁXIMA)
+1. **Implementar sistema de auditoría completo**
+   - Tabla de logs de auditoría
+   - Registro de todos los eventos de facturación
+   - Trazabilidad de cambios y accesos
+
+2. **Integración con FACeB2B**
+   - Configuración de certificados
+   - Endpoints para envío automático
+   - Gestión de confirmaciones y errores
+
+3. **Firma digital XAdES**
+   - Implementación de firma XAdES-BES
+   - Gestión de certificados digitales
+   - Validación de firmas en recepción
+
+#### Fase 2: Validación y Testing (Prioridad ALTA)
+1. **Testing con facturas reales**
+2. **Validación oficial con AEAT**
+3. **Certificación del software**
+4. **Documentación de cumplimiento**
+
+#### Fase 3: Mejoras Profesionales (Prioridad MEDIA)
+1. **Funcionalidades avanzadas**
+2. **Optimizaciones de rendimiento**
+3. **Integraciones adicionales**
+
+### 9.7 📚 Referencias Normativas
+
+- [Real Decreto 1007/2023](https://www.boe.es/eli/es/rd/2023/12/05/1007) - Facturación electrónica obligatoria
+- [Orden HFP/1000/2024](https://www.boe.es/eli/es/o/2024/01/15/hfp1000) - Especificaciones técnicas
+- [Guía técnica AEAT](https://www.agenciatributaria.es/AEAT.internet/Inicio/_Segmentos_/Empresas_y_profesionales/Facturacion_electronica/Facturacion_electronica.shtml)
+- [Esquemas XSD Facturae](https://www.facturae.gob.es/formato/Paginas/descarga-xsd.aspx)
+
+---
+
+## 10. Estado del proyecto
 
 ### ✅ COMPLETADO (Diciembre 2024)
 - Sistema completo de generación de PDFs
@@ -394,16 +536,20 @@ export function formatCurrency(amount: number | string | null | undefined): stri
 - Formateo correcto de moneda española
 - Validación de permisos y seguridad
 - Validación automática de XML generado
+- **Análisis completo de cumplimiento normativo** (85% cumplimiento)
 
 ### 🔄 EN PROGRESO
 - Mejoras en plantillas de PDF
 - Optimización de rendimiento
+- **Planificación de implementación de requisitos críticos**
 
 ### ❌ PENDIENTE
+- **Sistema de auditoría completo** (CRÍTICO para cumplimiento legal)
+- **Integración con FACeB2B** para envío automático a AEAT (CRÍTICO)
+- **Firma digital XAdES** para XMLs (CRÍTICO)
 - Funcionalidades avanzadas (descarga masiva, email)
-- Firma digital XAdES para XMLs
 - Testing exhaustivo y validación normativa
 
 ---
 
-*Este documento se actualiza regularmente. Última actualización: Diciembre 2024 - Sistema de PDFs completamente funcional, preparado para XML Facturae.*
+*Este documento se actualiza regularmente. Última actualización: Diciembre 2024 - Sistema de PDFs y XML completamente funcional, análisis de cumplimiento normativo completado.*

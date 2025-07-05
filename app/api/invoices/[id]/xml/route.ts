@@ -6,6 +6,7 @@ import { getDb } from "@/lib/db"
 import { businesses } from "@/app/db/schema"
 import { eq } from "drizzle-orm"
 import { generateFacturaeXML, validateFacturaeXML, convertInvoiceToFacturaeFormat } from "@/lib/facturae-xml"
+import { auditHelpers } from "@/lib/audit"
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   // 1. Validar usuario
@@ -45,6 +46,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     console.error('Error validando XML Facturae:', validation.errors)
     return new Response('Error generando XML Facturae válido', { status: 500 })
   }
+
+  // 8. Registrar evento de auditoría
+  await auditHelpers.logInvoiceDownloaded(params.id, 'xml', req)
 
   return new Response(xml, {
     headers: {

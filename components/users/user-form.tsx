@@ -20,6 +20,7 @@ const MODULES = [
   { key: "received_invoices", label: "Facturas recibidas" },
   { key: "projects", label: "Proyectos" },
   { key: "providers", label: "Proveedores" },
+  { key: "audit", label: "Auditoría" },
 ];
 const ACTIONS = [
   { key: "canView", label: "Ver" },

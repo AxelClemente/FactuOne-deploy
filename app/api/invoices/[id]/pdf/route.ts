@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
 import { getInvoiceWithLines } from "@/app/(dashboard)/invoices/actions"
 import puppeteer from "puppeteer"
+import { auditHelpers } from "@/lib/audit"
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   // 1. Validar usuario
@@ -102,6 +103,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     await page.setContent(html, { waitUntil: "networkidle0" })
     const pdfBuffer = await page.pdf({ format: "A4", printBackground: true })
     await browser.close()
+
+    // Registrar evento de auditoría
+    await auditHelpers.logInvoiceDownloaded(params.id, 'pdf', req)
 
     return new Response(pdfBuffer, {
       headers: {
