@@ -128,4 +128,31 @@ La página `/users` muestra:
 
 ---
 
+## 8. Histórico de resolución y próximos pasos
+
+### Resolución de problemas recientes (Julio 2024)
+
+- **Problema:** El botón y formulario de "Nuevo usuario" solo debe estar disponible para usuarios con rol `admin` en el negocio activo. Sin embargo, aunque la UI lo mostraba, el backend redirigía porque la comprobación real de permisos fallaba.
+- **Diagnóstico:**
+  - Se revisó la tabla `business_users` y se detectó que el rol real era `accountant`, no `admin`.
+  - Se usaron logs detallados en el backend para comparar los valores usados en la query y los existentes en la base de datos.
+  - Se ejecutó un SQL directo para ver el valor exacto del campo `role` y se confirmó la discrepancia.
+- **Solución:**
+  - Se actualizó el valor del campo `role` a `admin` para el usuario y negocio correspondiente.
+  - Se comprobó que la comprobación de permisos en backend y frontend es consistente y robusta.
+  - Se documentó el flujo y se reforzó la importancia de la coincidencia exacta de valores en la base de datos.
+
+### Recomendaciones y próximos pasos
+
+- **Auditoría de roles:** Revisar periódicamente los roles en la tabla `business_users` para evitar inconsistencias.
+- **UI/UX:** Mostrar mensajes claros si el usuario no tiene permisos para crear/editar usuarios, en vez de solo redirigir.
+- **Permisos granulares:** Implementar una gestión más flexible de permisos (por módulo y acción) y roles personalizados.
+- **Invitaciones y onboarding:** Añadir flujo de invitación por email y onboarding para nuevos usuarios.
+- **Auditoría avanzada:** Registrar logs de cambios de roles y acciones de gestión de usuarios para trazabilidad.
+- **Testing:** Añadir tests automáticos para los flujos de permisos y gestión multi-tenant.
+
+---
+
+*Este histórico se irá actualizando con cada mejora o resolución relevante.*
+
 *Última actualización: Julio 2024*

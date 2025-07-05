@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { notFound, redirect } from "next/navigation"
-import { getUserById } from "../../actions"
+import { getUserById, getUserPermissions } from "../../actions"
 import { UserForm } from "@/components/users/user-form"
 import { getActiveBusiness } from "@/lib/getActiveBusiness"
 import { getCurrentUser } from "@/lib/auth"
@@ -60,6 +60,8 @@ export default async function EditUserPage({ params }: EditUserPageProps) {
     role: userBusiness?.role || "accountant",
   }
 
+  const userPermissions = await getUserPermissions(id, activeBusiness)
+
   return (
     <div className="w-full">
       <div className="mb-4">
@@ -78,6 +80,7 @@ export default async function EditUserPage({ params }: EditUserPageProps) {
             user={userWithRole} 
             businessId={activeBusiness} 
             currentUserIsAdmin={isAdmin}
+            permissions={userPermissions}
           />
         </CardContent>
       </Card>

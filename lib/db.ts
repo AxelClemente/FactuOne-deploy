@@ -26,6 +26,8 @@ export async function getDb() {
 
 // Exportar el esquema para uso en otros archivos
 export { schema };
+export { userPermissions } from "@/app/db/schema";
+export type { UserPermission, NewUserPermission } from "@/app/db/schema";
 
 // Función para cerrar la conexión (útil para tests)
 export async function closeConnection() {

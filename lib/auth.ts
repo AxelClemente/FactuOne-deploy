@@ -1,7 +1,8 @@
 import { compare, hash } from "bcryptjs"
 import { cookies } from "next/headers"
-import { getDb, schema } from "@/lib/db"
+import { getDb, schema, userPermissions } from "@/lib/db"
 import { eq } from "drizzle-orm"
+import { capitalize } from "@/lib/utils"
 
 /**
  * Verifica si la contraseña proporcionada coincide con el hash almacenado
@@ -83,4 +84,24 @@ export async function getCurrentUser() {
   const db = await getDb();
   const user = await db.select().from(schema.users).where(eq(schema.users.id, userId)).limit(1);
   return user[0] || null;
+}
+
+/**
+ * Comprueba si el usuario tiene permiso granular para una acción en un módulo y negocio
+ */
+export async function hasPermission(userId: string, businessId: string, module: string, action: "view" | "create" | "edit" | "delete") {
+  const db = await getDb();
+  const perm = await db
+    .select()
+    .from(userPermissions)
+    .where(
+      schema.and(
+        schema.eq(userPermissions.userId, userId),
+        schema.eq(userPermissions.businessId, businessId),
+        schema.eq(userPermissions.module, module)
+      )
+    )
+    .then(rows => rows[0]);
+  if (!perm) return false;
+  return perm[`can${capitalize(action)}`] === true;
 }

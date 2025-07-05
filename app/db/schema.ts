@@ -184,6 +184,19 @@ export const notifications = table("notifications", {
   action_url: t.varchar("action_url", { length: 500 }),
 });
 
+// UserPermissions (Permisos granulares por usuario y módulo)
+export const userPermissions = table("user_permissions", {
+  ...stringId,
+  userId: t.varchar("user_id", { length: 36 }).notNull().references(() => users.id),
+  businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
+  module: t.varchar("module", { length: 50 }).notNull(), // Ej: 'clients', 'invoices', etc.
+  canView: t.boolean("can_view").default(false).notNull(),
+  canCreate: t.boolean("can_create").default(false).notNull(),
+  canEdit: t.boolean("can_edit").default(false).notNull(),
+  canDelete: t.boolean("can_delete").default(false).notNull(),
+  // ...timestamps, // Comentado temporalmente
+}, (table) => [t.unique().on(table.userId, table.businessId, table.module)]);
+
 // DEFINICIÓN DE RELACIONES
 export const clientsRelations = relations(clients, ({ many }) => ({
   invoices: many(invoices),
@@ -264,3 +277,6 @@ export type NewProject = typeof projects.$inferInsert;
 
 export type Provider = typeof providers.$inferSelect;
 export type NewProvider = typeof providers.$inferInsert;
+
+export type UserPermission = typeof userPermissions.$inferSelect;
+export type NewUserPermission = typeof userPermissions.$inferInsert;

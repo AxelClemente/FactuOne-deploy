@@ -13,12 +13,35 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast"
 import { updateUser } from "@/app/(dashboard)/users/actions"
 
+// Módulos y acciones disponibles para permisos granulares
+const MODULES = [
+  { key: "clients", label: "Clientes" },
+  { key: "invoices", label: "Facturas emitidas" },
+  { key: "received_invoices", label: "Facturas recibidas" },
+  { key: "projects", label: "Proyectos" },
+  { key: "providers", label: "Proveedores" },
+];
+const ACTIONS = [
+  { key: "canView", label: "Ver" },
+  { key: "canCreate", label: "Crear" },
+  { key: "canEdit", label: "Editar" },
+  { key: "canDelete", label: "Eliminar" },
+];
+
 // Esquema de validación
 const userFormSchema = z.object({
   name: z.string().min(1, { message: "El nombre es obligatorio" }),
   role: z.enum(["admin", "accountant"], {
     required_error: "El rol es obligatorio",
   }),
+  permissions: z.record(
+    z.object({
+      canView: z.boolean(),
+      canCreate: z.boolean(),
+      canEdit: z.boolean(),
+      canDelete: z.boolean(),
+    })
+  ),
 })
 
 type UserFormValues = z.infer<typeof userFormSchema>
@@ -32,18 +55,27 @@ interface UserFormProps {
   }
   businessId: string
   currentUserIsAdmin: boolean
+  permissions?: Record<string, { canView: boolean; canCreate: boolean; canEdit: boolean; canDelete: boolean }>
 }
 
-export function UserForm({ user, businessId, currentUserIsAdmin }: UserFormProps) {
+export function UserForm({ user, businessId, currentUserIsAdmin, permissions }: UserFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // TODO: Cargar permisos actuales del usuario (fetch granular permissions)
+  // Por ahora, default: todos en false
+  const defaultPermissions = permissions || MODULES.reduce((acc, mod) => {
+    acc[mod.key] = { canView: false, canCreate: false, canEdit: false, canDelete: false };
+    return acc;
+  }, {} as Record<string, { canView: boolean; canCreate: boolean; canEdit: boolean; canDelete: boolean }>);
 
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
       name: user.name,
       role: user.role,
+      permissions: defaultPermissions,
     },
   })
 
@@ -60,6 +92,7 @@ export function UserForm({ user, businessId, currentUserIsAdmin }: UserFormProps
     setIsSubmitting(true)
 
     try {
+      // Enviar permisos junto con los datos
       const result = await updateUser(user.id, businessId, data)
 
       if (result.success) {
@@ -138,6 +171,38 @@ export function UserForm({ user, businessId, currentUserIsAdmin }: UserFormProps
               </FormItem>
             )}
           />
+        </div>
+
+        <div>
+          <h3 className="font-semibold mb-2">Permisos granulares</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full border text-sm">
+              <thead>
+                <tr>
+                  <th className="border px-2 py-1">Módulo</th>
+                  {ACTIONS.map((action) => (
+                    <th key={action.key} className="border px-2 py-1">{action.label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {MODULES.map((mod) => (
+                  <tr key={mod.key}>
+                    <td className="border px-2 py-1 font-medium">{mod.label}</td>
+                    {ACTIONS.map((action) => (
+                      <td key={action.key} className="border px-2 py-1 text-center">
+                        <input
+                          type="checkbox"
+                          {...form.register(`permissions.${mod.key}.${action.key}` as const)}
+                          disabled={!currentUserIsAdmin}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div className="flex justify-end gap-4">

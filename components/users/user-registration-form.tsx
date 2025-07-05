@@ -13,6 +13,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast"
 import { registerUser } from "@/app/(dashboard)/users/actions"
 
+// Módulos y acciones disponibles para permisos granulares
+const MODULES = [
+  { key: "clients", label: "Clientes" },
+  { key: "invoices", label: "Facturas emitidas" },
+  { key: "received_invoices", label: "Facturas recibidas" },
+  { key: "projects", label: "Proyectos" },
+  { key: "providers", label: "Proveedores" },
+];
+const ACTIONS = [
+  { key: "canView", label: "Ver" },
+  { key: "canCreate", label: "Crear" },
+  { key: "canEdit", label: "Editar" },
+  { key: "canDelete", label: "Eliminar" },
+];
+
 // Esquema de validación
 const userRegistrationSchema = z
   .object({
@@ -23,6 +38,14 @@ const userRegistrationSchema = z
     role: z.enum(["admin", "accountant"], {
       required_error: "El rol es obligatorio",
     }),
+    permissions: z.record(
+      z.object({
+        canView: z.boolean(),
+        canCreate: z.boolean(),
+        canEdit: z.boolean(),
+        canDelete: z.boolean(),
+      })
+    ),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Las contraseñas no coinciden",
@@ -40,6 +63,12 @@ export function UserRegistrationForm({ businessId }: UserRegistrationFormProps) 
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Default permissions: todos en false
+  const defaultPermissions = MODULES.reduce((acc, mod) => {
+    acc[mod.key] = { canView: false, canCreate: false, canEdit: false, canDelete: false };
+    return acc;
+  }, {} as Record<string, { canView: boolean; canCreate: boolean; canEdit: boolean; canDelete: boolean }>);
+
   const form = useForm<UserRegistrationFormValues>({
     resolver: zodResolver(userRegistrationSchema),
     defaultValues: {
@@ -47,7 +76,8 @@ export function UserRegistrationForm({ businessId }: UserRegistrationFormProps) 
       email: "",
       password: "",
       confirmPassword: "",
-      role: "accountant", // Valor por defecto
+      role: "accountant",
+      permissions: defaultPermissions,
     },
   })
 
@@ -61,6 +91,7 @@ export function UserRegistrationForm({ businessId }: UserRegistrationFormProps) 
         password: data.password,
         businessId,
         role: data.role,
+        permissions: data.permissions,
       })
 
       if (result.success) {
@@ -177,6 +208,37 @@ export function UserRegistrationForm({ businessId }: UserRegistrationFormProps) 
             </FormItem>
           )}
         />
+
+        <div>
+          <h3 className="font-semibold mb-2">Permisos granulares</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full border text-sm">
+              <thead>
+                <tr>
+                  <th className="border px-2 py-1">Módulo</th>
+                  {ACTIONS.map((action) => (
+                    <th key={action.key} className="border px-2 py-1">{action.label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {MODULES.map((mod) => (
+                  <tr key={mod.key}>
+                    <td className="border px-2 py-1 font-medium">{mod.label}</td>
+                    {ACTIONS.map((action) => (
+                      <td key={action.key} className="border px-2 py-1 text-center">
+                        <input
+                          type="checkbox"
+                          {...form.register(`permissions.${mod.key}.${action.key}` as const)}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
         <div className="flex justify-end gap-4">
           <Button type="button" variant="outline" onClick={() => router.push("/users")} disabled={isSubmitting}>

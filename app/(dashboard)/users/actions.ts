@@ -15,6 +15,14 @@ const registerUserSchema = z.object({
   password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres" }),
   businessId: z.string(),
   role: z.enum(["admin", "accountant"]),
+  permissions: z.record(
+    z.object({
+      canView: z.boolean(),
+      canCreate: z.boolean(),
+      canEdit: z.boolean(),
+      canDelete: z.boolean(),
+    })
+  ),
 })
 
 type RegisterUserInput = z.infer<typeof registerUserSchema>
@@ -116,6 +124,31 @@ export async function registerUser(input: RegisterUserInput): Promise<RegisterUs
       role: validatedData.role,
     });
 
+    // Guardar permisos granulares
+    const permissions = validatedData.permissions;
+    const modules = Object.keys(permissions);
+    for (const mod of modules) {
+      const perm = permissions[mod];
+      // Elimina permisos previos si existen (por si el usuario ya existía)
+      await db.delete(schema.userPermissions).where(
+        and(
+          eq(schema.userPermissions.userId, userId),
+          eq(schema.userPermissions.businessId, validatedData.businessId),
+          eq(schema.userPermissions.module, mod)
+        )
+      );
+      await db.insert(schema.userPermissions).values({
+        id: uuidv4(),
+        userId,
+        businessId: validatedData.businessId,
+        module: mod,
+        canView: perm.canView,
+        canCreate: perm.canCreate,
+        canEdit: perm.canEdit,
+        canDelete: perm.canDelete,
+      });
+    }
+
     // Revalidar las rutas para actualizar la UI
     revalidatePath("/users")
     revalidatePath(`/businesses/${validatedData.businessId}/users`)
@@ -196,10 +229,10 @@ export async function getUserById(userId: string) {
 }
 
 // Actualizar un usuario
-export async function updateUser(userId: string, businessId: string, data: { name?: string; email?: string; role?: "admin" | "accountant" }) {
+export async function updateUser(userId: string, businessId: string, data: { name?: string; email?: string; role?: "admin" | "accountant"; permissions?: Record<string, { canView: boolean; canCreate: boolean; canEdit: boolean; canDelete: boolean }> }) {
   try {
     const db = await getDb()
-    const { name, email, role } = data
+    const { name, email, role, permissions } = data
 
     // Actualizar datos del usuario si se proporcionan
     if (name || email) {
@@ -215,6 +248,32 @@ export async function updateUser(userId: string, businessId: string, data: { nam
         .update(schema.businessUsers)
         .set({ role })
         .where(and(eq(schema.businessUsers.userId, userId), eq(schema.businessUsers.businessId, businessId)))
+    }
+
+    // Guardar permisos granulares si se proporcionan
+    if (permissions) {
+      const modules = Object.keys(permissions);
+      for (const mod of modules) {
+        const perm = permissions[mod];
+        // Elimina permisos previos si existen
+        await db.delete(schema.userPermissions).where(
+          and(
+            eq(schema.userPermissions.userId, userId),
+            eq(schema.userPermissions.businessId, businessId),
+            eq(schema.userPermissions.module, mod)
+          )
+        );
+        await db.insert(schema.userPermissions).values({
+          id: uuidv4(),
+          userId,
+          businessId,
+          module: mod,
+          canView: perm.canView,
+          canCreate: perm.canCreate,
+          canEdit: perm.canEdit,
+          canDelete: perm.canDelete,
+        });
+      }
     }
 
     revalidatePath("/users")
@@ -252,4 +311,29 @@ export async function deleteUserFromBusiness(userId: string, businessId: string)
       error: "Error al eliminar el usuario del negocio"
     }
   }
+}
+
+// Obtener permisos granulares de un usuario para un negocio
+export async function getUserPermissions(userId: string, businessId: string) {
+  const db = await getDb();
+  const rows = await db
+    .select()
+    .from(schema.userPermissions)
+    .where(
+      and(
+        eq(schema.userPermissions.userId, userId),
+        eq(schema.userPermissions.businessId, businessId)
+      )
+    );
+  // Devuelve un objeto { [module]: { canView, canCreate, ... } }
+  const perms: Record<string, { canView: boolean; canCreate: boolean; canEdit: boolean; canDelete: boolean }> = {};
+  for (const row of rows) {
+    perms[row.module] = {
+      canView: row.canView,
+      canCreate: row.canCreate,
+      canEdit: row.canEdit,
+      canDelete: row.canDelete,
+    };
+  }
+  return perms;
 }
