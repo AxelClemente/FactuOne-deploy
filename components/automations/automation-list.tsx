@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { MoreHorizontal, Edit, Trash } from "lucide-react";
+import { MoreHorizontal, Edit, Trash, Eye } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { deleteAutomation } from "@/app/(dashboard)/automations/actions";
 
@@ -62,6 +62,12 @@ export function AutomationList({ automations, clientMap }: { automations: any[];
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem asChild>
+                        <Link href={`/automations/${auto.id}`}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          Ver detalle
+                        </Link>
+                      </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link href={`/automations/${auto.id}/edit`}>
                           <Edit className="mr-2 h-4 w-4" />

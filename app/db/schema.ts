@@ -231,6 +231,18 @@ export const invoiceAutomations = table("invoice_automations", {
   updatedAt: t.datetime("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`).$onUpdate(() => sql`CURRENT_TIMESTAMP`),
 });
 
+// Automatización de ejecución de automaciones
+export const automationExecutions = table("automation_executions", {
+  id: t.varchar("id", { length: 36 }).primaryKey(),
+  automationId: t.varchar("automation_id", { length: 36 }).notNull(),
+  invoiceId: t.varchar("invoice_id", { length: 36 }),
+  executedAt: t.datetime("executed_at").notNull(),
+  status: t.mysqlEnum("status", ["executed", "sent", "completed", "error"]).notNull(),
+  errorMessage: t.text("error_message"),
+  createdAt: t.datetime("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: t.datetime("updated_at").default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`).notNull(),
+});
+
 // DEFINICIÓN DE RELACIONES
 export const clientsRelations = relations(clients, ({ many }) => ({
   invoices: many(invoices),
