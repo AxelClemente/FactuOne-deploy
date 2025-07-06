@@ -21,6 +21,7 @@ const MODULES = [
   { key: "projects", label: "Proyectos" },
   { key: "providers", label: "Proveedores" },
   { key: "audit", label: "Auditoría" },
+  { key: "automations", label: "Automatizaciones" },
 ];
 const ACTIONS = [
   { key: "canView", label: "Ver" },

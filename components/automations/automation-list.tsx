@@ -1,13 +1,25 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { MoreHorizontal, Edit, Trash } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { deleteAutomation } from "@/app/(dashboard)/automations/actions";
 
 export function AutomationList({ automations, clientMap }: { automations: any[]; clientMap: Record<string, any> }) {
-  const handleDelete = (id: string) => {
-    alert(`Eliminar automatización ${id} (implementa la lógica real)`);
+  const [items, setItems] = useState(automations);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("¿Estás seguro de que deseas eliminar esta automatización? Esta acción no se puede deshacer.")) {
+      return;
+    }
+    const result = await deleteAutomation(id);
+    if (result.success) {
+      setItems((prev) => prev.filter((a) => a.id !== id));
+    } else {
+      alert(result.error || "Error al eliminar");
+    }
   };
 
   return (
@@ -25,12 +37,12 @@ export function AutomationList({ automations, clientMap }: { automations: any[];
           </tr>
         </thead>
         <tbody>
-          {automations.length === 0 && (
+          {items.length === 0 && (
             <tr>
               <td colSpan={7} className="text-center py-8 text-muted-foreground">No hay automatizaciones registradas.</td>
             </tr>
           )}
-          {automations.map(auto => {
+          {items.map(auto => {
             const cliente = clientMap[auto.clientId];
             const prox = auto.startDate + ' ' + auto.timeOfDay;
             return (

@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import { getCurrentUser } from "@/lib/auth";
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions";
 import { eq, and } from "drizzle-orm";
+import { hasPermission } from "@/lib/auth";
 
 const automationSchema = z.object({
   clientId: z.string().min(1),
@@ -131,5 +132,35 @@ export async function updateAutomation(id: string, prevState: any, formData: For
   } catch (error) {
     console.log('[updateAutomation] Error en update:', error);
     return { success: false, error: "Error al actualizar la automatización", details: undefined };
+  }
+}
+
+export async function deleteAutomation(id: string) {
+  const user = await getCurrentUser();
+  if (!user) {
+    console.log('[deleteAutomation] No autenticado');
+    return { success: false, error: "No autenticado" };
+  }
+  const activeBusiness = await getActiveBusiness();
+  if (!activeBusiness) {
+    console.log('[deleteAutomation] No hay negocio activo');
+    return { success: false, error: "No hay negocio activo" };
+  }
+  const canDelete = await hasPermission(user.id, activeBusiness.id.toString(), "automations", "delete");
+  console.log('[deleteAutomation] userId:', user.id, 'businessId:', activeBusiness.id, 'canDelete:', canDelete);
+  if (!canDelete) {
+    return { success: false, error: "No tienes permisos para eliminar automatizaciones" };
+  }
+  try {
+    const db = await getDb();
+    await db.delete(invoiceAutomations)
+      .where(and(
+        eq(invoiceAutomations.id, id),
+        eq(invoiceAutomations.businessId, activeBusiness.id)
+      ));
+    return { success: true };
+  } catch (error) {
+    console.log('[deleteAutomation] Error al eliminar:', error);
+    return { success: false, error: "Error al eliminar la automatización" };
   }
 } 
