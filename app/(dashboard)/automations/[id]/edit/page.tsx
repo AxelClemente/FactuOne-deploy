@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getDb } from "@/lib/db";
-import { invoiceAutomations, clients } from "@/app/db/schema";
+import { invoiceAutomations, clients, automationLines, projects } from "@/app/db/schema";
 import { eq } from "drizzle-orm";
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions";
 import { AutomationForm } from "@/app/(dashboard)/automations/new/automation-form";
@@ -28,6 +28,17 @@ export default async function EditAutomationPage({ params }: { params: Promise<{
     .select()
     .from(clients)
     .where(eq(clients.businessId, activeBusiness.id));
+  // Obtener proyectos del negocio
+  const projectsList = await db
+    .select()
+    .from(projects)
+    .where(eq(projects.businessId, activeBusiness.id));
+  // Obtener líneas de la automatización
+  const lines = await db
+    .select()
+    .from(automationLines)
+    .where(eq(automationLines.automationId, id));
+  automation.lines = lines;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -35,7 +46,7 @@ export default async function EditAutomationPage({ params }: { params: Promise<{
         <ArrowLeft className="w-5 h-5 mr-2" />
         Volver al listado
       </Link>
-      <AutomationForm clients={clientsList} automation={automation} />
+      <AutomationForm clients={clientsList} projects={projectsList} automation={automation} />
     </div>
   );
 } 
