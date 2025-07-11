@@ -9,5 +9,5 @@ export default function NewProviderForm({ businessId }: { businessId: string }) 
     const result = await createProvider(values, businessId)
     return result
   }
-  return <ProviderForm businessId={businessId} onSubmit={handleSubmit} submitText="Crear proveedor" />
+  return <ProviderForm businessId={businessId} />
 } 

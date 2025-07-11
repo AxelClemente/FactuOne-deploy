@@ -21,8 +21,11 @@ const providerFormSchema = z.object({
   postalCode: z.string().optional().or(z.literal("")),
   city: z.string().optional().or(z.literal("")),
   country: z.string().optional().or(z.literal("")),
-  phone: z.string().min(1, { message: "El teléfono es obligatorio" }),
-  email: z.string().email({ message: "Email inválido" }),
+  phone: z.string().optional().or(z.literal("")),
+  email: z.string().optional().or(z.literal("")).refine(
+    (val) => !val || /^[^@]+@[^@]+\.[^@]+$/.test(val),
+    { message: "Email inválido" }
+  ),
 })
 
 type ProviderFormValues = z.infer<typeof providerFormSchema>
@@ -37,8 +40,8 @@ type ProviderFormProps = {
     postalCode?: string
     city?: string
     country?: string
-    phone: string
-    email: string
+    phone?: string // <-- ahora opcional
+    email?: string // <-- ahora opcional
   }
 }
 
@@ -63,16 +66,24 @@ export default function ProviderForm({ businessId, provider }: ProviderFormProps
   })
 
   async function handleSubmit(data: ProviderFormValues) {
+    console.log("[ProviderForm] handleSubmit data:", data)
     setIsSubmitting(true)
     try {
+      // Normalizar email y phone a string siempre
+      const normalizedData = {
+        ...data,
+        email: data.email ?? "",
+        phone: data.phone ?? "",
+      }
       let result
       if (isEditing && provider) {
         // Actualizar proveedor existente
-        result = await updateProvider(provider.id, data, businessId)
+        result = await updateProvider(provider.id, normalizedData, businessId)
       } else {
         // Crear nuevo proveedor
-        result = await createProvider(data, businessId)
+        result = await createProvider(normalizedData, businessId)
       }
+      console.log("[ProviderForm] submit result:", result)
       if (result.success) {
         toast({
           title: isEditing ? "Proveedor actualizado" : "Proveedor creado",
@@ -88,6 +99,7 @@ export default function ProviderForm({ businessId, provider }: ProviderFormProps
         })
       }
     } catch (error) {
+      console.log("[ProviderForm] submit error:", error)
       toast({
         variant: "destructive",
         title: "Error",

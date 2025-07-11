@@ -5,6 +5,8 @@ import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
 import { getDb } from "@/lib/db"
 import { eq } from "drizzle-orm"
 import { providers } from "@/app/db/schema"
+import { Button } from "@/components/ui/button"
+import { ArrowLeft } from "lucide-react"
 
 console.log("DEBUG: import providers from schema:", providers)
 
@@ -40,6 +42,12 @@ export default async function EditProviderPage({ params }: { params: Promise<{ i
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
+        <Button variant="ghost" size="sm" asChild className="mb-6">
+          <a href={`/proveedores/${providerForForm.id}`}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Volver a proveedor
+          </a>
+        </Button>
         <h1 className="text-3xl font-bold tracking-tight">Editar Proveedor</h1>
         <p className="text-muted-foreground">Actualiza la información del proveedor</p>
       </div>

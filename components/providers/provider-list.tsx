@@ -2,10 +2,11 @@
 
 import { useState, useMemo } from "react"
 import Link from "next/link"
-import { Plus, Search, ArrowUp, ArrowDown, PlusCircle } from "lucide-react"
+import { Plus, Search, ArrowUp, ArrowDown, PlusCircle, Edit, CreditCard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
 
 interface Provider {
   id: string
@@ -99,16 +100,16 @@ export default function ProviderList({
     <div className="space-y-6">
       {/* Filtros y búsqueda */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center">
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nombre, NIF o email..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+        <div className="relative w-full md:w-96">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nombre, NIF o email..."
+            className="pl-8"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-2 items-center">
           <Tabs defaultValue="all" value={activeTab} onValueChange={(value) => setActiveTab(value as FilterTab)}>
             <TabsList>
               <TabsTrigger value="all">Todos</TabsTrigger>
@@ -117,15 +118,15 @@ export default function ProviderList({
               <TabsTrigger value="noInvoices">Sin facturas</TabsTrigger>
             </TabsList>
           </Tabs>
+          {canCreateProvider && (
+            <Button asChild>
+              <Link href="/proveedores/new">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Nuevo Proveedor
+              </Link>
+            </Button>
+          )}
         </div>
-        {canCreateProvider && (
-          <Button asChild>
-            <Link href="/proveedores/new">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Nuevo Proveedor
-            </Link>
-          </Button>
-        )}
       </div>
       {/* Ordenación */}
       <div className="flex flex-wrap gap-2 mb-4">
@@ -141,26 +142,44 @@ export default function ProviderList({
             No hay proveedores registrados.
           </div>
         ) : (
-          filteredProviders.map((provider) => (
-            <div key={provider.id} className="rounded-lg border bg-white p-4 flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">{provider.name}</h2>
-                {/* Aquí podrías poner un badge de estado si lo deseas */}
+          filteredProviders.map((provider) => {
+            // Determinar status
+            let status: "current" | "overdue" = "current"
+            if ((provider.totalPending ?? 0) > 0) status = "overdue"
+            // Badge
+            const badge = status === "overdue"
+              ? <Badge variant="destructive">Con deuda</Badge>
+              : <Badge variant="outline">Al día</Badge>
+            return (
+              <div key={provider.id} className="rounded-lg border bg-white p-4 flex flex-col gap-2">
+                <div className="flex items-start justify-between">
+                  <h2 className="text-lg font-semibold">{provider.name}</h2>
+                  {badge}
+                </div>
+                <div className="text-sm text-muted-foreground">{provider.nif}</div>
+                <div className="text-sm">{provider.address}</div>
+                <div className="text-sm">{provider.email}</div>
+                <div className="text-sm">{provider.phone}</div>
+                <div className="flex-1" />
+                <div className="mt-4">
+                  <div className="flex gap-2 w-full">
+                    <Button variant="outline" size="sm" className="flex-1" asChild>
+                      <Link href={`/proveedores/${provider.id}/edit`}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Editar
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1" asChild>
+                      <Link href={`/proveedores/${provider.id}`}>
+                        <CreditCard className="mr-2 h-4 w-4" />
+                        Ver facturas
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
               </div>
-              <div className="text-sm text-muted-foreground">{provider.nif}</div>
-              <div className="text-sm">{provider.address}</div>
-              <div className="text-sm">{provider.email}</div>
-              <div className="text-sm">{provider.phone}</div>
-              <div className="flex gap-2 mt-2">
-                <Link href={`/proveedores/${provider.id}/edit`} className="btn btn-sm btn-outline">
-                  Editar
-                </Link>
-                <Link href={`/proveedores/${provider.id}`} className="btn btn-sm btn-secondary">
-                  Ver facturas
-                </Link>
-              </div>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
     </div>
