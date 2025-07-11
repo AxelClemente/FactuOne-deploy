@@ -2,13 +2,14 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Download, Edit, FileCheck, FileX, Printer } from "lucide-react"
+import { Edit, FileCheck, FileX, Printer } from "lucide-react"
 import { updateReceivedInvoiceStatus } from "@/app/(dashboard)/received-invoices/actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ReceivedInvoiceStatusBadge } from "@/components/received-invoices/received-invoice-status-badge"
 import { useToast } from "@/hooks/use-toast"
+import { PDFDownloadButton } from "@/components/ui/pdf-download-button"
 
 interface ReceivedInvoiceDetailProps {
   invoice: any
@@ -100,15 +101,15 @@ export function ReceivedInvoiceDetail({ invoice, categories }: ReceivedInvoiceDe
           <ReceivedInvoiceStatusBadge status={invoice.status} />
 
           {/* Botones de descarga */}
-          <Button variant="outline" size="sm" asChild>
-            <a href={`/api/received-invoices/${invoice.id}/pdf`} target="_blank" rel="noopener noreferrer">
-              <Download className="mr-2 h-4 w-4" />
-              Descargar PDF
-            </a>
-          </Button>
+          <PDFDownloadButton 
+            invoiceId={invoice.id} 
+            invoiceNumber={invoice.number || "FacturaRecibida"} 
+            type="received-invoice"
+          >
+            Descargar PDF
+          </PDFDownloadButton>
           <Button variant="outline" size="sm" asChild>
             <a href={`/api/received-invoices/${invoice.id}/xml`} target="_blank" rel="noopener noreferrer">
-              <Download className="mr-2 h-4 w-4" />
               Descargar XML
             </a>
           </Button>
