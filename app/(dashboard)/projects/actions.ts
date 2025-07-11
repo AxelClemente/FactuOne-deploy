@@ -7,7 +7,7 @@ import { getDb } from "@/lib/db"
 import { projects, clients, invoices, receivedInvoices, userModuleExclusions } from "@/app/db/schema"
 import { getActiveBusiness } from "@/lib/getActiveBusiness"
 import { getCurrentUser, hasPermission } from "@/lib/auth"
-import { uploadContract } from "@/lib/upload"
+import { uploadContract, deleteContractFromBlob } from "@/lib/upload"
 import { v4 as uuidv4 } from "uuid"
 import { createNotification } from "@/lib/notifications"
 
@@ -118,11 +118,19 @@ export async function updateProject(projectId: string, formData: FormData): Prom
     }
 
     const validatedData = projectSchema.parse(rawData)
-
     const { contract, ...dataForDb } = validatedData
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updatePayload: { [key: string]: any } = { ...dataForDb }
+
+    // Lógica de borrado de contrato
+    const deleteContract = formData.get("deleteContract") === "true";
+    if (deleteContract) {
+      // Obtener la URL actual del contrato
+      const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
+      if (project?.contractUrl) {
+        await deleteContractFromBlob(project.contractUrl);
+      }
+      updatePayload.contractUrl = null;
+    }
 
     if (contract instanceof File && contract.size > 0) {
       const contractUrl = await uploadContract(contract, projectId)
@@ -137,7 +145,6 @@ export async function updateProject(projectId: string, formData: FormData): Prom
   } catch (error) {
     console.error("❌ Error actualizando proyecto:", error)
     if (error instanceof z.ZodError) {
-      // Proporcionar un mensaje de error más detallado en el servidor
       console.error("Error de validación de Zod:", error.flatten().fieldErrors)
       return { error: "Datos del formulario inválidos. Por favor, revisa los campos." }
     }

@@ -1,23 +1,19 @@
-/**
- * Función de utilidad para simular la subida de archivos
- * @param file Archivo a "subir"
- * @param projectId ID del proyecto
- * @returns URL simulada del archivo
- */
-export async function mockUploadContract(file: File, projectId: string): Promise<string> {
-  console.log(`[MOCK] Simulando subida de archivo: ${file.name} (${file.size} bytes) para el proyecto ${projectId}`)
+import { put, del } from "@vercel/blob";
+import { randomUUID } from "crypto";
 
-  // Simular un retraso de red (entre 1 y 2 segundos)
-  const delay = Math.floor(Math.random() * 1000) + 1000
-  await new Promise((resolve) => setTimeout(resolve, delay))
-
-  // Generar una URL simulada
-  const mockUrl = `https://mock-storage.example.com/proyectos/${projectId}/contrato.pdf`
-
-  console.log(`[MOCK] Archivo subido exitosamente. URL: ${mockUrl}`)
-
-  return mockUrl
+export async function uploadContract(file: File, projectId: string): Promise<string> {
+  const filename = `contracts/${projectId}-${randomUUID()}.pdf`;
+  const blob = await put(filename, file, {
+    access: "public",
+  });
+  return blob.url;
 }
 
-// Exportar la función de mock como la función principal
-export const uploadContract = mockUploadContract
+export async function deleteContractFromBlob(url: string): Promise<void> {
+  // Extraer la ruta relativa del blob desde la URL completa
+  // Ejemplo: https://<account>.blob.vercel-storage.com/contracts/uuid.pdf
+  const match = url.match(/\.com\/(.*)$/);
+  if (!match) throw new Error("No se pudo extraer la ruta del blob de la URL");
+  const pathname = match[1];
+  await del(pathname);
+}

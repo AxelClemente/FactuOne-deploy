@@ -69,6 +69,7 @@ export function ProjectForm({ clients, project }: ProjectFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [existingContractUrl, setExistingContractUrl] = useState(project?.contractUrl || null)
+  const [deleteContract, setDeleteContract] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const isEditing = !!project
@@ -99,7 +100,9 @@ export function ProjectForm({ clients, project }: ProjectFormProps) {
       if (data.contract instanceof File) {
         formData.append("contract", data.contract)
       }
-
+      if (deleteContract) {
+        formData.append("deleteContract", "true")
+      }
       const result = isEditing ? await updateProject(project.id, formData) : await createProject(formData)
 
       if (result.error) {
@@ -296,7 +299,7 @@ export function ProjectForm({ clients, project }: ProjectFormProps) {
             />
           </FormControl>
 
-          {existingContractUrl ? (
+          {existingContractUrl && !deleteContract ? (
             <div className="flex items-center justify-between rounded-md border p-3">
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-primary" />
@@ -309,10 +312,16 @@ export function ProjectForm({ clients, project }: ProjectFormProps) {
                   Ver contrato actual
                 </a>
               </div>
-              <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()}>
-                <Upload className="h-4 w-4" />
-                <span className="sr-only">Reemplazar</span>
-              </Button>
+              <div className="flex gap-2">
+                <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()}>
+                  <Upload className="h-4 w-4" />
+                  <span className="sr-only">Reemplazar</span>
+                </Button>
+                <Button type="button" variant="destructive" size="icon" onClick={() => { setDeleteContract(true); setExistingContractUrl(null); form.setValue("contract", undefined, { shouldValidate: true }); }}>
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">Eliminar contrato</span>
+                </Button>
+              </div>
             </div>
           ) : selectedFile ? (
             <div className="flex items-center justify-between rounded-md border p-3">

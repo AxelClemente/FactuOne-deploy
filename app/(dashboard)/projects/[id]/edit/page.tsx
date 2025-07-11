@@ -11,14 +11,13 @@ import { getProjectById } from "../../actions"
 import { clients as clientsSchema, type Project } from "@/app/db/schema"
 
 interface EditProjectPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function EditProjectPage({ params }: EditProjectPageProps) {
-  // El error de Next.js 15 sugiere esperar los params. Lo hacemos aquí.
-  // const awaitedParams = await params;
+  const { id } = await params;
   const businessId = await getActiveBusiness()
-  const projectId = params.id // Usar como string (UUID)
+  const projectId = id;
 
   const project = (await getProjectById(projectId)) as Project | null
 
@@ -32,7 +31,7 @@ export default async function EditProjectPage({ params }: EditProjectPageProps) 
     ? await db
         .select({ id: clientsSchema.id, name: clientsSchema.name })
         .from(clientsSchema)
-        .where(eq(clientsSchema.businessId, businessId)) // Usar businessId como string
+        .where(eq(clientsSchema.businessId, businessId))
     : []
 
   // Mapear el id a string para el componente Select del formulario
@@ -46,7 +45,7 @@ export default async function EditProjectPage({ params }: EditProjectPageProps) 
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <Button variant="link" className="px-0" asChild>
-            <Link href={`/projects/${params.id}`}>
+            <Link href={`/projects/${id}`}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Volver al proyecto
             </Link>
