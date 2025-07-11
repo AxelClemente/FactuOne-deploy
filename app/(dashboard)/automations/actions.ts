@@ -2,17 +2,27 @@
 
 import { z } from "zod";
 import { getDb } from "@/lib/db";
-import { invoiceAutomations } from "@/app/db/schema";
+import { invoiceAutomations, automationLines } from "@/app/db/schema";
 import { v4 as uuidv4 } from "uuid";
 import { getCurrentUser } from "@/lib/auth";
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions";
 import { eq, and } from "drizzle-orm";
 import { hasPermission } from "@/lib/auth";
 
+const automationLineSchema = z.object({
+  description: z.string().min(1),
+  quantity: z.number().min(1),
+  unitPrice: z.number().min(0),
+  taxRate: z.number().min(0),
+  total: z.number().min(0),
+});
+
 const automationSchema = z.object({
   clientId: z.string().min(1),
+  projectId: z.string().optional(),
   amount: z.string().or(z.number()).refine((v) => Number(v) > 0, { message: "El importe debe ser mayor que 0" }),
   concept: z.string().min(1),
+  lines: z.string().optional(), // JSON string de las líneas
   frequency: z.enum(["day", "month", "year"]),
   interval: z.string().or(z.number()).refine((v) => Number(v) > 0),
   startDate: z.string().min(1),
@@ -34,8 +44,10 @@ export async function createAutomation(prevState: any, formData: FormData) {
   // Parsear y validar datos
   const raw = {
     clientId: formData.get("clientId"),
+    projectId: formData.get("projectId"),
     amount: formData.get("amount"),
     concept: formData.get("concept"),
+    lines: formData.get("lines"),
     frequency: formData.get("frequency"),
     interval: formData.get("interval"),
     startDate: formData.get("startDate"),
@@ -51,23 +63,48 @@ export async function createAutomation(prevState: any, formData: FormData) {
 
   try {
     const db = await getDb();
+    const automationId = uuidv4();
     await db.insert(invoiceAutomations).values({
-      id: uuidv4(),
+      id: automationId,
       businessId: activeBusiness.id,
       clientId: data.clientId,
+      projectId: data.projectId || null,
       amount: Number(data.amount),
       concept: data.concept,
       frequency: data.frequency,
       interval: Number(data.interval),
       startDate: data.startDate,
       timeOfDay: data.timeOfDay,
-      maxOccurrences: data.maxOccurrences ? Number(data.maxOccurrences) : null,
+      maxOccurrences: data.maxOccurrences && data.maxOccurrences.trim() !== "" ? Number(data.maxOccurrences) : null,
       occurrences: 0,
       isActive: !!data.isActive,
       lastRunAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+    // Guardar líneas de factura si existen
+    if (data.lines) {
+      let linesArr: any[] = [];
+      try {
+        linesArr = JSON.parse(data.lines as string);
+      } catch (e) {}
+      for (const line of linesArr) {
+        const lineParsed = automationLineSchema.safeParse(line);
+        if (lineParsed.success) {
+          await db.insert(automationLines).values({
+            id: uuidv4(),
+            automationId,
+            description: line.description,
+            quantity: line.quantity,
+            unitPrice: line.unitPrice,
+            taxRate: line.taxRate,
+            total: line.total,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+        }
+      }
+    }
     return { success: true, error: null, details: undefined };
   } catch (error) {
     return { success: false, error: "Error al guardar la automatización", details: undefined };
@@ -90,8 +127,10 @@ export async function updateAutomation(id: string, prevState: any, formData: For
   // Parsear y validar datos
   const raw = {
     clientId: formData.get("clientId"),
+    projectId: formData.get("projectId"),
     amount: formData.get("amount"),
     concept: formData.get("concept"),
+    lines: formData.get("lines"),
     frequency: formData.get("frequency"),
     interval: formData.get("interval"),
     startDate: formData.get("startDate"),
@@ -110,16 +149,18 @@ export async function updateAutomation(id: string, prevState: any, formData: For
 
   try {
     const db = await getDb();
-    const result = await db.update(invoiceAutomations)
+    // Actualizar automatización principal
+    await db.update(invoiceAutomations)
       .set({
         clientId: data.clientId,
+        projectId: data.projectId || null,
         amount: Number(data.amount),
         concept: data.concept,
         frequency: data.frequency,
         interval: Number(data.interval),
         startDate: data.startDate,
         timeOfDay: data.timeOfDay,
-        maxOccurrences: data.maxOccurrences ? Number(data.maxOccurrences) : null,
+        maxOccurrences: data.maxOccurrences && data.maxOccurrences.trim() !== "" ? Number(data.maxOccurrences) : null,
         isActive: !!data.isActive,
         updatedAt: new Date(),
       })
@@ -127,7 +168,32 @@ export async function updateAutomation(id: string, prevState: any, formData: For
         eq(invoiceAutomations.id, id),
         eq(invoiceAutomations.businessId, activeBusiness.id)
       ));
-    console.log('[updateAutomation] update result:', result);
+    // Eliminar líneas anteriores
+    await db.delete(automationLines).where(eq(automationLines.automationId, id));
+    // Guardar nuevas líneas
+    if (data.lines) {
+      let linesArr: any[] = [];
+      try {
+        linesArr = JSON.parse(data.lines as string);
+      } catch (e) {}
+      for (const line of linesArr) {
+        const lineParsed = automationLineSchema.safeParse(line);
+        if (lineParsed.success) {
+          await db.insert(automationLines).values({
+            id: uuidv4(),
+            automationId: id,
+            description: line.description,
+            quantity: line.quantity,
+            unitPrice: line.unitPrice,
+            taxRate: line.taxRate,
+            total: line.total,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+        }
+      }
+    }
+    console.log('[updateAutomation] update result: OK');
     return { success: true, error: null, details: undefined };
   } catch (error) {
     console.log('[updateAutomation] Error en update:', error);

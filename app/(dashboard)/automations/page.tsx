@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Repeat, PlusCircle, MoreHorizontal, Edit, Trash } from "lucide-react";
 import { getDb } from "@/lib/db";
-import { invoiceAutomations, clients } from "@/app/db/schema";
+import { invoiceAutomations, clients, projects, automationLines } from "@/app/db/schema";
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions";
 import { eq, inArray } from "drizzle-orm";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -22,6 +22,25 @@ export default async function AutomationsPage() {
     ? await db.select().from(clients).where(inArray(clients.id, clientIds))
     : [];
   const clientMap = Object.fromEntries(clientsList.map(c => [c.id, c]));
+
+  // Obtener proyectos asociados
+  const projectIds = automations.map(a => a.projectId).filter(Boolean);
+  const projectsList = projectIds.length > 0
+    ? await db.select().from(projects).where(inArray(projects.id, projectIds))
+    : [];
+  const projectMap = Object.fromEntries(projectsList.map(p => [p.id, p]));
+
+  // Obtener líneas de automatización
+  const automationIds = automations.map(a => a.id);
+  const linesList = automationIds.length > 0
+    ? await db.select().from(automationLines).where(inArray(automationLines.automationId, automationIds))
+    : [];
+  // Agrupar por automationId
+  const linesMap: Record<string, any[]> = {};
+  for (const line of linesList) {
+    if (!linesMap[line.automationId]) linesMap[line.automationId] = [];
+    linesMap[line.automationId].push(line);
+  }
 
   // --- Funciones de acción ---
   // Eliminar automatización (deberás implementar la lógica real en un client component)
@@ -47,7 +66,7 @@ export default async function AutomationsPage() {
           </Link>
         </Button>
       </div>
-      <AutomationList automations={automations} clientMap={clientMap} />
+      <AutomationList automations={automations} clientMap={clientMap} projectMap={projectMap} linesMap={linesMap} />
     </div>
   );
 } 

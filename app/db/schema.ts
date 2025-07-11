@@ -218,6 +218,7 @@ export const invoiceAutomations = table("invoice_automations", {
   id: t.varchar("id", { length: 36 }).primaryKey().notNull(),
   businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
   clientId: t.varchar("client_id", { length: 36 }).notNull().references(() => clients.id),
+  projectId: t.varchar("project_id", { length: 36 }).references(() => projects.id),
   amount: t.decimal("amount", { precision: 12, scale: 2 }).notNull(),
   concept: t.varchar("concept", { length: 255 }).notNull(),
   frequency: t.mysqlEnum("frequency", ["day", "month", "year"]).notNull(),
@@ -230,6 +231,19 @@ export const invoiceAutomations = table("invoice_automations", {
   lastRunAt: t.datetime("last_run_at"),
   createdAt: t.datetime("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: t.datetime("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`).$onUpdate(() => sql`CURRENT_TIMESTAMP`),
+});
+
+// Líneas de automatización de facturas
+export const automationLines = table("automation_lines", {
+  id: t.varchar("id", { length: 36 }).primaryKey(),
+  automationId: t.varchar("automation_id", { length: 36 }).notNull().references(() => invoiceAutomations.id),
+  description: t.varchar("description", { length: 255 }).notNull(),
+  quantity: t.decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  unitPrice: t.decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
+  taxRate: t.decimal("tax_rate", { precision: 5, scale: 2 }).notNull(),
+  total: t.decimal("total", { precision: 10, scale: 2 }).notNull(),
+  createdAt: t.datetime("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: t.datetime("updated_at").default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`).notNull(),
 });
 
 // Automatización de ejecución de automaciones
@@ -302,6 +316,25 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   invoices: many(invoices),
 }));
 
+export const invoiceAutomationsRelations = relations(invoiceAutomations, ({ one, many }) => ({
+  client: one(clients, {
+    fields: [invoiceAutomations.clientId],
+    references: [clients.id],
+  }),
+  project: one(projects, {
+    fields: [invoiceAutomations.projectId],
+    references: [projects.id],
+  }),
+  lines: many(automationLines),
+}));
+
+export const automationLinesRelations = relations(automationLines, ({ one }) => ({
+  automation: one(invoiceAutomations, {
+    fields: [automationLines.automationId],
+    references: [invoiceAutomations.id],
+  }),
+}));
+
 // Tipos para TypeScript
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -341,3 +374,12 @@ export type NewUserPermission = typeof userPermissions.$inferInsert;
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
+
+export type InvoiceAutomation = typeof invoiceAutomations.$inferSelect;
+export type NewInvoiceAutomation = typeof invoiceAutomations.$inferInsert;
+
+export type AutomationLine = typeof automationLines.$inferSelect;
+export type NewAutomationLine = typeof automationLines.$inferInsert;
+
+export type AutomationExecution = typeof automationExecutions.$inferSelect;
+export type NewAutomationExecution = typeof automationExecutions.$inferInsert;
