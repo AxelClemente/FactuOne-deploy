@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
 import { getInvoiceWithLines } from "@/app/(dashboard)/invoices/actions"
-import puppeteer from "puppeteer"
+import { generatePDFFromHTML } from "@/lib/pdf-generator"
 import { auditHelpers } from "@/lib/audit"
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
@@ -98,33 +98,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   `
 
   try {
-    // Intentar con Puppeteer primero
-    const browser = await puppeteer.launch({ 
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--no-first-run",
-        "--no-zygote",
-        "--single-process",
-        "--disable-extensions"
-      ]
-    })
-    const page = await browser.newPage()
-    await page.setContent(html, { waitUntil: "networkidle0" })
-    const pdfBuffer = await page.pdf({ 
-      format: "A4", 
-      printBackground: true,
-      margin: {
-        top: '20px',
-        right: '20px',
-        bottom: '20px',
-        left: '20px'
-      }
-    })
-    await browser.close()
+    // Generar PDF usando la utilidad mejorada
+    const pdfBuffer = await generatePDFFromHTML(html)
 
     // Registrar evento de auditoría
     await auditHelpers.logInvoiceDownloaded(params.id, 'pdf', req)
@@ -136,9 +111,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       },
     })
   } catch (err) {
-    console.error("Error con Puppeteer:", err)
+    console.error("Error generando PDF:", err)
     
-    // Si Puppeteer falla, devolver un mensaje de error más informativo
     return new Response(
       `Error generando PDF: ${(err as Error).message}. 
       

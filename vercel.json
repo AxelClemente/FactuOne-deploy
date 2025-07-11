@@ -15,8 +15,7 @@
   },
   "env": {
     "NODE_ENV": "production",
-    "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "false",
-    "PUPPETEER_EXECUTABLE_PATH": "/usr/bin/google-chrome-stable"
+    "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "false"
   },
   "build": {
     "env": {
