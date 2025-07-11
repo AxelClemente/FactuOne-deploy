@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getCurrentUser, hasPermission } from "@/lib/auth"
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
-import { getReceivedInvoices, getExpenseCategories } from "./actions"
+import { getReceivedInvoicesForCurrentUser, getExpenseCategories } from "./actions"
 
 export default async function ReceivedInvoicesPage({
   searchParams,
@@ -44,7 +44,7 @@ export default async function ReceivedInvoicesPage({
   const endDate = resolvedSearchParams.endDate ? new Date(resolvedSearchParams.endDate as string) : undefined
   const searchTerm = typeof resolvedSearchParams.search === "string" ? resolvedSearchParams.search : undefined
 
-  const initialInvoices = await getReceivedInvoices({
+  const initialInvoices = await getReceivedInvoicesForCurrentUser({
     businessId: activeBusiness.id,
     status,
     category,

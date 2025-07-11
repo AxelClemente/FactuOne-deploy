@@ -5,7 +5,7 @@ import { z } from "zod"
 import { getDb } from "@/lib/db"
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
 import { getCurrentUser, hasPermission } from "@/lib/auth"
-import { invoices, invoiceLines, clients, projects, Client, Project } from "@/app/db/schema"
+import { invoices, invoiceLines, clients, projects, Client, Project, userModuleExclusions } from "@/app/db/schema"
 import { eq, and, sql, gte, lte, or, like } from "drizzle-orm"
 import { v4 as uuidv4 } from "uuid"
 import { createNotification } from "@/lib/notifications"
@@ -239,6 +239,7 @@ export async function getInvoices({
   startDate,
   endDate,
   searchTerm,
+  userId,
 }: {
   businessId: string
   status?: string
@@ -246,6 +247,7 @@ export async function getInvoices({
   startDate?: Date
   endDate?: Date
   searchTerm?: string
+  userId?: string
 }) {
   const db = await getDb()
   try {
@@ -265,11 +267,13 @@ export async function getInvoices({
       )
     }
 
-    const allInvoices = await db
+    let allInvoices = await db
       .select({
         id: invoices.id,
         number: invoices.number,
         clientName: clients.name,
+        clientId: invoices.clientId,
+        projectId: invoices.projectId,
         date: invoices.date,
         dueDate: invoices.dueDate,
         total: invoices.total,
@@ -280,11 +284,73 @@ export async function getInvoices({
       .where(and(...whereClauses))
       .orderBy(sql`${invoices.date} desc`)
 
+    // Si hay userId, filtrar por exclusiones de clientes y proyectos
+    if (userId) {
+      // Obtener exclusiones de clientes
+      const excludedClientIds = await db.select().from(userModuleExclusions)
+        .where(
+          and(
+            eq(userModuleExclusions.userId, userId),
+            eq(userModuleExclusions.businessId, businessId),
+            eq(userModuleExclusions.module, "clients")
+          )
+        )
+        .then(rows => rows.map(r => r.entityId));
+
+      // Obtener exclusiones de proyectos
+      const excludedProjectIds = await db.select().from(userModuleExclusions)
+        .where(
+          and(
+            eq(userModuleExclusions.userId, userId),
+            eq(userModuleExclusions.businessId, businessId),
+            eq(userModuleExclusions.module, "projects")
+          )
+        )
+        .then(rows => rows.map(r => r.entityId));
+
+      // Filtrar facturas que no estén asociadas a clientes o proyectos excluidos
+      allInvoices = allInvoices.filter(invoice => {
+        const isClientExcluded = excludedClientIds.includes(invoice.clientId);
+        const isProjectExcluded = invoice.projectId && excludedProjectIds.includes(invoice.projectId);
+        return !isClientExcluded && !isProjectExcluded;
+      });
+    }
+
     return allInvoices
   } catch (error) {
     console.error("Error al obtener facturas:", error)
     throw new Error("No se pudieron obtener las facturas")
   }
+}
+
+// Obtener facturas para el usuario actual (versión pública)
+export async function getInvoicesForCurrentUser({
+  businessId,
+  status,
+  clientId,
+  startDate,
+  endDate,
+  searchTerm,
+}: {
+  businessId: string
+  status?: string
+  clientId?: string
+  startDate?: Date
+  endDate?: Date
+  searchTerm?: string
+}) {
+  const user = await getCurrentUser()
+  const userId = user?.id
+
+  return getInvoices({
+    businessId,
+    status,
+    clientId,
+    startDate,
+    endDate,
+    searchTerm,
+    userId,
+  })
 }
 
 // Obtener una factura con sus líneas

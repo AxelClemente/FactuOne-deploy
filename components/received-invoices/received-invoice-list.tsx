@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowDown, ArrowUp, Edit, Eye, FileCheck, FileX, MoreHorizontal, Plus, Trash, PlusCircle } from "lucide-react"
 import {
-  getReceivedInvoices,
+  getReceivedInvoicesForCurrentUser,
   updateReceivedInvoiceStatus,
   deleteReceivedInvoice,
 } from "@/app/(dashboard)/received-invoices/actions"
@@ -50,7 +50,7 @@ export function ReceivedInvoiceList({ businessId, initialInvoices, categories, c
         const endDate = searchParams.get("endDate") ? new Date(searchParams.get("endDate")!) : undefined
         const searchTerm = searchParams.get("search") || undefined
 
-        const data = await getReceivedInvoices({
+        const data = await getReceivedInvoicesForCurrentUser({
           businessId,
           status,
           category,

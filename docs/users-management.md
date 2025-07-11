@@ -172,4 +172,245 @@ La página `/users` muestra:
 
 ---
 
-*Última actualización: Julio 2024 (modelo híbrido de exclusión por entidad y permisos granulares)*
+## 9. Implementación Completa de Exclusiones por Entidad (Diciembre 2024)
+
+### Resumen de Implementación
+Se ha completado la implementación del sistema de exclusiones por entidad para **todos los módulos principales** (Clientes, Proveedores, Proyectos). El sistema ahora funciona de manera consistente en toda la aplicación, filtrando automáticamente las entidades excluidas según el usuario actual.
+
+### Módulos Implementados
+
+#### 1. Clientes (`clients`)
+- **Función principal:** `getClientsWithStats(businessId, userId?)`
+- **Función pública:** `getClientsForCurrentUser(businessId)`
+- **Página afectada:** `/clients` - Listado de clientes
+- **Filtrado:** Los clientes excluidos no aparecen en la lista ni en las estadísticas
+
+#### 2. Proveedores (`providers`)
+- **Función principal:** `getProviders(businessId, userId?)`
+- **Función pública:** `getProvidersForCurrentUser(businessId)`
+- **Página afectada:** `/proveedores` - Listado de proveedores
+- **Página de detalle:** `/proveedores/[id]` - Detalle del proveedor
+- **Filtrado:** Los proveedores excluidos no aparecen en la lista ni en las estadísticas
+
+#### 3. Proyectos (`projects`)
+- **Función principal:** `getProjects({..., userId?})`
+- **Función pública:** `getProjectsForCurrentUser({...})`
+- **Página afectada:** `/projects` - Listado de proyectos (via `ProjectList` component)
+- **Filtrado:** Los proyectos excluidos no aparecen en la lista
+
+#### 4. Facturas Emitidas (`invoices`)
+- **Función principal:** `getInvoices({..., userId?})`
+- **Función pública:** `getInvoicesForCurrentUser({...})`
+- **Página afectada:** `/invoices` - Listado de facturas emitidas
+- **Componente:** `InvoiceList` - Lista de facturas con filtrado
+- **Filtrado:** Las facturas asociadas a clientes o proyectos excluidos no aparecen
+
+#### 5. Facturas Recibidas (`received_invoices`)
+- **Función principal:** `getReceivedInvoices({..., userId?})`
+- **Función pública:** `getReceivedInvoicesForCurrentUser({...})`
+- **Página afectada:** `/received-invoices` - Listado de facturas recibidas
+- **Componente:** `ReceivedInvoiceList` - Lista de facturas recibidas con filtrado
+- **Filtrado:** Las facturas asociadas a proveedores o proyectos excluidos no aparecen
+
+### Arquitectura de Funciones
+
+#### Patrón de Implementación
+Cada módulo sigue el mismo patrón:
+
+1. **Función interna:** Acepta `userId` opcional para filtrado
+2. **Función pública:** Obtiene automáticamente el usuario actual y llama a la función interna
+3. **Filtrado:** Consulta `user_module_exclusions` y filtra las entidades excluidas
+
+```typescript
+// Ejemplo para proveedores
+export async function getProviders(businessId: string, userId?: string) {
+  // ... obtener proveedores ...
+  
+  // Si hay userId, filtrar por exclusiones
+  if (userId) {
+    const excludedProviderIds = await db.select().from(userModuleExclusions)
+      .where(and(
+        eq(userModuleExclusions.userId, userId),
+        eq(userModuleExclusions.businessId, businessId),
+        eq(userModuleExclusions.module, "providers")
+      ))
+      .then(rows => rows.map(r => r.entityId));
+    providersList = providersList.filter(p => !excludedProviderIds.includes(p.id));
+  }
+  
+  return providersList;
+}
+
+// Función pública para uso en componentes
+export async function getProvidersForCurrentUser(businessId: string) {
+  const user = await getCurrentUser()
+  const userId = user?.id
+  return getProviders(businessId, userId)
+}
+```
+
+### Componentes Actualizados
+
+#### Formularios de Usuarios
+- **`user-registration-form.tsx`:** Usa `getClientsForCurrentUser`, `getProvidersForCurrentUser`, `getProjectsForCurrentUser`
+- **`user-form.tsx`:** Usa las mismas funciones para mostrar solo entidades visibles al admin
+
+#### Páginas de Listado
+- **`/clients`:** Usa `getClientsWithStats(businessId, user.id)`
+- **`/proveedores`:** Usa `getProviders(businessId, user.id)`
+- **`/projects`:** Usa `getProjectsForCurrentUser` via `ProjectList` component
+
+### Lógica de Filtrado
+
+#### Consulta de Exclusiones
+```sql
+SELECT entity_id FROM user_module_exclusions 
+WHERE user_id = ? AND business_id = ? AND module = ?
+```
+
+#### Filtrado en Memoria
+```typescript
+// Obtener IDs excluidos
+const excludedIds = await db.select().from(userModuleExclusions)
+  .where(and(
+    eq(userModuleExclusions.userId, userId),
+    eq(userModuleExclusions.businessId, businessId),
+    eq(userModuleExclusions.module, moduleName)
+  ))
+  .then(rows => rows.map(r => r.entityId));
+
+// Filtrar entidades
+const filteredEntities = allEntities.filter(e => !excludedIds.includes(e.id));
+```
+
+#### Filtrado de Facturas (Caso Especial)
+Las facturas requieren un filtrado más complejo porque están asociadas a entidades:
+
+```typescript
+// Para facturas emitidas: filtrar por clientes y proyectos excluidos
+const excludedClientIds = await db.select().from(userModuleExclusions)
+  .where(and(
+    eq(userModuleExclusions.userId, userId),
+    eq(userModuleExclusions.businessId, businessId),
+    eq(userModuleExclusions.module, "clients")
+  ))
+  .then(rows => rows.map(r => r.entityId));
+
+const excludedProjectIds = await db.select().from(userModuleExclusions)
+  .where(and(
+    eq(userModuleExclusions.userId, userId),
+    eq(userModuleExclusions.businessId, businessId),
+    eq(userModuleExclusions.module, "projects")
+  ))
+  .then(rows => rows.map(r => r.entityId));
+
+// Filtrar facturas que no estén asociadas a entidades excluidas
+const filteredInvoices = allInvoices.filter(invoice => {
+  const isClientExcluded = excludedClientIds.includes(invoice.clientId);
+  const isProjectExcluded = invoice.projectId && excludedProjectIds.includes(invoice.projectId);
+  return !isClientExcluded && !isProjectExcluded;
+});
+```
+
+### Impacto en la Experiencia de Usuario
+
+#### Para Administradores
+- Pueden configurar exclusiones en los formularios de usuarios
+- Ven todas las entidades disponibles para asignar exclusiones
+- Las exclusiones se aplican inmediatamente
+
+#### Para Usuarios Regulares
+- Solo ven las entidades a las que tienen acceso
+- Las facturas asociadas a entidades excluidas también quedan ocultas
+- La experiencia es transparente: no ven lo que no pueden acceder
+
+### Consideraciones Técnicas
+
+#### Rendimiento
+- Las consultas de exclusión se ejecutan una vez por página
+- El filtrado se hace en memoria después de obtener los datos
+- No hay impacto significativo en el rendimiento
+
+#### Seguridad
+- El filtrado se aplica en el servidor, no en el cliente
+- Los usuarios no pueden acceder a entidades excluidas incluso manipulando las URLs
+- Las exclusiones se verifican en cada consulta
+
+#### Mantenibilidad
+- Patrón consistente en todos los módulos
+- Funciones reutilizables y bien documentadas
+- Fácil extensión a nuevos módulos
+
+### Casos de Uso Implementados
+
+#### Escenario 1: Usuario con Acceso Limitado
+- **Configuración:** Usuario con permiso "ver clientes" pero excluido de 2 clientes específicos
+- **Resultado:** Ve todos los clientes excepto los 2 excluidos
+- **Facturas:** No ve facturas asociadas a los clientes excluidos
+
+#### Escenario 2: Usuario con Acceso Completo
+- **Configuración:** Usuario con permisos completos sin exclusiones
+- **Resultado:** Ve todas las entidades del módulo
+- **Facturas:** Ve todas las facturas asociadas
+
+#### Escenario 3: Administrador Configurando Exclusiones
+- **Configuración:** Admin editando permisos de usuario
+- **Resultado:** Ve todas las entidades disponibles para asignar exclusiones
+- **Interfaz:** Checkboxes para seleccionar exclusiones
+
+#### Escenario 4: Usuario con Acceso a Facturas Limitado
+- **Configuración:** Usuario con permiso "ver facturas" pero excluido de 2 clientes específicos
+- **Resultado:** Ve todas las facturas emitidas excepto las asociadas a los clientes excluidos
+- **Facturas recibidas:** Ve todas las facturas recibidas excepto las asociadas a proveedores excluidos
+- **Proyectos:** Si está excluido de un proyecto, no ve facturas asociadas a ese proyecto
+
+### Próximos Pasos Recomendados
+
+#### Mejoras Inmediatas
+1. **Auditoría:** Agregar logs de acceso a entidades excluidas
+2. **Cache:** Implementar cache para consultas de exclusión frecuentes
+3. **UI:** Mejorar la interfaz de configuración de exclusiones
+
+#### Mejoras Futuras
+1. **Exclusiones Temporales:** Permitir exclusiones con fecha de expiración
+2. **Exclusiones por Rol:** Exclusiones automáticas basadas en roles
+3. **Análisis de Uso:** Métricas sobre qué entidades se excluyen más frecuentemente
+4. **Sugerencias Inteligentes:** Recomendar exclusiones basadas en patrones de uso
+
+### Código de Ejemplo para Nuevos Módulos
+
+```typescript
+// Para agregar exclusiones a un nuevo módulo (ej: "products")
+export async function getProducts(businessId: string, userId?: string) {
+  const db = await getDb()
+  let productsList = await db.select().from(products)
+    .where(and(
+      eq(products.businessId, businessId),
+      eq(products.isDeleted, false)
+    ))
+
+  // Aplicar filtrado de exclusiones
+  if (userId) {
+    const excludedProductIds = await db.select().from(userModuleExclusions)
+      .where(and(
+        eq(userModuleExclusions.userId, userId),
+        eq(userModuleExclusions.businessId, businessId),
+        eq(userModuleExclusions.module, "products")
+      ))
+      .then(rows => rows.map(r => r.entityId));
+    productsList = productsList.filter(p => !excludedProductIds.includes(p.id));
+  }
+
+  return productsList
+}
+
+export async function getProductsForCurrentUser(businessId: string) {
+  const user = await getCurrentUser()
+  const userId = user?.id
+  return getProducts(businessId, userId)
+}
+```
+
+---
+
+*Última actualización: Diciembre 2024 (implementación completa de exclusiones por entidad)*

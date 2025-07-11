@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getCurrentUser, hasPermission } from "@/lib/auth"
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
-import { getInvoices, getClientsForBusiness } from "@/app/(dashboard)/invoices/actions"
+import { getInvoicesForCurrentUser, getClientsForBusiness } from "@/app/(dashboard)/invoices/actions"
 
 export default async function InvoicesPage({
   searchParams,
@@ -69,7 +69,7 @@ export default async function InvoicesPage({
   })
 
   // Obtener las facturas iniciales
-  const initialInvoices = await getInvoices({
+  const initialInvoices = await getInvoicesForCurrentUser({
     businessId: activeBusiness.id,
     status,
     clientId,

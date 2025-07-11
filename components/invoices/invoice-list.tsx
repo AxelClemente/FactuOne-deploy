@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Edit, Eye, FileCheck, FileText, MoreHorizontal, Plus, Trash, PlusCircle } from "lucide-react"
-import { getInvoices, updateInvoiceStatus, deleteInvoice } from "@/app/(dashboard)/invoices/actions"
+import { getInvoicesForCurrentUser, updateInvoiceStatus, deleteInvoice } from "@/app/(dashboard)/invoices/actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -38,7 +38,7 @@ export function InvoiceList({ businessId, initialInvoices, canCreateInvoice }: I
         const endDate = searchParams.get("endDate") ? new Date(searchParams.get("endDate")!) : undefined
         const searchTerm = searchParams.get("search") || undefined
 
-        const data = await getInvoices({
+        const data = await getInvoicesForCurrentUser({
           businessId,
           status,
           clientId,
