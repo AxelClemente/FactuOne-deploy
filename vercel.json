@@ -6,11 +6,21 @@
   "devCommand": "npm run dev",
   "regions": ["iad1"],
   "functions": {
-    "app/api/**/*.ts": {
+    "app/api/invoices/[id]/pdf/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/received-invoices/[id]/pdf/route.ts": {
       "maxDuration": 30
     }
   },
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "false",
+    "PUPPETEER_EXECUTABLE_PATH": "/usr/bin/google-chrome-stable"
+  },
+  "build": {
+    "env": {
+      "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "false"
+    }
   }
 } 

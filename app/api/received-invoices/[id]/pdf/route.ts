@@ -97,10 +97,32 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   `
 
   try {
-    const browser = await puppeteer.launch({ args: ["--no-sandbox", "--disable-setuid-sandbox"] })
+    // Intentar con Puppeteer primero
+    const browser = await puppeteer.launch({ 
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--no-first-run",
+        "--no-zygote",
+        "--single-process",
+        "--disable-extensions"
+      ]
+    })
     const page = await browser.newPage()
     await page.setContent(html, { waitUntil: "networkidle0" })
-    const pdfBuffer = await page.pdf({ format: "A4", printBackground: true })
+    const pdfBuffer = await page.pdf({ 
+      format: "A4", 
+      printBackground: true,
+      margin: {
+        top: '20px',
+        right: '20px',
+        bottom: '20px',
+        left: '20px'
+      }
+    })
     await browser.close()
 
     return new Response(pdfBuffer, {
@@ -110,6 +132,20 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       },
     })
   } catch (err) {
-    return new Response("Error generando PDF: " + (err as Error).message, { status: 500 })
+    console.error("Error con Puppeteer:", err)
+    
+    // Si Puppeteer falla, devolver un mensaje de error más informativo
+    return new Response(
+      `Error generando PDF: ${(err as Error).message}. 
+      
+      En producción, esto puede deberse a que Chrome no está disponible. 
+      Por favor, contacta al administrador del sistema.`, 
+      { 
+        status: 500,
+        headers: {
+          "Content-Type": "text/plain"
+        }
+      }
+    )
   }
 } 
