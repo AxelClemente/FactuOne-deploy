@@ -34,9 +34,10 @@ interface UserListProps {
   businessId: string
   currentUserId: string
   isAdmin: boolean
+  ownerId?: string // <-- nuevo prop
 }
 
-export function UserList({ users, businessId, currentUserId, isAdmin }: UserListProps) {
+export function UserList({ users, businessId, currentUserId, isAdmin, ownerId }: UserListProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [isRemoving, setIsRemoving] = useState<string | null>(null)
@@ -103,6 +104,9 @@ export function UserList({ users, businessId, currentUserId, isAdmin }: UserList
               <CardTitle className="text-lg">{user.name}</CardTitle>
               <Badge variant={user.role === "admin" ? "default" : "outline"}>
                 {user.role === "admin" ? "Administrador" : "Contable"}
+                {ownerId && user.id === ownerId && (
+                  <span className="ml-2 text-xs font-semibold text-primary">(Propietario)</span>
+                )}
               </Badge>
             </div>
             <CardDescription>{user.email}</CardDescription>
@@ -113,16 +117,19 @@ export function UserList({ users, businessId, currentUserId, isAdmin }: UserList
               <span className="text-sm text-muted-foreground">{user.id === currentUserId ? "Tú" : "Usuario"}</span>
             </div>
           </CardContent>
-          {isAdmin && (
+          {isAdmin && (user.id !== ownerId || user.id === currentUserId) && (
             <CardFooter className="flex justify-end gap-2 pt-3">
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/users/${user.id}/edit`}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Editar
-                </Link>
-              </Button>
-
-              {user.id !== currentUserId && (
+              {/* Mostrar botón de editar si es el mismo usuario (aunque sea owner) o si no es owner */}
+              {(user.id === currentUserId || user.id !== ownerId) && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/users/${user.id}/edit`}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Editar
+                  </Link>
+                </Button>
+              )}
+              {/* Mostrar botón de eliminar solo si no es owner y no es el usuario actual */}
+              {user.id !== currentUserId && user.id !== ownerId && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" size="sm">

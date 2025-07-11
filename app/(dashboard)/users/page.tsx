@@ -112,7 +112,7 @@ export default async function UsersPage() {
           </Button>
         )}
       </div>
-      <UserList users={users.filter(Boolean)} businessId={activeBusiness.id} currentUserId={currentUser.id} isAdmin={isAdmin} />
+      <UserList users={users.filter(Boolean)} businessId={activeBusiness.id} currentUserId={currentUser.id} isAdmin={isAdmin} ownerId={activeBusiness.ownerId} />
     </div>
   )
 }

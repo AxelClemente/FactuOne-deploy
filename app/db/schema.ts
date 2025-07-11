@@ -38,6 +38,7 @@ export const businesses = table("businesses", {
   fiscalAddress: t.varchar("fiscal_address", { length: 500 }).notNull(),
   phone: t.varchar("phone", { length: 20 }),
   email: t.varchar("email", { length: 255 }),
+  ownerId: t.varchar("owner_id", { length: 36 }), // Nueva columna para el owner
   isDeleted: t.boolean("is_deleted").default(false).notNull(),
   ...timestamps,
 }, (table) => [t.unique().on(table.nif)]);
