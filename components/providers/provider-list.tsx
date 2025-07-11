@@ -18,6 +18,10 @@ interface Provider {
   totalInvoiced?: number
   totalPending?: number
   invoiceCount?: number
+  totalInvoicedBase?: number
+  totalInvoicedIVA?: number
+  totalPendingBase?: number
+  totalPendingIVA?: number
 }
 
 type SortField = "name" | "totalInvoiced" | "totalPending" | "invoiceCount"
@@ -160,6 +164,21 @@ export default function ProviderList({
                 <div className="text-sm">{provider.address}</div>
                 <div className="text-sm">{provider.email}</div>
                 <div className="text-sm">{provider.phone}</div>
+                {/* Totales facturado y pendiente */}
+                <div className="mt-2 flex flex-col gap-1">
+                  <div className="flex gap-4">
+                    <div>
+                      <span className="font-medium">Total facturado</span><br />
+                      <span>{(provider.totalInvoicedBase ?? 0).toLocaleString("es-ES", { style: "currency", currency: "EUR" })} <span className="text-xs text-muted-foreground">(base)</span></span><br />
+                      <span className="text-xs text-muted-foreground">{(provider.totalInvoicedIVA ?? 0).toLocaleString("es-ES", { style: "currency", currency: "EUR" })} (IVA)</span>
+                    </div>
+                    <div>
+                      <span className="font-medium">Total pendiente</span><br />
+                      <span className={((provider.totalPendingBase ?? 0) > 0 ? "text-red-600 font-semibold" : "")}>{(provider.totalPendingBase ?? 0).toLocaleString("es-ES", { style: "currency", currency: "EUR" })} <span className="text-xs text-muted-foreground">(base)</span></span><br />
+                      <span className="text-xs text-muted-foreground">{(provider.totalPendingIVA ?? 0).toLocaleString("es-ES", { style: "currency", currency: "EUR" })} (IVA)</span>
+                    </div>
+                  </div>
+                </div>
                 <div className="flex-1" />
                 <div className="mt-4">
                   <div className="flex gap-2 w-full">

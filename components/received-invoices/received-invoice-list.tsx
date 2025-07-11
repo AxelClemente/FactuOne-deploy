@@ -21,9 +21,10 @@ interface ReceivedInvoiceListProps {
   initialInvoices: any[]
   categories: { id: string; name: string }[]
   canCreateReceivedInvoice: boolean
+  providerId?: string
 }
 
-export function ReceivedInvoiceList({ businessId, initialInvoices, categories, canCreateReceivedInvoice }: ReceivedInvoiceListProps) {
+export function ReceivedInvoiceList({ businessId, initialInvoices, categories, canCreateReceivedInvoice, providerId }: ReceivedInvoiceListProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
@@ -56,6 +57,7 @@ export function ReceivedInvoiceList({ businessId, initialInvoices, categories, c
           startDate,
           endDate,
           searchTerm,
+          providerId,
         })
 
         if (isMounted) {
@@ -106,7 +108,7 @@ export function ReceivedInvoiceList({ businessId, initialInvoices, categories, c
     return () => {
       isMounted = false
     }
-  }, [businessId, searchParams.toString(), toast, sortField, sortOrder])
+  }, [businessId, searchParams.toString(), toast, sortField, sortOrder, providerId])
 
   // Formatear fecha
   const formatDate = (dateString: string | null | undefined) => {

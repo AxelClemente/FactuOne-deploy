@@ -161,6 +161,7 @@ export async function getReceivedInvoices({
   startDate,
   endDate,
   searchTerm,
+  providerId,
 }: {
   businessId: string | number
   status?: string
@@ -168,6 +169,7 @@ export async function getReceivedInvoices({
   startDate?: Date
   endDate?: Date
   searchTerm?: string
+  providerId?: string
 }) {
   const db = await getDb()
   try {
@@ -197,6 +199,9 @@ export async function getReceivedInvoices({
           like(receivedInvoices.number, `%${searchTerm}%`),
         ),
       )
+    }
+    if (providerId) {
+      conditions.push(eq(receivedInvoices.providerId, providerId))
     }
 
     const invoices = await db.select().from(receivedInvoices).where(and(...conditions))

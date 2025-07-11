@@ -8,10 +8,11 @@ import { ReceivedInvoiceList } from "@/components/received-invoices/received-inv
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 
-export default async function ProviderDetailPage({ params }: { params: { id: string } }) {
+export default async function ProviderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const businessId = await getActiveBusiness()
   const providers = businessId ? await getProviders(businessId) : []
-  const provider = providers.find((p) => p.id === params.id)
+  const provider = providers.find((p) => p.id === id)
   if (!provider) {
     return <div className="p-8 text-center text-red-500">Proveedor no encontrado</div>
   }
@@ -79,6 +80,7 @@ export default async function ProviderDetailPage({ params }: { params: { id: str
           initialInvoices={invoices}
           categories={categories}
           canCreateReceivedInvoice={false}
+          providerId={provider.id}
         />
       </div>
     </>
