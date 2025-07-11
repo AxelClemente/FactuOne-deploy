@@ -401,7 +401,15 @@ export function ReceivedInvoiceForm({ categories, providers, projects = [], invo
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.push("/received-invoices")}
+              onClick={() => {
+                // Si estamos editando, volver a los detalles de la factura
+                if (isEditing && invoice?.id) {
+                  router.push(`/received-invoices/${invoice.id}`)
+                } else {
+                  // Si estamos creando, volver a la lista
+                  router.push("/received-invoices")
+                }
+              }}
               disabled={isSubmitting}
             >
               Cancelar

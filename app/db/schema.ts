@@ -128,8 +128,8 @@ export const providers = table("providers", {
   postalCode: t.varchar("postal_code", { length: 10 }),
   city: t.varchar("city", { length: 100 }),
   country: t.varchar("country", { length: 100 }).default("España"),
-  phone: t.varchar("phone", { length: 20 }).notNull(),
-  email: t.varchar("email", { length: 255 }).notNull(),
+  phone: t.varchar("phone", { length: 20 }),
+  email: t.varchar("email", { length: 255 }),
   isDeleted: t.boolean("is_deleted").default(false).notNull(),
   ...timestamps,
 });

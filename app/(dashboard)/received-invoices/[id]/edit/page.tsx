@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
 import { getReceivedInvoiceById, getExpenseCategories } from "@/app/(dashboard)/received-invoices/actions"
 import { getProjectsForBusiness } from "@/app/(dashboard)/invoices/actions"
+import { getProviders } from "@/app/(dashboard)/proveedores/actions"
 
 export default async function EditReceivedInvoicePage({ params }: { params: { id: string } }) {
   // Obtener el usuario actual
@@ -40,6 +41,10 @@ export default async function EditReceivedInvoicePage({ params }: { params: { id
     // Obtener las categorías de gastos y mapearlas correctamente
     const categories = (await getExpenseCategories()).map(cat => ({ id: cat, name: cat }));
 
+    // Obtener los proveedores del negocio activo
+    const providers = await getProviders(business.id)
+    const providerOptions = providers.map((p) => ({ id: p.id, name: p.name, nif: p.nif }))
+
     // Obtener los proyectos del negocio activo
     const projects = await getProjectsForBusiness(business.id)
 
@@ -57,7 +62,7 @@ export default async function EditReceivedInvoicePage({ params }: { params: { id
           <p className="text-muted-foreground">Modifica los detalles de la factura recibida</p>
         </div>
 
-        <ReceivedInvoiceForm categories={categories} invoice={invoice} projects={projects} />
+        <ReceivedInvoiceForm categories={categories} providers={providerOptions} invoice={invoice} projects={projects} />
       </div>
     )
   } catch (error) {

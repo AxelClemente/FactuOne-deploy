@@ -7,10 +7,15 @@ Permitir a los usuarios programar la emisión automática de facturas a clientes
 
 ## Logros recientes
 
-- Sección de automatizaciones implementada en el dashboard, con listado, creación y edición de automatizaciones.
+- Sección de automatizaciones implementada en el dashboard, con listado, creación, edición y **eliminación real** de automatizaciones.
+- Permisos granulares: solo los usuarios con permiso pueden crear, editar o eliminar automatizaciones.
 - Formulario unificado para crear y editar automatizaciones, con validación y guardado en base de datos.
-- Menú de acciones en cada automatización para editar (y próximamente eliminar o pausar).
-- Diseño consistente y experiencia de usuario alineada con el resto del sistema.
+- Menú de acciones en cada automatización para ver detalle, editar y eliminar.
+- Página de **detalle de automatización** con información completa y profesional.
+- **Historial de ejecuciones**: muestra todas las ejecuciones de la automatización, con fechas formateadas, estado, factura generada y errores si los hay.
+- UI profesional: bordes dashed, botón de volver, diseño consistente y experiencia de usuario alineada con el resto del sistema.
+- Navegación intuitiva: desde el listado puedes acceder a editar, eliminar o ver el historial de cada automatización.
+- Robustez en el manejo de fechas y errores: nunca se renderizan objetos Date directamente, evitando errores de React y asegurando compatibilidad cross-browser.
 
 ---
 
@@ -63,13 +68,11 @@ Permitir a los usuarios programar la emisión automática de facturas a clientes
 ---
 
 ## Siguientes pasos
-1. Implementar la lógica real de eliminación de automatizaciones.
-2. Añadir opción de pausar/reanudar automatizaciones.
-3. Mostrar historial de ejecuciones y facturas generadas por cada automatización.
-4. Integrar el botón "Automatizar" en la edición de facturas.
-5. Desarrollar el cron job backend para emisión automática.
-6. Integrar notificaciones y logs de auditoría.
-7. Mejorar la UX y cumplimiento legal (origen de factura, exportación, etc.).
+1. Añadir opción de pausar/reanudar automatizaciones.
+2. Integrar el botón "Automatizar" en la edición de facturas.
+3. Desarrollar el cron job backend para emisión automática.
+4. Integrar notificaciones y logs de auditoría.
+5. Mejorar la UX y cumplimiento legal (origen de factura, exportación, etc.).
 
 ---
 
