@@ -5,7 +5,9 @@ import { v4 as uuidv4 } from "uuid"
 import { getDb } from "@/lib/db"
 import { getCurrentUser, hasPermission } from "@/lib/auth"
 import { providers } from "@/app/db/schema"
-import { eq, and } from "drizzle-orm"
+import { eq, and, inArray } from "drizzle-orm"
+import { sql } from "drizzle-orm"
+import { receivedInvoices } from "@/app/db/schema"
 
 const providerSchema = z.object({
   name: z.string().min(1, "El nombre es obligatorio"),
@@ -14,14 +16,18 @@ const providerSchema = z.object({
   postalCode: z.string().optional(),
   city: z.string().optional(),
   country: z.string().optional(),
-  phone: z.string().min(1, "El teléfono es obligatorio"),
-  email: z.string().email("Email inválido"),
+  phone: z.string().optional().or(z.literal("")),
+  email: z.string().optional().or(z.literal("")).refine(
+    (val) => !val || /^[^@]+@[^@]+\.[^@]+$/.test(val),
+    { message: "Email inválido" }
+  ),
 })
 
 export async function getProviders(businessId: string) {
   try {
     const db = await getDb()
-    return await db
+    // Obtener proveedores
+    const providersList = await db
       .select()
       .from(providers)
       .where(
@@ -30,6 +36,27 @@ export async function getProviders(businessId: string) {
           eq(providers.isDeleted, false)
         )
       )
+    // Obtener el número de facturas asociadas a cada proveedor
+    const providerIds = providersList.map((p) => p.id)
+    let invoiceCounts: Record<string, number> = {}
+    if (providerIds.length > 0) {
+      const invoiceCountRows = (await db
+        .select({ providerId: receivedInvoices.providerId, count: sql`COUNT(*)` })
+        .from(receivedInvoices)
+        .where(
+          and(
+            eq(receivedInvoices.businessId, businessId),
+            eq(receivedInvoices.isDeleted, false),
+            inArray(receivedInvoices.providerId, providerIds)
+          )
+        )
+        .groupBy(receivedInvoices.providerId)) as { providerId: string; count: number }[]
+      invoiceCountRows.forEach((row) => {
+        invoiceCounts[row.providerId] = Number(row.count)
+      })
+    }
+    // Añadir invoiceCount a cada proveedor
+    return providersList.map((p) => ({ ...p, invoiceCount: invoiceCounts[p.id] || 0 }))
   } catch {
     return []
   }

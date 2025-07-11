@@ -172,7 +172,9 @@ export default function ProviderList({
                     <Button variant="outline" size="sm" className="flex-1" asChild>
                       <Link href={`/proveedores/${provider.id}`}>
                         <CreditCard className="mr-2 h-4 w-4" />
-                        Ver facturas
+                        {provider.invoiceCount === 1
+                          ? "1 factura"
+                          : `${provider.invoiceCount ?? 0} facturas`}
                       </Link>
                     </Button>
                   </div>
