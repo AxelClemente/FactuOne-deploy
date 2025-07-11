@@ -1,5 +1,5 @@
 import { getDb } from "@/lib/db";
-import { auditLogs, type NewAuditLog } from "@/app/db/schema";
+import { auditLogs, type NewAuditLog, users } from "@/app/db/schema";
 import { getCurrentUser } from "./auth";
 import { getActiveBusiness } from "./getActiveBusiness";
 import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
@@ -124,7 +124,16 @@ export async function getAuditLogs(
     offset = 0
   } = options;
 
-  let query = (await getDb()).select().from(auditLogs).where(eq(auditLogs.businessId, businessId));
+  const db = await getDb();
+  let query = db
+    .select({
+      ...auditLogs,
+      userName: users.name,
+      userEmail: users.email
+    })
+    .from(auditLogs)
+    .leftJoin(users, eq(auditLogs.userId, users.id))
+    .where(eq(auditLogs.businessId, businessId));
 
   if (module) {
     query = query.where(eq(auditLogs.module, module));

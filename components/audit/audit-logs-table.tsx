@@ -144,7 +144,9 @@ export async function AuditLogsTable() {
                     {formatDate(log.createdAt)}
                   </TableCell>
                   <TableCell className="font-mono text-sm">
-                    {log.userId ? log.userId.substring(0, 8) + '...' : 'Sistema'}
+                    {log.userId
+                      ? (log.userName || log.userEmail || (log.userId.substring(0, 8) + '...'))
+                      : 'Sistema'}
                   </TableCell>
                   <TableCell>
                     {getActionBadge(log.action)}
