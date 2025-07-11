@@ -35,7 +35,7 @@ export default async function EditUserPage({ params }: EditUserPageProps) {
   const currentUserBusiness = await db.query.businessUsers.findFirst({
     where: (businessUsers, { eq }) => 
       eq(businessUsers.userId, currentUser.id) && 
-      eq(businessUsers.businessId, activeBusiness.id) && 
+      eq(businessUsers.businessId, activeBusiness) && 
       eq(businessUsers.role, "admin"),
   })
 
@@ -50,7 +50,7 @@ export default async function EditUserPage({ params }: EditUserPageProps) {
   const userBusiness = await db.query.businessUsers.findFirst({
     where: (businessUsers, { eq }) => 
       eq(businessUsers.userId, id) && 
-      eq(businessUsers.businessId, activeBusiness.id),
+      eq(businessUsers.businessId, activeBusiness),
   })
 
   const userWithRole = {

@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { ProjectStatusBadge } from "@/components/projects/project-status-badge"
-import { changeProjectStatus, deleteProject, getProjects } from "@/app/(dashboard)/projects/actions"
+import { changeProjectStatus, deleteProject, getProjectsForCurrentUser } from "@/app/(dashboard)/projects/actions"
 
 interface Client {
   id: string
@@ -51,7 +51,7 @@ export function ProjectList({ canCreateProject }: { canCreateProject: boolean })
         const endDate = searchParams.get("endDate") || undefined
         const search = searchParams.get("search") || undefined
 
-        const projectsData = await getProjects({
+        const projectsData = await getProjectsForCurrentUser({
           status,
           clientId,
           startDate,

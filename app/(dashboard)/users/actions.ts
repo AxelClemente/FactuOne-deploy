@@ -23,6 +23,7 @@ const registerUserSchema = z.object({
       canDelete: z.boolean(),
     })
   ),
+  exclusions: z.record(z.array(z.string())).optional(),
 })
 
 type RegisterUserInput = z.infer<typeof registerUserSchema>
@@ -149,6 +150,21 @@ export async function registerUser(input: RegisterUserInput): Promise<RegisterUs
       });
     }
 
+    // En registerUser y updateUser, manejar exclusions
+    if (input.exclusions) {
+      for (const [module, ids] of Object.entries(input.exclusions)) {
+        for (const entityId of ids) {
+          await db.insert(schema.userModuleExclusions).values({
+            id: uuidv4(),
+            userId,
+            businessId: validatedData.businessId,
+            module,
+            entityId,
+          });
+        }
+      }
+    }
+
     // Revalidar las rutas para actualizar la UI
     revalidatePath("/users")
     revalidatePath(`/businesses/${validatedData.businessId}/users`)
@@ -229,7 +245,7 @@ export async function getUserById(userId: string) {
 }
 
 // Actualizar un usuario
-export async function updateUser(userId: string, businessId: string, data: { name?: string; email?: string; role?: "admin" | "accountant"; permissions?: Record<string, { canView: boolean; canCreate: boolean; canEdit: boolean; canDelete: boolean }> }) {
+export async function updateUser(userId: string, businessId: string, data: { name?: string; email?: string; role?: "admin" | "accountant"; permissions?: Record<string, { canView: boolean; canCreate: boolean; canEdit: boolean; canDelete: boolean }>; exclusions?: Record<string, string[]> }) {
   try {
     const db = await getDb()
     const { name, email, role, permissions } = data
@@ -273,6 +289,29 @@ export async function updateUser(userId: string, businessId: string, data: { nam
           canEdit: perm.canEdit,
           canDelete: perm.canDelete,
         });
+      }
+    }
+
+    // Al actualizar usuario
+    if (data.exclusions) {
+      // Eliminar exclusiones previas
+      await db.delete(schema.userModuleExclusions).where(
+        and(
+          eq(schema.userModuleExclusions.userId, userId),
+          eq(schema.userModuleExclusions.businessId, businessId)
+        )
+      );
+      // Insertar nuevas exclusiones
+      for (const [module, ids] of Object.entries(data.exclusions)) {
+        for (const entityId of ids) {
+          await db.insert(schema.userModuleExclusions).values({
+            id: uuidv4(),
+            userId,
+            businessId,
+            module,
+            entityId,
+          });
+        }
       }
     }
 

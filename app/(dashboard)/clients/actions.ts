@@ -2,7 +2,7 @@
 
 import { z } from "zod"
 import { getDb } from "@/lib/db"
-import { clients, invoices } from "@/app/db/schema"
+import { clients, invoices, userModuleExclusions } from "@/app/db/schema"
 import { eq, and, ne } from "drizzle-orm"
 import { v4 as uuidv4 } from "uuid"
 import { createNotification } from "@/lib/notifications"
@@ -171,14 +171,28 @@ export async function updateClient(clientId: string, formData: ClientFormData): 
 }
 
 // Acción para obtener clientes con estadísticas
-export async function getClientsWithStats(businessId: string) {
+export async function getClientsWithStats(businessId: string, userId?: string) {
   console.log("Obteniendo clientes con estadísticas para el negocio:", businessId)
 
   try {
     const db = await getDb()
     
     // Obtener todos los clientes del negocio
-    const clientsList = await db.select().from(clients).where(eq(clients.businessId, businessId))
+    let clientsList = await db.select().from(clients).where(eq(clients.businessId, businessId))
+
+    // Si hay userId, filtrar por exclusiones
+    if (userId) {
+      const excludedClientIds = await db.select().from(userModuleExclusions)
+        .where(
+          and(
+            eq(userModuleExclusions.userId, userId),
+            eq(userModuleExclusions.businessId, businessId),
+            eq(userModuleExclusions.module, "clients")
+          )
+        )
+        .then(rows => rows.map(r => r.entityId));
+      clientsList = clientsList.filter(c => !excludedClientIds.includes(c.id));
+    }
 
     // Para cada cliente, calcular estadísticas basadas en sus facturas
     const clientsWithStats = await Promise.all(
@@ -259,4 +273,12 @@ export async function getClients(businessId: string) {
     console.error("Error al obtener clientes:", error)
     throw new Error("No se pudieron obtener los clientes")
   }
+}
+
+// Obtener clientes para el usuario actual (versión pública)
+export async function getClientsForCurrentUser(businessId: string) {
+  const user = await getCurrentUser()
+  const userId = user?.id
+
+  return getClientsWithStats(businessId, userId)
 }

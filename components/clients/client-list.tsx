@@ -34,7 +34,7 @@ type SortField = "name" | "totalInvoiced" | "totalPending" | "invoiceCount"
 type SortOrder = "asc" | "desc"
 type FilterTab = "all" | "overdue" | "top" | "noInvoices"
 
-export function ClientList({ businessId, canCreateClient = false }: { businessId: string, canCreateClient?: boolean }) {
+export function ClientList({ businessId, canCreateClient = false, initialClients }: { businessId: string, canCreateClient?: boolean, initialClients?: ClientWithStats[] }) {
   const router = useRouter()
   const { toast } = useToast()
   const [clients, setClients] = useState<ClientWithStats[]>([])
@@ -52,7 +52,12 @@ export function ClientList({ businessId, canCreateClient = false }: { businessId
   useEffect(() => {
     async function loadClients() {
       try {
-        const clientsData = await getClientsWithStats(businessId)
+        let clientsData: ClientWithStats[] = [];
+        if (initialClients) {
+          clientsData = initialClients;
+        } else {
+          clientsData = await getClientsWithStats(businessId);
+        }
         const clientsDataWithStringId = clientsData.map(client => ({
           ...client,
           id: client.id.toString()
@@ -72,7 +77,7 @@ export function ClientList({ businessId, canCreateClient = false }: { businessId
     }
 
     loadClients()
-  }, [businessId, toast])
+  }, [businessId, toast, initialClients])
 
   // Filtrar clientes cuando cambia la búsqueda o la pestaña activa
   useEffect(() => {

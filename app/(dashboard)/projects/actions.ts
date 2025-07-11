@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { and, eq, gte, like, lte, sql } from "drizzle-orm"
 import { getDb } from "@/lib/db"
-import { projects, clients, invoices, receivedInvoices } from "@/app/db/schema"
+import { projects, clients, invoices, receivedInvoices, userModuleExclusions } from "@/app/db/schema"
 import { getActiveBusiness } from "@/lib/getActiveBusiness"
 import { getCurrentUser, hasPermission } from "@/lib/auth"
 import { uploadContract } from "@/lib/upload"
@@ -182,19 +182,21 @@ export async function changeProjectStatus(id: string, status: "won" | "lost" | "
   }
 }
 
-// Obtener proyectos con filtros
+// Obtener proyectos con filtros (versión para uso interno)
 export async function getProjects({
   status,
   clientId,
   startDate,
   endDate,
   search,
+  userId,
 }: {
   status?: string
   clientId?: string
   startDate?: string
   endDate?: string
   search?: string
+  userId?: string
 } = {}) {
   const db = await getDb()
   const activeBusiness = await getActiveBusiness()
@@ -226,7 +228,7 @@ export async function getProjects({
       conditions.push(like(projects.name, `%${search}%`))
     }
 
-    const projectList = await db
+    let projectList = await db
       .select({
         id: projects.id,
         name: projects.name,
@@ -243,11 +245,52 @@ export async function getProjects({
       .leftJoin(clients, eq(projects.clientId, clients.id))
       .where(and(...conditions))
 
+    // Si hay userId, filtrar por exclusiones
+    if (userId) {
+      const excludedProjectIds = await db.select().from(userModuleExclusions)
+        .where(
+          and(
+            eq(userModuleExclusions.userId, userId),
+            eq(userModuleExclusions.businessId, businessId),
+            eq(userModuleExclusions.module, "projects")
+          )
+        )
+        .then(rows => rows.map(r => r.entityId));
+      projectList = projectList.filter(p => !excludedProjectIds.includes(p.id));
+    }
+
     return projectList
   } catch (error) {
     console.error("Error obteniendo proyectos:", error)
     return []
   }
+}
+
+// Obtener proyectos con filtros para el usuario actual (versión pública)
+export async function getProjectsForCurrentUser({
+  status,
+  clientId,
+  startDate,
+  endDate,
+  search,
+}: {
+  status?: string
+  clientId?: string
+  startDate?: string
+  endDate?: string
+  search?: string
+} = {}) {
+  const user = await getCurrentUser()
+  const userId = user?.id
+
+  return getProjects({
+    status,
+    clientId,
+    startDate,
+    endDate,
+    search,
+    userId,
+  })
 }
 
 // Obtener un proyecto por su ID

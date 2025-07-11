@@ -4,7 +4,7 @@ import { z } from "zod"
 import { v4 as uuidv4 } from "uuid"
 import { getDb } from "@/lib/db"
 import { getCurrentUser, hasPermission } from "@/lib/auth"
-import { providers } from "@/app/db/schema"
+import { providers, userModuleExclusions } from "@/app/db/schema"
 import { eq, and, inArray } from "drizzle-orm"
 import { sql } from "drizzle-orm"
 import { receivedInvoices } from "@/app/db/schema"
@@ -23,11 +23,11 @@ const providerSchema = z.object({
   ),
 })
 
-export async function getProviders(businessId: string) {
+export async function getProviders(businessId: string, userId?: string) {
   try {
     const db = await getDb()
     // Obtener proveedores
-    const providersList = await db
+    let providersList = await db
       .select()
       .from(providers)
       .where(
@@ -36,6 +36,20 @@ export async function getProviders(businessId: string) {
           eq(providers.isDeleted, false)
         )
       )
+
+    // Si hay userId, filtrar por exclusiones
+    if (userId) {
+      const excludedProviderIds = await db.select().from(userModuleExclusions)
+        .where(
+          and(
+            eq(userModuleExclusions.userId, userId),
+            eq(userModuleExclusions.businessId, businessId),
+            eq(userModuleExclusions.module, "providers")
+          )
+        )
+        .then(rows => rows.map(r => r.entityId));
+      providersList = providersList.filter(p => !excludedProviderIds.includes(p.id));
+    }
     // Obtener el número de facturas y totales asociadas a cada proveedor
     const providerIds = providersList.map((p) => p.id)
     let invoiceCounts: Record<string, number> = {}
@@ -150,4 +164,12 @@ export async function deleteProvider(providerId: string, businessId: string) {
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "Error al eliminar proveedor" }
   }
+}
+
+// Obtener proveedores para el usuario actual (versión pública)
+export async function getProvidersForCurrentUser(businessId: string) {
+  const user = await getCurrentUser()
+  const userId = user?.id
+
+  return getProviders(businessId, userId)
 } 

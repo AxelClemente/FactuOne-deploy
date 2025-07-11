@@ -29,7 +29,7 @@ export default async function ProveedoresPage() {
   console.log("[PROVIDERS PAGE] user.id type:", typeof user.id)
   console.log("[PROVIDERS PAGE] activeBusiness.id type:", typeof activeBusiness.id)
 
-  const providers = activeBusiness ? await getProviders(activeBusiness.id) : []
+  const providers = activeBusiness ? await getProviders(activeBusiness.id, user.id) : []
 
   return (
     <div className="w-full px-4 py-4 md:px-6">

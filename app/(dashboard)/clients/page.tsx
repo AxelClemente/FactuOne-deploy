@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { getCurrentUser, hasPermission } from "@/lib/auth"
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
 import { PlusCircle } from "lucide-react"
+import { getClientsWithStats } from "@/app/(dashboard)/clients/actions"
 
 export default async function ClientsPage() {
   console.log("[SERVER] Cargando página de clientes")
@@ -27,6 +28,9 @@ export default async function ClientsPage() {
     redirect("/businesses")
   }
 
+  // Obtener clientes visibles según exclusiones
+  const clientsWithStats = await getClientsWithStats(activeBusiness.id.toString(), user.id)
+
   console.log("[DEBUG] user.id:", user.id)
   console.log("[DEBUG] activeBusiness.id:", activeBusiness.id)
   // Comprobar permiso granular para crear clientes
@@ -46,7 +50,7 @@ export default async function ClientsPage() {
       </div>
 
       <Suspense fallback={<ClientListSkeleton />}>
-        <ClientList businessId={activeBusiness.id.toString()} canCreateClient={canCreateClient} />
+        <ClientList businessId={activeBusiness.id.toString()} canCreateClient={canCreateClient} initialClients={clientsWithStats} />
       </Suspense>
     </div>
   )

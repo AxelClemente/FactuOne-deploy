@@ -2,6 +2,7 @@ import React from "react"
 import { getProviders } from "../actions"
 import { getActiveBusiness } from "@/lib/getActiveBusiness"
 import { getDb } from "@/lib/db"
+import { getCurrentUser } from "@/lib/auth"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { ReceivedInvoiceList } from "@/components/received-invoices/received-invoice-list"
@@ -10,8 +11,9 @@ import { ArrowLeft } from "lucide-react"
 
 export default async function ProviderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const user = await getCurrentUser()
   const businessId = await getActiveBusiness()
-  const providers = businessId ? await getProviders(businessId) : []
+  const providers = businessId ? await getProviders(businessId, user?.id) : []
   const provider = providers.find((p) => p.id === id)
   if (!provider) {
     return <div className="p-8 text-center text-red-500">Proveedor no encontrado</div>

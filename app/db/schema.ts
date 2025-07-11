@@ -244,6 +244,17 @@ export const automationExecutions = table("automation_executions", {
   updatedAt: t.datetime("updated_at").default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`).notNull(),
 });
 
+// Exclusiones de entidades por usuario, negocio y módulo
+export const userModuleExclusions = table("user_module_exclusions", {
+  id: t.varchar("id", { length: 36 }).primaryKey(),
+  userId: t.varchar("user_id", { length: 36 }).notNull().references(() => users.id),
+  businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
+  module: t.varchar("module", { length: 50 }).notNull(), // 'clients', 'providers', 'projects'
+  entityId: t.varchar("entity_id", { length: 36 }).notNull(),
+  createdAt: t.datetime("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: t.datetime("updated_at").default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`).notNull(),
+}, (table) => [t.unique().on(table.userId, table.businessId, table.module, table.entityId)]);
+
 // DEFINICIÓN DE RELACIONES
 export const clientsRelations = relations(clients, ({ many }) => ({
   invoices: many(invoices),
