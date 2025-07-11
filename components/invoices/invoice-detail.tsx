@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Edit, FileCheck, FileX, Printer } from "lucide-react"
+import { Edit, FileCheck, FileX } from "lucide-react"
 import { updateInvoiceStatus } from "@/app/(dashboard)/invoices/actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -67,13 +67,13 @@ export function InvoiceDetail({ invoice, client, lines }: InvoiceDetailProps) {
     })
   }
 
-  // Simular impresión
-  const handlePrint = () => {
-    toast({
-      title: "Impresión simulada",
-      description: "En una implementación real, aquí se abriría el diálogo de impresión",
-    })
-  }
+  // Simular impresión (OCULTO TEMPORALMENTE)
+  // const handlePrint = () => {
+  //   toast({
+  //     title: "Impresión simulada",
+  //     description: "En una implementación real, aquí se abriría el diálogo de impresión",
+  //   })
+  // }
 
   // Formatear moneda
   const formatCurrency = (amount: number) => {
@@ -123,10 +123,12 @@ export function InvoiceDetail({ invoice, client, lines }: InvoiceDetailProps) {
           </Button>
 
           {/* Botones de acción */}
+          {/* Botón de impresión oculto temporalmente
           <Button variant="outline" size="sm" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" />
             Imprimir
           </Button>
+          */}
 
           {invoice.status !== "paid" && invoice.status !== "cancelled" && (
             <Button variant="outline" size="sm" asChild>
