@@ -9,6 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import Link from "next/link"
 
 export function InfoDropdown() {
   return (
@@ -21,18 +22,21 @@ export function InfoDropdown() {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuItem onClick={() => (window.location.href = "/profile")}>Mis datos</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => window.open("/legal/privacy", "_blank")}>
-          <span>Política de privacidad</span>
-          <ExternalLink className="ml-auto h-3 w-3" />
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => window.open("/legal/notice", "_blank")}>
-          <span>Aviso legal</span>
-          <ExternalLink className="ml-auto h-3 w-3" />
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => window.open("/legal/terms", "_blank")}>
-          <span>Términos de uso</span>
-          <ExternalLink className="ml-auto h-3 w-3" />
-        </DropdownMenuItem>
+        <Link href="/privacy" passHref legacyBehavior>
+          <DropdownMenuItem asChild>
+            <a>Política de privacidad</a>
+          </DropdownMenuItem>
+        </Link>
+        <Link href="/legal" passHref legacyBehavior>
+          <DropdownMenuItem asChild>
+            <a>Aviso legal</a>
+          </DropdownMenuItem>
+        </Link>
+        <Link href="/terms" passHref legacyBehavior>
+          <DropdownMenuItem asChild>
+            <a>Términos de uso</a>
+          </DropdownMenuItem>
+        </Link>
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled>
           <span className="text-muted-foreground">Versión v1.2.4</span>
