@@ -254,25 +254,14 @@ export async function getInvoices({
     const whereClauses = [eq(invoices.businessId, businessId)]
     if (status) whereClauses.push(eq(invoices.status, status))
     if (clientId) whereClauses.push(eq(invoices.clientId, clientId))
-    if (startDate && endDate && startDate.toDateString() === endDate.toDateString()) {
-      // Fecha exacta: filtrar solo ese día usando fecha local
-      const start = new Date(startDate)
-      start.setHours(0, 0, 0, 0)
-      const end = new Date(endDate)
-      end.setHours(23, 59, 59, 999)
-      whereClauses.push(gte(invoices.date, start))
-      whereClauses.push(lte(invoices.date, end))
-    } else {
-      if (startDate) {
-        const start = new Date(startDate)
-        start.setHours(0, 0, 0, 0)
-        whereClauses.push(gte(invoices.date, start))
-      }
-      if (endDate) {
-        const end = new Date(endDate)
-        end.setHours(23, 59, 59, 999)
-        whereClauses.push(lte(invoices.date, end))
-      }
+    // Simplificar la lógica de fechas - usar directamente las fechas que vienen del frontend
+    if (startDate) {
+      console.log("[ACTIONS] StartDate recibida:", startDate.toISOString())
+      whereClauses.push(gte(invoices.date, startDate))
+    }
+    if (endDate) {
+      console.log("[ACTIONS] EndDate recibida:", endDate.toISOString())
+      whereClauses.push(lte(invoices.date, endDate))
     }
     if (searchTerm) {
       const searchValue = `%${searchTerm.toLowerCase()}%`
@@ -301,6 +290,12 @@ export async function getInvoices({
       .leftJoin(clients, eq(invoices.clientId, clients.id))
       .where(and(...whereClauses))
       .orderBy(sql`${invoices.date} desc`)
+
+    // Log para debugging
+    console.log("[ACTIONS] Total facturas encontradas:", allInvoices.length)
+    allInvoices.forEach(invoice => {
+      console.log(`[ACTIONS] Factura ${invoice.number}: ${invoice.date}`)
+    })
 
     // Si hay userId, filtrar por exclusiones de clientes y proyectos
     if (userId) {

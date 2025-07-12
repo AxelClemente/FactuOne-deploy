@@ -34,8 +34,23 @@ export function InvoiceList({ businessId, initialInvoices, canCreateInvoice }: I
         // Extraer los valores de los parámetros de búsqueda una sola vez
         const status = searchParams.get("status") || undefined
         const clientId = searchParams.get("clientId") || undefined
-        const startDate = searchParams.get("startDate") ? new Date(searchParams.get("startDate")!) : undefined
-        const endDate = searchParams.get("endDate") ? new Date(searchParams.get("endDate")!) : undefined
+        
+        // Manejar fechas de forma consistente con el page.tsx
+        let startDate: Date | undefined
+        let endDate: Date | undefined
+        
+        const startDateStr = searchParams.get("startDate")
+        if (startDateStr) {
+          const [year, month, day] = startDateStr.split('-').map(Number)
+          startDate = new Date(year, month - 1, day, 0, 0, 0, 0)
+        }
+        
+        const endDateStr = searchParams.get("endDate")
+        if (endDateStr) {
+          const [year, month, day] = endDateStr.split('-').map(Number)
+          endDate = new Date(year, month - 1, day, 23, 59, 59, 999)
+        }
+        
         const searchTerm = searchParams.get("search") || undefined
 
         const data = await getInvoicesForCurrentUser({

@@ -39,7 +39,7 @@ export function InvoiceFilters({ clients }: InvoiceFiltersProps) {
 
   // Opciones de estado
   const statusOptions = [
-    { value: "all", label: "Todos los estados" },
+    { value: "all", label: "Estados" },
     { value: "draft", label: "Borrador" },
     { value: "sent", label: "Enviada" },
     { value: "paid", label: "Pagada" },
@@ -65,7 +65,9 @@ export function InvoiceFilters({ clients }: InvoiceFiltersProps) {
       const year = startDate.getFullYear()
       const month = (startDate.getMonth() + 1).toString().padStart(2, "0")
       const day = startDate.getDate().toString().padStart(2, "0")
-      current.set("startDate", `${year}-${month}-${day}`)
+      const dateStr = `${year}-${month}-${day}`
+      console.log("[FILTER] StartDate to URL:", startDate, "-> string:", dateStr)
+      current.set("startDate", dateStr)
     }
 
     if (endDate) {
@@ -73,7 +75,9 @@ export function InvoiceFilters({ clients }: InvoiceFiltersProps) {
       const year = endDate.getFullYear()
       const month = (endDate.getMonth() + 1).toString().padStart(2, "0")
       const day = endDate.getDate().toString().padStart(2, "0")
-      current.set("endDate", `${year}-${month}-${day}`)
+      const dateStr = `${year}-${month}-${day}`
+      console.log("[FILTER] EndDate to URL:", endDate, "-> string:", dateStr)
+      current.set("endDate", dateStr)
     }
 
     if (searchTerm) {
@@ -144,7 +148,7 @@ export function InvoiceFilters({ clients }: InvoiceFiltersProps) {
             <SelectValue placeholder="Cliente" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos los clientes</SelectItem>
+            <SelectItem value="all">Clientes</SelectItem>
             {clients.map((client) => (
               <SelectItem key={client.id} value={client.id}>
                 {client.name}
@@ -172,7 +176,10 @@ export function InvoiceFilters({ clients }: InvoiceFiltersProps) {
                   to: endDate,
                 }}
                 onSelect={(range) => {
+                  console.log("[CALENDAR] Range seleccionado:", range)
                   if (range) {
+                    console.log("[CALENDAR] From:", range.from)
+                    console.log("[CALENDAR] To:", range.to)
                     setStartDate(range.from)
                     setEndDate(range.to)
                   }

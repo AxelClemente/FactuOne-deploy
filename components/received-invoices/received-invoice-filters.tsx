@@ -4,14 +4,14 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { CalendarIcon, Check, ChevronsUpDown, Search, X } from "lucide-react"
+import { CalendarIcon, Search, X } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
 interface ReceivedInvoiceFiltersProps {
@@ -34,14 +34,12 @@ export function ReceivedInvoiceFilters({ categories }: ReceivedInvoiceFiltersPro
   )
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "")
 
-  // Estado para los popover
-  const [categoryOpen, setCategoryOpen] = useState(false)
-  const [statusOpen, setStatusOpen] = useState(false)
+  // Estado para el popover de fechas
   const [dateOpen, setDateOpen] = useState(false)
 
   // Opciones de estado
   const statusOptions = [
-    { value: "all", label: "Todos los estados" },
+    { value: "all", label: "Estados" },
     { value: "pending", label: "Pendiente" },
     { value: "recorded", label: "Contabilizada" },
     { value: "rejected", label: "Rechazada" },
@@ -51,30 +49,30 @@ export function ReceivedInvoiceFilters({ categories }: ReceivedInvoiceFiltersPro
   const updateSearchParams = () => {
     const current = new URLSearchParams()
 
-    // Solo añadir parámetros que no sean valores por defecto
     if (status && status !== "all") {
       current.set("status", status)
     }
-
     if (category && category !== "all") {
       current.set("category", category)
     }
-
     if (startDate) {
-      current.set("startDate", startDate.toISOString().split("T")[0])
+      // Usar fecha local para evitar problemas de zona horaria
+      const year = startDate.getFullYear()
+      const month = (startDate.getMonth() + 1).toString().padStart(2, "0")
+      const day = startDate.getDate().toString().padStart(2, "0")
+      current.set("startDate", `${year}-${month}-${day}`)
     }
-
     if (endDate) {
-      current.set("endDate", endDate.toISOString().split("T")[0])
+      const year = endDate.getFullYear()
+      const month = (endDate.getMonth() + 1).toString().padStart(2, "0")
+      const day = endDate.getDate().toString().padStart(2, "0")
+      current.set("endDate", `${year}-${month}-${day}`)
     }
-
     if (searchTerm) {
       current.set("search", searchTerm)
     }
-
     const search = current.toString()
     const query = search ? `?${search}` : ""
-
     router.push(`${pathname}${query}`, { scroll: false })
   }
 
@@ -117,80 +115,33 @@ export function ReceivedInvoiceFilters({ categories }: ReceivedInvoiceFiltersPro
     <div className="space-y-4">
       <div className="flex flex-col gap-4 md:flex-row md:items-center">
         {/* Filtro por estado */}
-        <Popover open={statusOpen} onOpenChange={setStatusOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="w-full justify-between md:w-[200px]">
-              {statusOptions.find((opt) => opt.value === status)?.label || "Estado"}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[200px] p-0">
-            <Command>
-              <CommandList>
-                <CommandGroup>
-                  {statusOptions.map((option) => (
-                    <CommandItem
-                      key={option.value}
-                      value={option.value}
-                      onSelect={(value) => {
-                        setStatus(value)
-                        setStatusOpen(false)
-                      }}
-                    >
-                      <Check className={cn("mr-2 h-4 w-4", status === option.value ? "opacity-100" : "opacity-0")} />
-                      {option.label}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+        <Select value={status} onValueChange={setStatus}>
+          <SelectTrigger className="w-full md:w-[200px]">
+            <SelectValue placeholder="Estado" />
+          </SelectTrigger>
+          <SelectContent>
+            {statusOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {/* Filtro por categoría */}
-        <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="w-full justify-between md:w-[250px]">
-              {category !== "all"
-                ? categories.find((c) => c.id === category)?.name || "Categoría"
-                : "Todas las categorías"}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[250px] p-0">
-            <Command>
-              <CommandInput placeholder="Buscar categoría..." />
-              <CommandList>
-                <CommandEmpty>No se encontraron categorías.</CommandEmpty>
-                <CommandGroup>
-                  <CommandItem
-                    value="all"
-                    onSelect={() => {
-                      setCategory("all")
-                      setCategoryOpen(false)
-                    }}
-                  >
-                    <Check className={cn("mr-2 h-4 w-4", category === "all" ? "opacity-100" : "opacity-0")} />
-                    Todas las categorías
-                  </CommandItem>
-                  {categories.map((cat) => (
-                    <CommandItem
-                      key={cat.id}
-                      value={cat.name}
-                      onSelect={() => {
-                        setCategory(cat.id)
-                        setCategoryOpen(false)
-                      }}
-                    >
-                      <Check className={cn("mr-2 h-4 w-4", category === cat.id ? "opacity-100" : "opacity-0")} />
-                      {cat.name}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+        <Select value={category} onValueChange={setCategory}>
+          <SelectTrigger className="w-full md:w-[250px]">
+            <SelectValue placeholder="Categoría" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Categorías</SelectItem>
+            {categories.map((cat) => (
+              <SelectItem key={cat.id} value={cat.id}>
+                {cat.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {/* Filtro por fecha */}
         <Popover open={dateOpen} onOpenChange={setDateOpen}>
@@ -198,12 +149,10 @@ export function ReceivedInvoiceFilters({ categories }: ReceivedInvoiceFiltersPro
             <Button variant="outline" className="w-full justify-between md:w-[300px]">
               <CalendarIcon className="mr-2 h-4 w-4" />
               {formatDateRange()}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
-              initialFocus
               mode="range"
               defaultMonth={startDate || new Date()}
               selected={{
@@ -214,11 +163,16 @@ export function ReceivedInvoiceFilters({ categories }: ReceivedInvoiceFiltersPro
                 setStartDate(range?.from)
                 setEndDate(range?.to)
                 if (range?.from || range?.to) {
-                  // Auto-cerrar el popover después de seleccionar fechas
                   setTimeout(() => setDateOpen(false), 100)
                 }
               }}
-              numberOfMonths={2}
+              numberOfMonths={1}
+              weekStartsOn={1}
+              fixedWeeks
+              className="rounded-md"
+              classNames={{}}
+              labels={{}}
+              formatters={{}}
               locale={es}
             />
             <div className="flex items-center justify-between border-t p-3">

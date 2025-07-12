@@ -49,13 +49,23 @@ export default async function InvoicesPage({
   let endDate: Date | undefined
 
   if (resolvedSearchParams.startDate && typeof resolvedSearchParams.startDate === "string") {
-    startDate = new Date(resolvedSearchParams.startDate)
+    // Crear fecha asegurando que se interprete como fecha local
+    const dateStr = resolvedSearchParams.startDate
+    const [year, month, day] = dateStr.split('-').map(Number)
+    startDate = new Date(year, month - 1, day, 0, 0, 0, 0)
+    console.log("[PAGE] Fecha inicio string:", dateStr)
     console.log("[PAGE] Fecha inicio parseada:", startDate.toISOString())
+    console.log("[PAGE] Fecha inicio local:", startDate.toString())
   }
 
   if (resolvedSearchParams.endDate && typeof resolvedSearchParams.endDate === "string") {
-    endDate = new Date(resolvedSearchParams.endDate)
+    // Crear fecha asegurando que se interprete como fecha local
+    const dateStr = resolvedSearchParams.endDate
+    const [year, month, day] = dateStr.split('-').map(Number)
+    endDate = new Date(year, month - 1, day, 23, 59, 59, 999)
+    console.log("[PAGE] Fecha fin string:", dateStr)
     console.log("[PAGE] Fecha fin parseada:", endDate.toISOString())
+    console.log("[PAGE] Fecha fin local:", endDate.toString())
   }
 
   const searchTerm = typeof resolvedSearchParams.search === "string" ? resolvedSearchParams.search : undefined

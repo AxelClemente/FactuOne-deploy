@@ -13,8 +13,10 @@ import { getReceivedInvoicesForCurrentUser, getExpenseCategories } from "./actio
 export default async function ReceivedInvoicesPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined }
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
+  const resolvedSearchParams = await searchParams
+
   const user = await getCurrentUser()
   if (!user) {
     redirect("/login")
@@ -27,21 +29,29 @@ export default async function ReceivedInvoicesPage({
 
   // Comprobar permiso granular para crear facturas recibidas
   const canCreateReceivedInvoice = await hasPermission(user.id, activeBusiness.id.toString(), "received_invoices", "create")
-  console.log("[RECEIVED INVOICES PAGE] user.id:", user.id)
-  console.log("[RECEIVED INVOICES PAGE] activeBusiness.id:", activeBusiness.id)
-  console.log("[RECEIVED INVOICES PAGE] canCreateReceivedInvoice:", canCreateReceivedInvoice)
-  console.log("[RECEIVED INVOICES PAGE] user.id type:", typeof user.id)
-  console.log("[RECEIVED INVOICES PAGE] activeBusiness.id type:", typeof activeBusiness.id)
 
-  const resolvedSearchParams = await searchParams
-
+  // Obtener categorías
   const categoriesStrings = await getExpenseCategories()
   const categories = categoriesStrings.map((cat) => ({ id: cat, name: cat }))
 
+  // Obtener los parámetros de búsqueda y convertir fechas correctamente (igual que en emitidas)
   const status = typeof resolvedSearchParams.status === "string" ? resolvedSearchParams.status : undefined
   const category = typeof resolvedSearchParams.category === "string" ? resolvedSearchParams.category : undefined
-  const startDate = resolvedSearchParams.startDate ? new Date(resolvedSearchParams.startDate as string) : undefined
-  const endDate = resolvedSearchParams.endDate ? new Date(resolvedSearchParams.endDate as string) : undefined
+
+  let startDate: Date | undefined
+  let endDate: Date | undefined
+
+  if (resolvedSearchParams.startDate && typeof resolvedSearchParams.startDate === "string") {
+    const dateStr = resolvedSearchParams.startDate
+    const [year, month, day] = dateStr.split('-').map(Number)
+    startDate = new Date(year, month - 1, day, 0, 0, 0, 0)
+  }
+  if (resolvedSearchParams.endDate && typeof resolvedSearchParams.endDate === "string") {
+    const dateStr = resolvedSearchParams.endDate
+    const [year, month, day] = dateStr.split('-').map(Number)
+    endDate = new Date(year, month - 1, day, 23, 59, 59, 999)
+  }
+
   const searchTerm = typeof resolvedSearchParams.search === "string" ? resolvedSearchParams.search : undefined
 
   const initialInvoices = await getReceivedInvoicesForCurrentUser({
@@ -60,7 +70,6 @@ export default async function ReceivedInvoicesPage({
           <h1 className="text-3xl font-bold tracking-tight">Facturas recibidas</h1>
           <p className="text-muted-foreground">Gestiona las facturas de tus proveedores y gastos</p>
         </div>
-        {/* El botón de Registrar factura se gestiona en ReceivedInvoiceList según el permiso */}
       </div>
 
       <div className="space-y-5">

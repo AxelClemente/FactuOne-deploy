@@ -43,13 +43,21 @@ export function ReceivedInvoiceList({ businessId, initialInvoices, categories, c
 
       setLoading(true)
       try {
-        // Extraer los valores de los parámetros de búsqueda una sola vez
+        const startDateStr = searchParams.get("startDate")
+        const endDateStr = searchParams.get("endDate")
+        let startDate: Date | undefined = undefined
+        let endDate: Date | undefined = undefined
+        if (startDateStr) {
+          const [year, month, day] = startDateStr.split('-').map(Number)
+          startDate = new Date(year, month - 1, day, 0, 0, 0, 0)
+        }
+        if (endDateStr) {
+          const [year, month, day] = endDateStr.split('-').map(Number)
+          endDate = new Date(year, month - 1, day, 23, 59, 59, 999)
+        }
         const status = searchParams.get("status") || undefined
         const category = searchParams.get("category") || undefined
-        const startDate = searchParams.get("startDate") ? new Date(searchParams.get("startDate")!) : undefined
-        const endDate = searchParams.get("endDate") ? new Date(searchParams.get("endDate")!) : undefined
         const searchTerm = searchParams.get("search") || undefined
-
         const data = await getReceivedInvoicesForCurrentUser({
           businessId,
           status,
