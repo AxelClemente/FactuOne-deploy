@@ -17,29 +17,24 @@ export default async function EditBusinessPage({ params }: { params: Promise<{ i
 
   // Obtener el negocio a editar
   const db = await getDb()
-  const business = await db.select().from(businesses).where(eq(businesses.id, parseInt(id))).limit(1)
+  const business = await db.select().from(businesses).where(eq(businesses.id, id)).limit(1)
 
   if (!business || business.length === 0) {
     notFound()
   }
 
-  // Verificar que el usuario tiene permisos para editar este negocio
-  const userBusinesses = await getBusinessesForUser(user.id)
-  const userBusiness = userBusinesses.find((b) => b.id === business[0].id)
-
-  if (!userBusiness) {
-    // El usuario no tiene acceso a este negocio
-    redirect("/businesses")
-  }
-
-  if (userBusiness.role !== "admin") {
-    // El usuario no es administrador de este negocio
+  // Verificar permisos granulares para editar negocios
+  const { hasPermission } = await import("@/lib/auth")
+  const canEditBusiness = await hasPermission(user.id, business[0].id, "businesses", "edit")
+  
+  if (!canEditBusiness) {
+    // El usuario no tiene permisos para editar negocios
     redirect("/businesses")
   }
 
   // Convertir el negocio para que coincida con el tipo esperado por BusinessForm
   const businessForForm = {
-    id: business[0].id.toString(), // Convertir number a string
+    id: business[0].id, // Ya es string
     name: business[0].name,
     nif: business[0].nif,
     fiscalAddress: business[0].fiscalAddress,

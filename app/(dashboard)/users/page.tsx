@@ -63,7 +63,7 @@ export default async function UsersPage() {
     if (existingPermissions.length === 0) {
       console.log("[USERS PAGE] No permissions found for admin, creating default permissions...")
       
-      const modules = ["clients", "invoices", "received_invoices", "projects", "providers"]
+      const modules = ["clients", "invoices", "received_invoices", "projects", "providers", "businesses"]
       
       for (const module of modules) {
         await db.insert(userPermissions).values({
@@ -86,13 +86,15 @@ export default async function UsersPage() {
     const canCreateProjects = await hasPermission(currentUser.id, activeBusiness.id, "projects", "create")
     const canCreateProviders = await hasPermission(currentUser.id, activeBusiness.id, "providers", "create")
     const canCreateReceivedInvoices = await hasPermission(currentUser.id, activeBusiness.id, "received_invoices", "create")
+    const canCreateBusinesses = await hasPermission(currentUser.id, activeBusiness.id, "businesses", "create")
     
     console.log("[USERS PAGE] Admin permissions:", {
       canCreateClients,
       canCreateInvoices,
       canCreateProjects,
       canCreateProviders,
-      canCreateReceivedInvoices
+      canCreateReceivedInvoices,
+      canCreateBusinesses
     })
   }
 

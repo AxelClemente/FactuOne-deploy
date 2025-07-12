@@ -23,6 +23,7 @@ const MODULES = [
   { key: "received_invoices", label: "Facturas recibidas" },
   { key: "projects", label: "Proyectos" },
   { key: "providers", label: "Proveedores" },
+  { key: "businesses", label: "Negocios" },
   { key: "audit", label: "Auditoría" },
   { key: "automations", label: "Automatizaciones" },
 ];

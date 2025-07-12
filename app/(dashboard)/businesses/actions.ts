@@ -59,7 +59,7 @@ export async function createBusiness(data: z.infer<typeof businessSchema>, userI
     });
 
     // Insertar permisos granulares para el admin/owner
-    const MODULES = ["clients", "invoices", "received_invoices", "projects", "providers"];
+    const MODULES = ["clients", "invoices", "received_invoices", "projects", "providers", "businesses"];
     await db.insert(schema.userPermissions).values(
       MODULES.map((module) => ({
         id: uuidv4(),
@@ -85,17 +85,19 @@ export async function createBusiness(data: z.infer<typeof businessSchema>, userI
 export async function updateBusiness(businessId: string, data: z.infer<typeof businessSchema>, userId: string) {
   try {
     const validatedData = businessSchema.parse(data)
-    const businesses = await getBusinessesForUser(userId)
-    const hasAccess = businesses.some((b) => b.id === parseInt(businessId))
-
-    if (!hasAccess) {
-      return { success: false, error: "No tienes permiso para editar este negocio" }
+    
+    // Verificar permisos granulares para editar negocios
+    const { hasPermission } = await import("@/lib/auth")
+    const canEditBusiness = await hasPermission(userId, businessId, "businesses", "edit")
+    
+    if (!canEditBusiness) {
+      return { success: false, error: "No tienes permisos para editar negocios" }
     }
 
     const db = await getDb();
     await db.update(schema.businesses)
       .set(validatedData)
-      .where(eq(schema.businesses.id, parseInt(businessId)));
+      .where(eq(schema.businesses.id, businessId));
 
     return { success: true, businessId }
   } catch (error) {
