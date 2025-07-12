@@ -254,8 +254,26 @@ export async function getInvoices({
     const whereClauses = [eq(invoices.businessId, businessId)]
     if (status) whereClauses.push(eq(invoices.status, status))
     if (clientId) whereClauses.push(eq(invoices.clientId, clientId))
-    if (startDate) whereClauses.push(gte(invoices.date, startDate))
-    if (endDate) whereClauses.push(lte(invoices.date, endDate))
+    if (startDate && endDate && startDate.toDateString() === endDate.toDateString()) {
+      // Fecha exacta: filtrar solo ese día usando fecha local
+      const start = new Date(startDate)
+      start.setHours(0, 0, 0, 0)
+      const end = new Date(endDate)
+      end.setHours(23, 59, 59, 999)
+      whereClauses.push(gte(invoices.date, start))
+      whereClauses.push(lte(invoices.date, end))
+    } else {
+      if (startDate) {
+        const start = new Date(startDate)
+        start.setHours(0, 0, 0, 0)
+        whereClauses.push(gte(invoices.date, start))
+      }
+      if (endDate) {
+        const end = new Date(endDate)
+        end.setHours(23, 59, 59, 999)
+        whereClauses.push(lte(invoices.date, end))
+      }
+    }
     if (searchTerm) {
       const searchValue = `%${searchTerm.toLowerCase()}%`
       whereClauses.push(

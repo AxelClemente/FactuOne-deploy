@@ -4,14 +4,14 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { CalendarIcon, Check, ChevronsUpDown, Search, X } from "lucide-react"
+import { CalendarIcon, ChevronsUpDown, Search, X } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
 interface InvoiceFiltersProps {
@@ -34,9 +34,7 @@ export function InvoiceFilters({ clients }: InvoiceFiltersProps) {
   )
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "")
 
-  // Estado para los popover
-  const [clientOpen, setClientOpen] = useState(false)
-  const [statusOpen, setStatusOpen] = useState(false)
+  // Estado para el popover de fechas
   const [dateOpen, setDateOpen] = useState(false)
 
   // Opciones de estado
@@ -63,11 +61,19 @@ export function InvoiceFilters({ clients }: InvoiceFiltersProps) {
     }
 
     if (startDate) {
-      current.set("startDate", startDate.toISOString().split("T")[0])
+      // Usar fecha local para evitar problemas de zona horaria
+      const year = startDate.getFullYear()
+      const month = (startDate.getMonth() + 1).toString().padStart(2, "0")
+      const day = startDate.getDate().toString().padStart(2, "0")
+      current.set("startDate", `${year}-${month}-${day}`)
     }
 
     if (endDate) {
-      current.set("endDate", endDate.toISOString().split("T")[0])
+      // Usar fecha local para evitar problemas de zona horaria
+      const year = endDate.getFullYear()
+      const month = (endDate.getMonth() + 1).toString().padStart(2, "0")
+      const day = endDate.getDate().toString().padStart(2, "0")
+      current.set("endDate", `${year}-${month}-${day}`)
     }
 
     if (searchTerm) {
@@ -119,78 +125,33 @@ export function InvoiceFilters({ clients }: InvoiceFiltersProps) {
     <div className="space-y-4">
       <div className="flex flex-col gap-4 md:flex-row md:items-center">
         {/* Filtro por estado */}
-        <Popover open={statusOpen} onOpenChange={setStatusOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="w-full justify-between md:w-[200px]">
-              {statusOptions.find((opt) => opt.value === status)?.label || "Estado"}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[200px] p-0">
-            <Command>
-              <CommandList>
-                <CommandGroup>
-                  {statusOptions.map((option) => (
-                    <CommandItem
-                      key={option.value}
-                      value={option.value}
-                      onSelect={(value) => {
-                        setStatus(value)
-                        setStatusOpen(false)
-                      }}
-                    >
-                      <Check className={cn("mr-2 h-4 w-4", status === option.value ? "opacity-100" : "opacity-0")} />
-                      {option.label}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+        <Select value={status} onValueChange={setStatus}>
+          <SelectTrigger className="w-full md:w-[200px]">
+            <SelectValue placeholder="Estado" />
+          </SelectTrigger>
+          <SelectContent>
+            {statusOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {/* Filtro por cliente */}
-        <Popover open={clientOpen} onOpenChange={setClientOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="w-full justify-between md:w-[250px]">
-              {clientId !== "all" ? clients.find((c) => c.id === clientId)?.name || "Cliente" : "Todos los clientes"}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[250px] p-0">
-            <Command>
-              <CommandInput placeholder="Buscar cliente..." />
-              <CommandList>
-                <CommandEmpty>No se encontraron clientes.</CommandEmpty>
-                <CommandGroup>
-                  <CommandItem
-                    value="all"
-                    onSelect={() => {
-                      setClientId("all")
-                      setClientOpen(false)
-                    }}
-                  >
-                    <Check className={cn("mr-2 h-4 w-4", clientId === "all" ? "opacity-100" : "opacity-0")} />
-                    Todos los clientes
-                  </CommandItem>
-                  {clients.map((client) => (
-                    <CommandItem
-                      key={client.id}
-                      value={client.name}
-                      onSelect={() => {
-                        setClientId(client.id)
-                        setClientOpen(false)
-                      }}
-                    >
-                      <Check className={cn("mr-2 h-4 w-4", clientId === client.id ? "opacity-100" : "opacity-0")} />
-                      {client.name}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+        <Select value={clientId} onValueChange={setClientId}>
+          <SelectTrigger className="w-full md:w-[250px]">
+            <SelectValue placeholder="Cliente" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los clientes</SelectItem>
+            {clients.map((client) => (
+              <SelectItem key={client.id} value={client.id}>
+                {client.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {/* Filtro por fecha */}
         <Popover open={dateOpen} onOpenChange={setDateOpen}>
@@ -202,25 +163,58 @@ export function InvoiceFilters({ clients }: InvoiceFiltersProps) {
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              initialFocus
-              mode="range"
-              defaultMonth={startDate || new Date()}
-              selected={{
-                from: startDate,
-                to: endDate,
-              }}
-              onSelect={(range) => {
-                setStartDate(range?.from)
-                setEndDate(range?.to)
-                if (range?.from || range?.to) {
-                  // Auto-cerrar el popover después de seleccionar fechas
-                  setTimeout(() => setDateOpen(false), 100)
-                }
-              }}
-              numberOfMonths={2}
-              locale={es}
-            />
+            <div className="p-3">
+              <Calendar
+                mode="range"
+                defaultMonth={startDate || new Date()}
+                selected={{
+                  from: startDate,
+                  to: endDate,
+                }}
+                onSelect={(range) => {
+                  if (range) {
+                    setStartDate(range.from)
+                    setEndDate(range.to)
+                  }
+                }}
+                numberOfMonths={1}
+                weekStartsOn={1}
+                fixedWeeks
+                className="rounded-md"
+                classNames={{
+                  months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                  month: "space-y-4",
+                  caption: "flex justify-center pt-1 relative items-center",
+                  caption_label: "text-sm font-medium",
+                  nav: "space-x-1 flex items-center",
+                  table: "w-full border-collapse space-y-1",
+                  head_row: "flex w-full",
+                  head_cell: "text-muted-foreground rounded-md w-8 font-normal text-xs flex items-center justify-center",
+                  row: "flex w-full mt-2",
+                  cell: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected].day-range-end)]:rounded-r-md first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
+                  day: "h-8 w-8 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-md",
+                  day_range_end: "day-range-end",
+                  day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                  day_today: "bg-accent text-accent-foreground",
+                  day_outside: "day-outside text-muted-foreground opacity-50  aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
+                  day_disabled: "text-muted-foreground opacity-50",
+                  day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
+                  day_hidden: "invisible",
+                }}
+                labels={{
+                  labelMonthDropdown: () => "Mes",
+                  labelYearDropdown: () => "Año",
+                  labelNext: () => "Siguiente mes",
+                  labelPrevious: () => "Mes anterior",
+                  labelDay: (day) => format(day, "d", { locale: es }),
+                  labelWeekday: (day) => format(day, "EEEEE", { locale: es }),
+                }}
+                formatters={{
+                  formatCaption: (date) => format(date, "LLLL yyyy", { locale: es }),
+                  formatWeekdayName: (day) => format(day, "EEEEE", { locale: es }),
+                }}
+              />
+            </div>
             <div className="flex items-center justify-between border-t p-3">
               <Button
                 variant="ghost"
