@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { getCurrentUser } from "@/lib/auth"
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
 import { getReceivedInvoiceById, getExpenseCategories } from "@/app/(dashboard)/received-invoices/actions"
-import { getProjectsForBusiness } from "@/app/(dashboard)/invoices/actions"
+import { getProjectsForBusiness, getBanksForBusiness } from "@/app/(dashboard)/invoices/actions"
 import { getProviders } from "@/app/(dashboard)/proveedores/actions"
 
 export default async function EditReceivedInvoicePage({ params }: { params: { id: string } }) {
@@ -48,6 +48,9 @@ export default async function EditReceivedInvoicePage({ params }: { params: { id
     // Obtener los proyectos del negocio activo
     const projects = await getProjectsForBusiness(business.id)
 
+    // Obtener los bancos del negocio activo
+    const banks = await getBanksForBusiness(business.id.toString())
+
     return (
       <div className="container mx-auto px-4 py-8">
         <Button variant="ghost" size="sm" asChild className="mb-6">
@@ -62,7 +65,7 @@ export default async function EditReceivedInvoicePage({ params }: { params: { id
           <p className="text-muted-foreground">Modifica los detalles de la factura recibida</p>
         </div>
 
-        <ReceivedInvoiceForm categories={categories} providers={providerOptions} invoice={invoice} projects={projects} />
+        <ReceivedInvoiceForm categories={categories} providers={providerOptions} invoice={invoice} projects={projects} banks={banks} />
       </div>
     )
   } catch (error) {
