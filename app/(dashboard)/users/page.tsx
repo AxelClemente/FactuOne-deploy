@@ -63,7 +63,7 @@ export default async function UsersPage() {
     if (existingPermissions.length === 0) {
       console.log("[USERS PAGE] No permissions found for admin, creating default permissions...")
       
-      const modules = ["clients", "invoices", "received_invoices", "projects", "providers", "businesses"]
+      const modules = ["clients", "invoices", "received_invoices", "projects", "providers", "businesses", "banks"]
       
       for (const module of modules) {
         await db.insert(userPermissions).values({
@@ -79,6 +79,23 @@ export default async function UsersPage() {
       }
       
       console.log("[USERS PAGE] Default permissions created for admin")
+    } else {
+      // Verificar si faltan permisos para "banks"
+      const banksPermission = existingPermissions.find(p => p.module === "banks")
+      if (!banksPermission) {
+        console.log("[USERS PAGE] Adding missing banks permission for admin...")
+        await db.insert(userPermissions).values({
+          id: uuid.v4(),
+          userId: currentUser.id,
+          businessId: activeBusiness.id,
+          module: "banks",
+          canView: true,
+          canCreate: true,
+          canEdit: true,
+          canDelete: true,
+        })
+        console.log("[USERS PAGE] Banks permission created for admin")
+      }
     }
     
     const canCreateClients = await hasPermission(currentUser.id, activeBusiness.id, "clients", "create")
@@ -87,6 +104,7 @@ export default async function UsersPage() {
     const canCreateProviders = await hasPermission(currentUser.id, activeBusiness.id, "providers", "create")
     const canCreateReceivedInvoices = await hasPermission(currentUser.id, activeBusiness.id, "received_invoices", "create")
     const canCreateBusinesses = await hasPermission(currentUser.id, activeBusiness.id, "businesses", "create")
+    const canCreateBanks = await hasPermission(currentUser.id, activeBusiness.id, "banks", "create")
     
     console.log("[USERS PAGE] Admin permissions:", {
       canCreateClients,
@@ -94,7 +112,8 @@ export default async function UsersPage() {
       canCreateProjects,
       canCreateProviders,
       canCreateReceivedInvoices,
-      canCreateBusinesses
+      canCreateBusinesses,
+      canCreateBanks
     })
   }
 

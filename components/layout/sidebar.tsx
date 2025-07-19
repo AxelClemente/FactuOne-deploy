@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Building2, FileText, FolderKanban, Home, Menu, Receipt, Users, X, Activity, Shield, Repeat } from "lucide-react"
+import { Building2, FileText, FolderKanban, Home, Menu, Receipt, Users, X, Activity, Shield, Repeat, CreditCard } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
@@ -68,6 +68,12 @@ export function AppSidebar() {
       path: "/proveedores",
       icon: Users,
       onClick: () => handleNavigation("/proveedores"),
+    },
+    {
+      name: "Bancos",
+      path: "/banks",
+      icon: CreditCard,
+      onClick: () => handleNavigation("/banks"),
     },
     {
       name: "Facturas emitidas",

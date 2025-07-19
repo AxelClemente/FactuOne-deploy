@@ -15,6 +15,7 @@ import { updateUser } from "@/app/(dashboard)/users/actions"
 import { getClientsForCurrentUser } from "@/app/(dashboard)/clients/actions";
 import { getProvidersForCurrentUser } from "@/app/(dashboard)/proveedores/actions";
 import { getProjectsForCurrentUser } from "@/app/(dashboard)/projects/actions";
+import { getBanksWithStats } from "@/app/(dashboard)/banks/actions";
 
 // Módulos y acciones disponibles para permisos granulares
 const MODULES = [
@@ -24,6 +25,7 @@ const MODULES = [
   { key: "projects", label: "Proyectos" },
   { key: "providers", label: "Proveedores" },
   { key: "businesses", label: "Negocios" },
+  { key: "banks", label: "Bancos" },
   { key: "audit", label: "Auditoría" },
   { key: "automations", label: "Automatizaciones" },
 ];
@@ -34,22 +36,26 @@ const ACTIONS = [
   { key: "canDelete", label: "Eliminar" },
 ];
 
-// Solo módulos con exclusión: clients, providers, projects
-const EXCLUSION_MODULES = ["clients", "providers", "projects"];
+// Solo módulos con exclusión: clients, providers, projects, banks
+const EXCLUSION_MODULES = ["clients", "providers", "projects", "banks"];
 
 // Simulación de fetch de entidades (en producción, fetch real)
 const fetchEntities = async (businessId: string, module: string) => {
   if (module === "clients") {
-    const clients = await getClients(businessId);
+    const clients = await getClientsForCurrentUser(businessId);
     return clients.map((c: any) => ({ id: c.id, name: `${c.name} (${c.nif})` }));
   }
   if (module === "providers") {
-    const providers = await getProviders(businessId);
+    const providers = await getProvidersForCurrentUser(businessId);
     return providers.map((p: any) => ({ id: p.id, name: `${p.name} (${p.nif})` }));
   }
   if (module === "projects") {
-    const projects = await getProjects({});
+    const projects = await getProjectsForCurrentUser({});
     return projects.map((prj: any) => ({ id: prj.id, name: prj.name }));
+  }
+  if (module === "banks") {
+    const banks = await getBanksWithStats(businessId, "");
+    return banks.map((b: any) => ({ id: b.id, name: `${b.bankName} (${b.nif})` }));
   }
   return [];
 };
@@ -120,6 +126,9 @@ export function UserForm({ user, businessId, currentUserIsAdmin, permissions }: 
         } else if (mod.key === "projects") {
           const projects = await getProjectsForCurrentUser({});
           newEntities[mod.key] = projects.map((prj: any) => ({ id: prj.id, name: prj.name }));
+        } else if (mod.key === "banks") {
+          const banks = await getBanksWithStats(businessId, user.id);
+          newEntities[mod.key] = banks.map((b: any) => ({ id: b.id, name: `${b.bankName} (${b.nif})` }));
         } else {
           newEntities[mod.key] = [];
         }

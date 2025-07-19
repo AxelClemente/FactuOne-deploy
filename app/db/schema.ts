@@ -43,6 +43,19 @@ export const businesses = table("businesses", {
   ...timestamps,
 }, (table) => [t.unique().on(table.nif)]);
 
+// Banks (Información bancaria)
+export const banks = table("banks", {
+  ...stringId,
+  businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
+  bankName: t.varchar("bank_name", { length: 255 }).notNull(),
+  accountHolder: t.varchar("account_holder", { length: 255 }).notNull(),
+  accountType: t.varchar("account_type", { length: 100 }).notNull(),
+  nif: t.varchar("nif", { length: 20 }).notNull(),
+  accountNumber: t.varchar("account_number", { length: 50 }).notNull(),
+  isDeleted: t.boolean("is_deleted").default(false).notNull(),
+  ...timestamps,
+});
+
 // BusinessUsers (Relación Usuario-Negocio)
 export const businessUsers = table("business_users", {
   ...stringId,
@@ -341,6 +354,9 @@ export type NewUser = typeof users.$inferInsert;
 
 export type Business = typeof businesses.$inferSelect;
 export type NewBusiness = typeof businesses.$inferInsert;
+
+export type Bank = typeof banks.$inferSelect;
+export type NewBank = typeof banks.$inferInsert;
 
 export type BusinessUser = typeof businessUsers.$inferSelect;
 export type NewBusinessUser = typeof businessUsers.$inferInsert;
