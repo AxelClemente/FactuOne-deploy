@@ -107,6 +107,11 @@ export const invoices = table("invoices", {
   total: t.decimal("total", { precision: 10, scale: 2 }).notNull(),
   status: t.mysqlEnum("status", invoiceStatus).notNull().default("draft"),
   documentUrl: t.varchar("document_url", { length: 500 }),
+  // Campos de método de pago
+  paymentMethod: t.mysqlEnum("payment_method", ["bank", "bizum", "cash"]),
+  bankId: t.varchar("bank_id", { length: 36 }).references(() => banks.id),
+  bizumHolder: t.varchar("bizum_holder", { length: 255 }),
+  bizumNumber: t.varchar("bizum_number", { length: 20 }),
   isDeleted: t.boolean("is_deleted").default(false).notNull(),
   ...timestamps,
 });
@@ -166,6 +171,11 @@ export const receivedInvoices = table("received_invoices", {
   status: t.mysqlEnum("status", receivedInvoiceStatus).notNull().default("pending"),
   category: t.varchar("category", { length: 100 }),
   documentUrl: t.varchar("document_url", { length: 500 }),
+  // Campos de método de pago
+  paymentMethod: t.mysqlEnum("payment_method", ["bank", "bizum", "cash"]),
+  bankId: t.varchar("bank_id", { length: 36 }).references(() => banks.id),
+  bizumHolder: t.varchar("bizum_holder", { length: 255 }),
+  bizumNumber: t.varchar("bizum_number", { length: 20 }),
   isDeleted: t.boolean("is_deleted").default(false).notNull(),
   ...timestamps,
 });
@@ -296,6 +306,10 @@ export const invoicesRelations = relations(invoices, ({ one, many }) => ({
     fields: [invoices.projectId],
     references: [projects.id],
   }),
+  bank: one(banks, {
+    fields: [invoices.bankId],
+    references: [banks.id],
+  }),
   lines: many(invoiceLines),
 }));
 
@@ -318,6 +332,10 @@ export const receivedInvoicesRelations = relations(receivedInvoices, ({ one }) =
   project: one(projects, {
     fields: [receivedInvoices.projectId],
     references: [projects.id],
+  }),
+  bank: one(banks, {
+    fields: [receivedInvoices.bankId],
+    references: [banks.id],
   }),
 }));
 

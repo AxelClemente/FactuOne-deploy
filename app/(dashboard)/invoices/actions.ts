@@ -10,6 +10,7 @@ import { eq, and, sql, gte, lte, or, like } from "drizzle-orm"
 import { v4 as uuidv4 } from "uuid"
 import { createNotification } from "@/lib/notifications"
 import { auditHelpers } from "@/lib/audit"
+import { getBanksWithStats } from "@/app/(dashboard)/banks/actions"
 
 // Esquemas de validación
 const invoiceLineSchema = z.object({
@@ -28,6 +29,11 @@ const invoiceSchema = z.object({
   dueDate: z.date({ required_error: "La fecha de vencimiento es obligatoria" }),
   concept: z.string().min(1, { message: "El concepto es obligatorio" }),
   lines: z.array(invoiceLineSchema).min(1, { message: "Debe incluir al menos una línea" }),
+  // Campos de método de pago
+  paymentMethod: z.enum(["bank", "bizum", "cash"]).optional(),
+  bankId: z.string().optional(),
+  bizumHolder: z.string().optional(),
+  bizumNumber: z.string().optional(),
 })
 
 type InvoiceFormData = z.infer<typeof invoiceSchema>
@@ -90,6 +96,11 @@ export async function createInvoice(formData: InvoiceFormData): Promise<InvoiceA
         total: total.toString(),
         status: "draft",
         number,
+        // Campos de método de pago
+        paymentMethod: validatedData.paymentMethod || null,
+        bankId: validatedData.bankId || null,
+        bizumHolder: validatedData.bizumHolder || null,
+        bizumNumber: validatedData.bizumNumber || null,
       })
 
     await db.insert(invoiceLines).values(
@@ -159,6 +170,11 @@ export async function updateInvoice(invoiceId: string, formData: InvoiceFormData
         subtotal: subtotal.toString(),
         taxAmount: taxAmount.toString(),
         total: total.toString(),
+        // Campos de método de pago
+        paymentMethod: validatedData.paymentMethod || null,
+        bankId: validatedData.bankId || null,
+        bizumHolder: validatedData.bizumHolder || null,
+        bizumNumber: validatedData.bizumNumber || null,
       })
       .where(eq(invoices.id, invoiceId))
 
@@ -470,5 +486,17 @@ export async function getInvoicesForProject({
   } catch (error) {
     console.error("Error al obtener facturas del proyecto:", error)
     throw new Error("No se pudieron obtener las facturas del proyecto")
+  }
+}
+
+export async function getBanksForBusiness(businessId: string) {
+  console.log("[INVOICES ACTIONS] getBanksForBusiness - businessId:", businessId)
+
+  try {
+    const banks = await getBanksWithStats(businessId, "")
+    return banks
+  } catch (error) {
+    console.error("[INVOICES ACTIONS] Error obteniendo bancos:", error)
+    return []
   }
 }

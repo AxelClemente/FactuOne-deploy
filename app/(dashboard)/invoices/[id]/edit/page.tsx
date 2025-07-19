@@ -5,7 +5,7 @@ import { InvoiceForm } from "@/components/invoices/invoice-form"
 import { Button } from "@/components/ui/button"
 import { getCurrentUser } from "@/lib/auth"
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
-import { getInvoiceWithLines, getClientsForBusiness, getProjectsForBusiness } from "@/app/(dashboard)/invoices/actions"
+import { getInvoiceWithLines, getClientsForBusiness, getProjectsForBusiness, getBanksForBusiness } from "@/app/(dashboard)/invoices/actions"
 
 export default async function EditInvoicePage({ params }: { params: Promise<{ id: string }> }) {
   // Obtener el usuario actual
@@ -65,6 +65,10 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
       name: project.name,
     }))
 
+    // Obtener los bancos del negocio
+    const banks = await getBanksForBusiness(businessId.toString())
+    console.log("[EditInvoicePage] Bancos obtenidos:", banks)
+
     return (
       <div className="container mx-auto px-4 py-8">
         <Button variant="ghost" size="sm" asChild className="mb-6">
@@ -79,7 +83,7 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
           <p className="text-muted-foreground">Modifica los detalles de la factura {invoice.number}</p>
         </div>
 
-        <InvoiceForm clients={clientsForForm} projects={projectsForForm} invoice={invoice} />
+        <InvoiceForm clients={clientsForForm} projects={projectsForForm} banks={banks} invoice={invoice} />
       </div>
     )
   } catch (error) {

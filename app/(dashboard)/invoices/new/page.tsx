@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 import { InvoiceForm } from "@/components/invoices/invoice-form"
 import { getCurrentUser, hasPermission } from "@/lib/auth"
 import { getActiveBusiness } from "@/app/(dashboard)/businesses/actions"
-import { getClientsForBusiness, getProjectsForBusiness } from "@/app/(dashboard)/invoices/actions"
+import { getClientsForBusiness, getProjectsForBusiness, getBanksForBusiness } from "@/app/(dashboard)/invoices/actions"
 import { Client, Project } from "@/app/db/schema"
 
 export default async function NewInvoicePage() {
@@ -44,6 +44,10 @@ export default async function NewInvoicePage() {
   }))
   console.log("[NewInvoicePage] Proyectos pasados al formulario:", projects)
 
+  // Obtener los bancos del negocio
+  const banks = await getBanksForBusiness(activeBusiness.id.toString())
+  console.log("[NewInvoicePage] Bancos obtenidos:", banks)
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
@@ -51,7 +55,7 @@ export default async function NewInvoicePage() {
         <p className="text-muted-foreground">Crea una nueva factura para un cliente</p>
       </div>
 
-      <InvoiceForm clients={clients} projects={projects} />
+      <InvoiceForm clients={clients} projects={projects} banks={banks} />
     </div>
   )
 }

@@ -18,7 +18,8 @@ import { Popover, PopoverContent, PopoverTrigger, PopoverPrimitive } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
-import { Invoice, InvoiceLine, Client } from "@/app/db/schema"
+import { Invoice, InvoiceLine, Client, Bank } from "@/app/db/schema"
+import { PaymentMethodSelector } from "@/components/ui/payment-method-selector"
 
 // Esquema de validación para el formulario
 const invoiceLineSchema = z.object({
@@ -44,6 +45,7 @@ type InvoiceFormValues = z.infer<typeof invoiceFormSchema>
 interface InvoiceFormProps {
   clients: (Omit<Client, "id"> & { id: string })[]
   projects?: { id: string; name: string }[]
+  banks?: Bank[]
   invoice?: Invoice & { lines: InvoiceLine[] }
 }
 
@@ -54,9 +56,9 @@ const getDueDate = (date: Date): Date => {
   return newDueDate
 }
 
-export function InvoiceForm({ clients, projects = [], invoice }: InvoiceFormProps) {
+export function InvoiceForm({ clients, projects = [], banks = [], invoice }: InvoiceFormProps) {
   // DEBUG: Ver las props que recibe el componente
-  console.log("[InvoiceForm] Props recibidas:", { clients, projects, invoice })
+  console.log("[InvoiceForm] Props recibidas:", { clients, projects, banks, invoice })
 
   const router = useRouter()
   const { toast } = useToast()
@@ -64,6 +66,29 @@ export function InvoiceForm({ clients, projects = [], invoice }: InvoiceFormProp
   const [subtotal, setSubtotal] = useState(0)
   const [taxTotal, setTaxTotal] = useState(0)
   const [total, setTotal] = useState(0)
+
+  // Estado para método de pago
+  const [paymentMethod, setPaymentMethod] = useState<"bank" | "bizum" | "cash" | null>(invoice?.paymentMethod || null)
+  const [selectedBankId, setSelectedBankId] = useState<string | null>(invoice?.bankId || null)
+  const [bizumHolder, setBizumHolder] = useState(invoice?.bizumHolder || "")
+  const [bizumNumber, setBizumNumber] = useState(invoice?.bizumNumber || "")
+
+  // DEBUG: Logs para verificar los valores iniciales
+  console.log("[InvoiceForm] Invoice recibida:", invoice)
+  console.log("[InvoiceForm] Valores iniciales de pago:", {
+    paymentMethod: invoice?.paymentMethod,
+    bankId: invoice?.bankId,
+    bizumHolder: invoice?.bizumHolder,
+    bizumNumber: invoice?.bizumNumber
+  })
+  console.log("[InvoiceForm] Estados iniciales:", {
+    paymentMethod,
+    selectedBankId,
+    bizumHolder,
+    bizumNumber
+  })
+  console.log("[InvoiceForm] Bancos disponibles:", banks.map(b => ({ id: b.id, name: b.bankName })))
+  console.log("[InvoiceForm] bankId de la factura coincide con bancos:", banks.some(b => b.id === invoice?.bankId))
 
   const isEditing = !!invoice
 
@@ -139,6 +164,11 @@ export function InvoiceForm({ clients, projects = [], invoice }: InvoiceFormProp
         ...line,
         total: (line.quantity || 0) * (line.unitPrice || 0),
       })),
+      // Datos del método de pago
+      paymentMethod,
+      bankId: selectedBankId,
+      bizumHolder,
+      bizumNumber,
     }
 
     try {
@@ -265,7 +295,10 @@ export function InvoiceForm({ clients, projects = [], invoice }: InvoiceFormProp
               </FormItem>
             )}
           />
+        </div>
 
+        {/* Proyecto y Concepto en la misma línea */}
+        <div className="grid gap-6 md:grid-cols-2">
           {/* Proyecto (opcional) */}
           <FormField
             control={form.control}
@@ -300,22 +333,35 @@ export function InvoiceForm({ clients, projects = [], invoice }: InvoiceFormProp
               )
             }}
           />
+
+          {/* Concepto */}
+          <FormField
+            control={form.control}
+            name="concept"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Concepto</FormLabel>
+                <FormControl>
+                  <Input placeholder="Ej: Desarrollo de página web" {...field} />
+                </FormControl>
+                <FormDescription>Concepto general de la factura.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
-        {/* Concepto */}
-        <FormField
-          control={form.control}
-          name="concept"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Concepto</FormLabel>
-              <FormControl>
-                <Input placeholder="Ej: Desarrollo de página web" {...field} />
-              </FormControl>
-              <FormDescription>Concepto general de la factura.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
+        {/* Método de Pago */}
+        <PaymentMethodSelector
+          value={paymentMethod}
+          onValueChange={setPaymentMethod}
+          banks={banks}
+          selectedBankId={selectedBankId}
+          onBankChange={setSelectedBankId}
+          bizumHolder={bizumHolder}
+          onBizumHolderChange={setBizumHolder}
+          bizumNumber={bizumNumber}
+          onBizumNumberChange={setBizumNumber}
         />
 
         {/* Líneas de factura */}

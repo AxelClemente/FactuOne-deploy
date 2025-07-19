@@ -5,6 +5,7 @@ import { getActiveBusiness } from "@/lib/getActiveBusiness"
 import { getExpenseCategories } from "@/app/(dashboard)/received-invoices/actions"
 import { getProviders } from "@/app/(dashboard)/proveedores/actions"
 import { getProjectsForBusiness } from "@/app/(dashboard)/invoices/actions"
+import { getBanksForBusiness } from "@/app/(dashboard)/invoices/actions"
 
 export default async function NewReceivedInvoicePage() {
   // Obtener el usuario actual
@@ -36,6 +37,9 @@ export default async function NewReceivedInvoicePage() {
   // Obtener proyectos del negocio activo
   const projects = await getProjectsForBusiness(businessId)
 
+  // Obtener bancos del negocio activo
+  const banks = await getBanksForBusiness(businessId.toString())
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
@@ -43,7 +47,7 @@ export default async function NewReceivedInvoicePage() {
         <p className="text-muted-foreground">Registra una nueva factura de un proveedor</p>
       </div>
 
-      <ReceivedInvoiceForm categories={categories} providers={providerOptions} projects={projects} />
+      <ReceivedInvoiceForm categories={categories} providers={providerOptions} projects={projects} banks={banks} />
     </div>
   )
 }
