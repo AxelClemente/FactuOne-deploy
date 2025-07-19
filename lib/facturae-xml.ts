@@ -33,6 +33,15 @@ interface FacturaeInvoice {
   seller: FacturaeParty
   buyer: FacturaeParty
   projectId?: string
+  // Datos del método de pago
+  paymentMethod?: 'bank' | 'bizum' | 'cash'
+  bank?: {
+    bankName: string
+    accountNumber: string
+    accountHolder: string
+  }
+  bizumHolder?: string
+  bizumNumber?: string
 }
 
 /**
@@ -189,11 +198,37 @@ export function generateFacturaeXML(invoice: FacturaeInvoice): string {
   const installment = paymentDetails.ele('Installment')
   installment.ele('InstallmentDueDate').txt(invoice.dueDate.toISOString().split('T')[0])
   installment.ele('InstallmentAmount').txt(invoice.total.toFixed(2))
-  installment.ele('PaymentMeans').txt('01') // 01 = Transferencia
+  
+  // Método de pago específico
+  if (invoice.paymentMethod === 'bank' && invoice.bank) {
+    installment.ele('PaymentMeans').txt('01') // 01 = Transferencia
+    // Agregar información del banco como comentario o en LegalLiterals
+    const paymentInfo = `Banco: ${invoice.bank.bankName} | IBAN: ${invoice.bank.accountNumber} | Titular: ${invoice.bank.accountHolder}`
+    installment.ele('PaymentMeans').txt('01')
+  } else if (invoice.paymentMethod === 'bizum') {
+    installment.ele('PaymentMeans').txt('03') // 03 = Otros medios
+    const paymentInfo = `Bizum | Titular: ${invoice.bizumHolder || 'N/A'} | Número: ${invoice.bizumNumber || 'N/A'}`
+  } else if (invoice.paymentMethod === 'cash') {
+    installment.ele('PaymentMeans').txt('10') // 10 = Efectivo
+  } else {
+    installment.ele('PaymentMeans').txt('01') // Por defecto transferencia
+  }
 
   // LegalLiterals (si es necesario)
   const legalLiterals = invoiceElement.ele('LegalLiterals')
   legalLiterals.ele('LegalReference').txt('Factura conforme a la normativa española de facturación electrónica')
+  
+  // Agregar información del método de pago en LegalLiterals
+  if (invoice.paymentMethod === 'bank' && invoice.bank) {
+    const paymentReference = legalLiterals.ele('LegalReference')
+    paymentReference.txt(`Método de pago: Transferencia bancaria | Banco: ${invoice.bank.bankName} | IBAN: ${invoice.bank.accountNumber} | Titular: ${invoice.bank.accountHolder}`)
+  } else if (invoice.paymentMethod === 'bizum') {
+    const paymentReference = legalLiterals.ele('LegalReference')
+    paymentReference.txt(`Método de pago: Bizum | Titular: ${invoice.bizumHolder || 'N/A'} | Número: ${invoice.bizumNumber || 'N/A'}`)
+  } else if (invoice.paymentMethod === 'cash') {
+    const paymentReference = legalLiterals.ele('LegalReference')
+    paymentReference.txt('Método de pago: Efectivo')
+  }
 
   return doc.end({ prettyPrint: true })
 }
@@ -260,6 +295,15 @@ export function convertInvoiceToFacturaeFormat(invoice: any, seller: any, buyer:
       city: buyer.city,
       country: buyer.country || 'ESP'
     },
-    projectId: invoice.projectId
+    projectId: invoice.projectId,
+    // Datos del método de pago
+    paymentMethod: invoice.paymentMethod,
+    bank: invoice.bank ? {
+      bankName: invoice.bank.bankName,
+      accountNumber: invoice.bank.accountNumber,
+      accountHolder: invoice.bank.accountHolder
+    } : undefined,
+    bizumHolder: invoice.bizumHolder,
+    bizumNumber: invoice.bizumNumber
   }
 } 
