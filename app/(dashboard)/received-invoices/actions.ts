@@ -349,6 +349,7 @@ export async function getReceivedInvoiceById(invoiceId: string) {
         lines: true,
         provider: true,
         project: true,
+        bank: true, // Agregar relación con el banco
       },
     })
     return invoice

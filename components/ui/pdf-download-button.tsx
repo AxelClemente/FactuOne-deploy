@@ -20,14 +20,26 @@ export function PDFDownloadButton({ invoiceId, invoiceNumber, type, children }: 
     setIsGenerating(true)
     
     try {
+      console.log('[PDF] Iniciando descarga de PDF para:', { invoiceId, type, invoiceNumber })
+      
       // Obtener los datos de la factura desde el servidor
       const response = await fetch(`/api/${type === 'invoice' ? 'invoices' : 'received-invoices'}/${invoiceId}/data`)
+      
+      console.log('[PDF] Respuesta del servidor:', response.status, response.statusText)
       
       if (!response.ok) {
         throw new Error('No se pudieron obtener los datos de la factura')
       }
       
       const invoiceData = await response.json()
+      
+      // Debug: Log de los datos recibidos
+      console.log('[PDF] Datos completos de la factura:', invoiceData)
+      console.log('[PDF] Método de pago:', invoiceData.paymentMethod)
+      console.log('[PDF] Banco completo:', invoiceData.bank)
+      console.log('[PDF] Bizum holder:', invoiceData.bizumHolder)
+      console.log('[PDF] Bizum number:', invoiceData.bizumNumber)
+      console.log('[PDF] Datos del negocio:', invoiceData.business)
       
       // Generar HTML para la factura
       const html = generateInvoiceHTML(invoiceData, type)
@@ -165,14 +177,6 @@ function generateInvoiceHTML(invoiceData: any, type: 'invoice' | 'received-invoi
           </div>
         </div>
 
-        ${invoiceData.concept ? `
-          <div style="margin-bottom: 20px;">
-            <h3 style="margin: 0 0 10px 0; color: #333; font-size: 16px;">Concepto</h3>
-            <div style="background: #f9f9f9; padding: 15px; border-radius: 5px;">
-              ${invoiceData.concept}
-            </div>
-          </div>
-        ` : ''}
       </div>
 
       ${invoiceData.lines && invoiceData.lines.length > 0 ? `
@@ -216,6 +220,39 @@ function generateInvoiceHTML(invoiceData: any, type: 'invoice' | 'received-invoi
           </tr>
         </table>
       </div>
+
+      ${invoiceData.paymentMethod ? `
+        <div style="margin-top: 30px; padding: 20px; background: #f9f9f9; border-radius: 5px;">
+          <h3 style="margin: 0 0 15px 0; color: #333; font-size: 16px;">Método de Pago</h3>
+          ${invoiceData.paymentMethod === 'bank' && invoiceData.bank ? `
+            <div style="margin-bottom: 10px;">
+              <strong style="color: #333;">Transferencia Bancaria:</strong><br/>
+              <div style="margin-left: 20px; margin-top: 5px;">
+                <div style="color: #333;"><strong>Banco:</strong> ${invoiceData.bank.bankName || 'N/A'}</div>
+                <div style="color: #333;"><strong>IBAN:</strong> ${invoiceData.bank.accountNumber || 'N/A'}</div>
+                <div style="color: #333;"><strong>Titular:</strong> ${invoiceData.bank.accountHolder || 'N/A'}</div>
+              </div>
+            </div>
+          ` : ''}
+          ${invoiceData.paymentMethod === 'bizum' ? `
+            <div style="margin-bottom: 10px;">
+              <strong style="color: #333;">Bizum:</strong><br/>
+              <div style="margin-left: 20px; margin-top: 5px;">
+                <div style="color: #333;"><strong>Titular:</strong> ${invoiceData.bizumHolder || 'N/A'}</div>
+                <div style="color: #333;"><strong>Número:</strong> ${invoiceData.bizumNumber || 'N/A'}</div>
+              </div>
+            </div>
+          ` : ''}
+          ${invoiceData.paymentMethod === 'cash' ? `
+            <div style="margin-bottom: 10px;">
+              <strong style="color: #333;">Efectivo:</strong><br/>
+              <div style="margin-left: 20px; margin-top: 5px;">
+                <div style="color: #333;">Pago en efectivo al recibir la factura</div>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      ` : ''}
 
       <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 10px; color: #666; text-align: center;">
         <p>Documento generado automáticamente por FactuOne</p>

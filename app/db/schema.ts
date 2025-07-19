@@ -264,6 +264,11 @@ export const invoiceAutomations = table("invoice_automations", {
   occurrences: t.int("occurrences").notNull().default(0),
   isActive: t.boolean("is_active").notNull().default(true),
   lastRunAt: t.datetime("last_run_at"),
+  // Campos del método de pago
+  paymentMethod: t.mysqlEnum("payment_method", ["bank", "bizum", "cash"]),
+  bankId: t.varchar("bank_id", { length: 36 }).references(() => banks.id),
+  bizumHolder: t.varchar("bizum_holder", { length: 255 }),
+  bizumNumber: t.varchar("bizum_number", { length: 20 }),
   createdAt: t.datetime("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: t.datetime("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`).$onUpdate(() => sql`CURRENT_TIMESTAMP`),
 });
@@ -375,6 +380,10 @@ export const invoiceAutomationsRelations = relations(invoiceAutomations, ({ one,
   project: one(projects, {
     fields: [invoiceAutomations.projectId],
     references: [projects.id],
+  }),
+  bank: one(banks, {
+    fields: [invoiceAutomations.bankId],
+    references: [banks.id],
   }),
   lines: many(automationLines),
 }));

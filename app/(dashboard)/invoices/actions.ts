@@ -394,10 +394,25 @@ export async function getInvoiceWithLines(invoiceId: string) {
         lines: true,
         client: true,
         project: true,
+        bank: true, // Agregar relación con el banco
       },
     })
     
-    console.log(`[getInvoiceWithLines] Resultado de la consulta:`, invoice)
+    console.log(`[getInvoiceWithLines] Resultado de la consulta:`, {
+      id: invoice?.id,
+      number: invoice?.number,
+      paymentMethod: invoice?.paymentMethod,
+      bankId: invoice?.bankId,
+      bizumHolder: invoice?.bizumHolder,
+      bizumNumber: invoice?.bizumNumber,
+      bank: invoice?.bank ? {
+        id: invoice.bank.id,
+        bankName: invoice.bank.bankName,
+        accountNumber: invoice.bank.accountNumber,
+        accountHolder: invoice.bank.accountHolder
+      } : null,
+      linesCount: invoice?.lines?.length || 0
+    })
     
     if (!invoice) {
       console.log(`[getInvoiceWithLines] Factura no encontrada`)

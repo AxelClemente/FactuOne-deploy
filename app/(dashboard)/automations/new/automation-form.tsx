@@ -13,7 +13,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Client, Project } from "@/app/db/schema";
+import { Client, Project, Bank } from "@/app/db/schema";
+import { PaymentMethodSelector } from "@/components/ui/payment-method-selector";
 
 // Esquema de validación para las líneas de automatización
 const automationLineSchema = z.object({
@@ -44,16 +45,23 @@ type AutomationFormValues = z.infer<typeof automationFormSchema>;
 interface AutomationFormProps {
   clients: (Omit<Client, "id"> & { id: string })[];
   projects?: { id: string; name: string }[];
+  banks?: Bank[];
   automation?: any;
 }
 
-export function AutomationForm({ clients, projects = [], automation }: AutomationFormProps) {
+export function AutomationForm({ clients, projects = [], banks = [], automation }: AutomationFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [subtotal, setSubtotal] = useState(0);
   const [taxTotal, setTaxTotal] = useState(0);
   const [total, setTotal] = useState(0);
+
+  // Estado para método de pago
+  const [paymentMethod, setPaymentMethod] = useState<"bank" | "bizum" | "cash" | null>(automation?.paymentMethod || null)
+  const [selectedBankId, setSelectedBankId] = useState<string | null>(automation?.bankId || null)
+  const [bizumHolder, setBizumHolder] = useState(automation?.bizumHolder || "")
+  const [bizumNumber, setBizumNumber] = useState(automation?.bizumNumber || "")
 
   const isEditing = !!automation;
 
@@ -129,6 +137,12 @@ export function AutomationForm({ clients, projects = [], automation }: Automatio
     if (data.maxOccurrences && data.maxOccurrences.trim() !== "") formData.append("maxOccurrences", data.maxOccurrences);
     formData.append("isActive", data.isActive.toString());
     formData.append("amount", total.toString());
+    
+    // Agregar datos del método de pago
+    if (paymentMethod) formData.append("paymentMethod", paymentMethod);
+    if (selectedBankId) formData.append("bankId", selectedBankId);
+    if (bizumHolder) formData.append("bizumHolder", bizumHolder);
+    if (bizumNumber) formData.append("bizumNumber", bizumNumber);
     
     // Agregar líneas como JSON
     const linesData = data.lines.map((line) => ({
@@ -241,6 +255,29 @@ export function AutomationForm({ clients, projects = [], automation }: Automatio
                     <FormMessage />
                   </FormItem>
                 )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Método de Pago */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Método de Pago</CardTitle>
+              <FormDescription>
+                Define el método de pago que se aplicará a las facturas automáticas.
+              </FormDescription>
+            </CardHeader>
+            <CardContent>
+              <PaymentMethodSelector
+                value={paymentMethod}
+                onValueChange={setPaymentMethod}
+                banks={banks}
+                selectedBankId={selectedBankId}
+                onBankChange={setSelectedBankId}
+                bizumHolder={bizumHolder}
+                onBizumHolderChange={setBizumHolder}
+                bizumNumber={bizumNumber}
+                onBizumNumberChange={setBizumNumber}
               />
             </CardContent>
           </Card>

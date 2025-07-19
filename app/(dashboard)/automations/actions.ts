@@ -29,6 +29,11 @@ const automationSchema = z.object({
   timeOfDay: z.string().min(1),
   maxOccurrences: z.string().optional(),
   isActive: z.string().optional(),
+  // Campos del método de pago
+  paymentMethod: z.string().optional(),
+  bankId: z.string().optional(),
+  bizumHolder: z.string().optional(),
+  bizumNumber: z.string().optional(),
 });
 
 export async function createAutomation(prevState: any, formData: FormData) {
@@ -54,6 +59,11 @@ export async function createAutomation(prevState: any, formData: FormData) {
     timeOfDay: formData.get("timeOfDay"),
     maxOccurrences: formData.get("maxOccurrences"),
     isActive: formData.get("isActive"),
+    // Campos del método de pago
+    paymentMethod: formData.get("paymentMethod"),
+    bankId: formData.get("bankId"),
+    bizumHolder: formData.get("bizumHolder"),
+    bizumNumber: formData.get("bizumNumber"),
   };
   const parsed = automationSchema.safeParse(raw);
   if (!parsed.success) {
@@ -81,6 +91,11 @@ export async function createAutomation(prevState: any, formData: FormData) {
       lastRunAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
+      // Campos del método de pago
+      paymentMethod: data.paymentMethod || null,
+      bankId: data.bankId || null,
+      bizumHolder: data.bizumHolder || null,
+      bizumNumber: data.bizumNumber || null,
     });
     // Guardar líneas de factura si existen
     if (data.lines) {
@@ -137,6 +152,11 @@ export async function updateAutomation(id: string, prevState: any, formData: For
     timeOfDay: formData.get("timeOfDay"),
     maxOccurrences: formData.get("maxOccurrences"),
     isActive: formData.get("isActive"),
+    // Campos del método de pago
+    paymentMethod: formData.get("paymentMethod"),
+    bankId: formData.get("bankId"),
+    bizumHolder: formData.get("bizumHolder"),
+    bizumNumber: formData.get("bizumNumber"),
   };
   console.log('[updateAutomation] raw:', raw);
   const parsed = automationSchema.safeParse(raw);
@@ -162,6 +182,11 @@ export async function updateAutomation(id: string, prevState: any, formData: For
         timeOfDay: data.timeOfDay,
         maxOccurrences: data.maxOccurrences && data.maxOccurrences.trim() !== "" ? Number(data.maxOccurrences) : null,
         isActive: !!data.isActive,
+        // Campos del método de pago
+        paymentMethod: data.paymentMethod || null,
+        bankId: data.bankId || null,
+        bizumHolder: data.bizumHolder || null,
+        bizumNumber: data.bizumNumber || null,
         updatedAt: new Date(),
       })
       .where(and(
