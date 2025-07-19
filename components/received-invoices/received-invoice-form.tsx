@@ -20,6 +20,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { CriticalChangeNotice } from "@/components/ui/critical-change-notice"
+import { PaymentMethodSelector } from "@/components/ui/payment-method-selector"
+import { Bank } from "@/app/db/schema"
 
 // Esquema de validación para línea de factura recibida
 const receivedInvoiceLineSchema = z.object({
@@ -56,10 +58,11 @@ interface ReceivedInvoiceFormProps {
   categories: { id: string; name: string }[]
   providers: { id: string; name: string; nif: string }[]
   projects?: { id: string; name: string }[]
+  banks?: Bank[]
   invoice?: any
 }
 
-export function ReceivedInvoiceForm({ categories, providers, projects = [], invoice }: ReceivedInvoiceFormProps) {
+export function ReceivedInvoiceForm({ categories, providers, projects = [], banks = [], invoice }: ReceivedInvoiceFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -67,6 +70,12 @@ export function ReceivedInvoiceForm({ categories, providers, projects = [], invo
   const [uploadedFile, setUploadedFile] = useState<string | null>(invoice?.fileUrl || null)
   const [showCriticalNotice, setShowCriticalNotice] = useState(false)
   const [pendingFormData, setPendingFormData] = useState<ReceivedInvoiceFormValues | null>(null)
+
+  // Estado para método de pago
+  const [paymentMethod, setPaymentMethod] = useState<"bank" | "bizum" | "cash" | null>(invoice?.paymentMethod || null)
+  const [selectedBankId, setSelectedBankId] = useState<string | null>(invoice?.bankId || null)
+  const [bizumHolder, setBizumHolder] = useState(invoice?.bizumHolder || "")
+  const [bizumNumber, setBizumNumber] = useState(invoice?.bizumNumber || "")
 
   const isEditing = !!invoice
 
@@ -193,6 +202,11 @@ export function ReceivedInvoiceForm({ categories, providers, projects = [], invo
           ...line,
           total: (line.quantity || 0) * (line.unitPrice || 0),
         })),
+        // Datos del método de pago
+        paymentMethod,
+        bankId: selectedBankId,
+        bizumHolder,
+        bizumNumber,
       }
       if (isEditing) {
         // Actualizar factura existente
@@ -445,6 +459,19 @@ export function ReceivedInvoiceForm({ categories, providers, projects = [], invo
               )}
             />
           </div>
+
+          {/* Método de Pago */}
+          <PaymentMethodSelector
+            value={paymentMethod}
+            onValueChange={setPaymentMethod}
+            banks={banks}
+            selectedBankId={selectedBankId}
+            onBankChange={setSelectedBankId}
+            bizumHolder={bizumHolder}
+            onBizumHolderChange={setBizumHolder}
+            bizumNumber={bizumNumber}
+            onBizumNumberChange={setBizumNumber}
+          />
 
           {/* Subida de archivo */}
           <div className="space-y-4">

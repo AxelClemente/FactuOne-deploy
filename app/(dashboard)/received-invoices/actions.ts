@@ -10,6 +10,7 @@ import { getCurrentUser, hasPermission } from "@/lib/auth"
 import { v4 as uuidv4 } from "uuid"
 import { createNotification } from "@/lib/notifications"
 import { providers } from "@/app/db/schema"
+import { receivedInvoiceLines } from "@/app/db/schema"
 
 // Esquemas de validación
 const receivedInvoiceSchema = z.object({
@@ -21,6 +22,18 @@ const receivedInvoiceSchema = z.object({
   documentUrl: z.string().optional(),
   number: z.string().optional(),
   projectId: z.string().optional(),
+  // Campos del método de pago
+  paymentMethod: z.enum(["bank", "bizum", "cash"]).optional(),
+  bankId: z.string().optional(),
+  bizumHolder: z.string().optional(),
+  bizumNumber: z.string().optional(),
+  lines: z.array(z.object({
+    description: z.string().min(1, { message: "La descripción es obligatoria" }),
+    quantity: z.number().min(0.01, { message: "La cantidad debe ser positiva" }),
+    unitPrice: z.number().min(0.01, { message: "El precio unitario debe ser positivo" }),
+    taxRate: z.number().optional(),
+    total: z.number().optional(),
+  })).optional(),
 })
 
 type ReceivedInvoiceFormData = z.infer<typeof receivedInvoiceSchema>
@@ -81,7 +94,27 @@ export async function createReceivedInvoice(formData: ReceivedInvoiceFormData): 
       total: validatedData.amount,
       dueDate: dueDate, // Añadir la fecha de vencimiento
       projectId: validatedData.projectId || null,
+      // Campos del método de pago
+      paymentMethod: validatedData.paymentMethod || null,
+      bankId: validatedData.bankId || null,
+      bizumHolder: validatedData.bizumHolder || null,
+      bizumNumber: validatedData.bizumNumber || null,
     })
+
+    // Crear las líneas de la factura recibida si existen
+    if (validatedData.lines && validatedData.lines.length > 0) {
+      const linesToInsert = validatedData.lines.map((line: any) => ({
+        id: uuidv4(),
+        receivedInvoiceId: id,
+        description: line.description,
+        quantity: line.quantity,
+        unitPrice: line.unitPrice,
+        taxRate: line.taxRate,
+        total: line.total || (line.quantity * line.unitPrice),
+      }))
+      
+      await db.insert(receivedInvoiceLines).values(linesToInsert)
+    }
 
     // Crear notificación
     await createNotification({
@@ -111,7 +144,33 @@ export async function updateReceivedInvoice(
     await db.update(receivedInvoices).set({
       ...validatedData,
       projectId: validatedData.projectId || null,
+      // Campos del método de pago
+      paymentMethod: validatedData.paymentMethod || null,
+      bankId: validatedData.bankId || null,
+      bizumHolder: validatedData.bizumHolder || null,
+      bizumNumber: validatedData.bizumNumber || null,
     }).where(eq(receivedInvoices.id, invoiceId))
+
+    // Actualizar las líneas de la factura recibida
+    if (validatedData.lines) {
+      // Eliminar líneas existentes
+      await db.delete(receivedInvoiceLines).where(eq(receivedInvoiceLines.receivedInvoiceId, invoiceId))
+      
+      // Insertar nuevas líneas
+      if (validatedData.lines.length > 0) {
+        const linesToInsert = validatedData.lines.map((line: any) => ({
+          id: uuidv4(),
+          receivedInvoiceId: invoiceId,
+          description: line.description,
+          quantity: line.quantity,
+          unitPrice: line.unitPrice,
+          taxRate: line.taxRate,
+          total: line.total || (line.quantity * line.unitPrice),
+        }))
+        
+        await db.insert(receivedInvoiceLines).values(linesToInsert)
+      }
+    }
 
     revalidatePath(`/received-invoices/${invoiceId}`)
     revalidatePath("/received-invoices")
@@ -287,6 +346,7 @@ export async function getReceivedInvoiceById(invoiceId: string) {
     const invoice = await db.query.receivedInvoices.findFirst({
       where: eq(receivedInvoices.id, invoiceId),
       with: {
+        lines: true,
         provider: true,
         project: true,
       },

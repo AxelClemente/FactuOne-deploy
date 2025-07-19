@@ -128,6 +128,18 @@ export const invoiceLines = table("invoice_lines", {
   ...timestamps,
 });
 
+// ReceivedInvoiceLines (Líneas de Factura Recibida)
+export const receivedInvoiceLines = table("received_invoice_lines", {
+  ...stringId,
+  receivedInvoiceId: t.varchar("received_invoice_id", { length: 36 }).notNull().references(() => receivedInvoices.id),
+  description: t.text("description").notNull(),
+  quantity: t.int("quantity").notNull(),
+  unitPrice: t.decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
+  taxRate: t.decimal("tax_rate", { precision: 5, scale: 2 }).notNull(),
+  total: t.decimal("total", { precision: 10, scale: 2 }).notNull(),
+  ...timestamps,
+});
+
 // ReceivedInvoiceTypes
 export const receivedTypes = table("received_invoice_types", {
   ...stringId,
@@ -324,7 +336,7 @@ export const providersRelations = relations(providers, ({ many }) => ({
   receivedInvoices: many(receivedInvoices),
 }));
 
-export const receivedInvoicesRelations = relations(receivedInvoices, ({ one }) => ({
+export const receivedInvoicesRelations = relations(receivedInvoices, ({ one, many }) => ({
   provider: one(providers, {
     fields: [receivedInvoices.providerId],
     references: [providers.id],
@@ -336,6 +348,14 @@ export const receivedInvoicesRelations = relations(receivedInvoices, ({ one }) =
   bank: one(banks, {
     fields: [receivedInvoices.bankId],
     references: [banks.id],
+  }),
+  lines: many(receivedInvoiceLines),
+}));
+
+export const receivedInvoiceLinesRelations = relations(receivedInvoiceLines, ({ one }) => ({
+  receivedInvoice: one(receivedInvoices, {
+    fields: [receivedInvoiceLines.receivedInvoiceId],
+    references: [receivedInvoices.id],
   }),
 }));
 
@@ -390,6 +410,9 @@ export type NewInvoice = typeof invoices.$inferInsert;
 
 export type InvoiceLine = typeof invoiceLines.$inferSelect;
 export type NewInvoiceLine = typeof invoiceLines.$inferInsert;
+
+export type ReceivedInvoiceLine = typeof receivedInvoiceLines.$inferSelect;
+export type NewReceivedInvoiceLine = typeof receivedInvoiceLines.$inferInsert;
 
 export type ReceivedInvoiceType = typeof receivedTypes.$inferSelect;
 export type NewReceivedInvoiceType = typeof receivedTypes.$inferInsert;
