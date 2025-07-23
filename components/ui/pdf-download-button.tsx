@@ -1,9 +1,12 @@
 "use client"
 
 import { useState } from 'react'
+import { Dialog, DialogContent, DialogTrigger, DialogClose, DialogTitle } from "@/components/ui/dialog"
 import { Button } from '@/components/ui/button'
 import { Download } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
 
 interface PDFDownloadButtonProps {
   invoiceId: string
@@ -14,37 +17,32 @@ interface PDFDownloadButtonProps {
 
 export function PDFDownloadButton({ invoiceId, invoiceNumber, type, children }: PDFDownloadButtonProps) {
   const [isGenerating, setIsGenerating] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
+  const [invoiceData, setInvoiceData] = useState<any>(null)
   const { toast } = useToast()
+
+  const handlePreview = async () => {
+    setIsGenerating(true)
+    try {
+      const response = await fetch(`/api/${type === 'invoice' ? 'invoices' : 'received-invoices'}/${invoiceId}/data`)
+      if (!response.ok) throw new Error('No se pudieron obtener los datos de la factura')
+      const data = await response.json()
+      setInvoiceData(data)
+      setShowPreview(true)
+    } catch (error) {
+      toast({ title: 'Error', description: 'No se pudo cargar la factura para previsualización', variant: 'destructive' })
+    } finally {
+      setIsGenerating(false)
+    }
+  }
 
   const handleDownload = async () => {
     setIsGenerating(true)
-    
     try {
-      console.log('[PDF] Iniciando descarga de PDF para:', { invoiceId, type, invoiceNumber })
-      
-      // Obtener los datos de la factura desde el servidor
       const response = await fetch(`/api/${type === 'invoice' ? 'invoices' : 'received-invoices'}/${invoiceId}/data`)
-      
-      console.log('[PDF] Respuesta del servidor:', response.status, response.statusText)
-      
-      if (!response.ok) {
-        throw new Error('No se pudieron obtener los datos de la factura')
-      }
-      
-      const invoiceData = await response.json()
-      
-      // Debug: Log de los datos recibidos
-      console.log('[PDF] Datos completos de la factura:', invoiceData)
-      console.log('[PDF] Método de pago:', invoiceData.paymentMethod)
-      console.log('[PDF] Banco completo:', invoiceData.bank)
-      console.log('[PDF] Bizum holder:', invoiceData.bizumHolder)
-      console.log('[PDF] Bizum number:', invoiceData.bizumNumber)
-      console.log('[PDF] Datos del negocio:', invoiceData.business)
-      
-      // Generar HTML para la factura
-      const html = generateInvoiceHTML(invoiceData, type)
-      
-      // Crear un elemento temporal para renderizar el HTML
+      if (!response.ok) throw new Error('No se pudieron obtener los datos de la factura')
+      const data = await response.json()
+      const html = generateInvoiceHTML(data, type)
       const tempDiv = document.createElement('div')
       tempDiv.innerHTML = html
       tempDiv.style.position = 'absolute'
@@ -55,76 +53,49 @@ export function PDFDownloadButton({ invoiceId, invoiceNumber, type, children }: 
       tempDiv.style.padding = '40px'
       tempDiv.style.fontFamily = 'Arial, sans-serif'
       tempDiv.style.fontSize = '12px'
-      
       document.body.appendChild(tempDiv)
-      
-      // Importar dinámicamente las librerías
-      const [jsPDF, html2canvas] = await Promise.all([
-        import('jspdf'),
-        import('html2canvas')
-      ])
-      
-      // Convertir HTML a canvas
-      const canvas = await html2canvas.default(tempDiv, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff'
-      })
-      
-      // Generar PDF
-      const pdf = new jsPDF.default('p', 'mm', 'a4')
+      const canvas = await html2canvas(tempDiv, { scale: 2, useCORS: true, allowTaint: true })
+      const pdf = new jsPDF('p', 'mm', 'a4')
       const imgData = canvas.toDataURL('image/png')
-      const imgWidth = 210 // A4 width in mm
-      const pageHeight = 295 // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width
-      let heightLeft = imgHeight
-      
-      let position = 0
-      
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-      heightLeft -= pageHeight
-      
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight
-        pdf.addPage()
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-        heightLeft -= pageHeight
-      }
-      
-      // Descargar PDF
-      pdf.save(`${type === 'invoice' ? 'Factura' : 'FacturaRecibida'}-${invoiceNumber}.pdf`)
-      
-      // Limpiar
+      pdf.addImage(imgData, 'PNG', 0, 0, 210, 297)
+      pdf.save(`factura-${data.invoice?.number || invoiceNumber}.pdf`)
       document.body.removeChild(tempDiv)
-      
-      toast({
-        title: "PDF generado",
-        description: "El PDF se ha descargado correctamente",
-      })
-      
     } catch (error) {
-      console.error('Error generando PDF:', error)
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo generar el PDF. Inténtalo de nuevo.",
-      })
+      toast({ title: 'Error', description: 'Error generando PDF', variant: 'destructive' })
     } finally {
       setIsGenerating(false)
+      setShowPreview(false)
     }
   }
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={handleDownload}
-      disabled={isGenerating}
-    >
-      <Download className="mr-2 h-4 w-4" />
-      {isGenerating ? "Generando..." : children || "Descargar PDF"}
-    </Button>
+    <Dialog open={showPreview} onOpenChange={setShowPreview}>
+      <DialogTrigger asChild>
+        <Button onClick={handlePreview} disabled={isGenerating}>
+          <Download className="mr-2 h-4 w-4" />
+          {children || 'Descargar PDF'}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-3xl w-full">
+        <DialogTitle>Previsualización de factura</DialogTitle>
+        {invoiceData ? (
+          <div style={{ maxHeight: '80vh', overflowY: 'auto', background: '#fff', padding: 0 }}>
+            <div dangerouslySetInnerHTML={{ __html: generateInvoiceHTML(invoiceData, type) }} />
+          </div>
+        ) : (
+          <div style={{ minHeight: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Cargando factura...</div>
+        )}
+        <div className="flex justify-end gap-2 mt-4">
+          <Button onClick={handleDownload} disabled={isGenerating}>
+            <Download className="mr-2 h-4 w-4" />
+            Descargar PDF
+          </Button>
+          <DialogClose asChild>
+            <Button variant="outline">Cerrar</Button>
+          </DialogClose>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -137,126 +108,97 @@ function generateInvoiceHTML(invoiceData: any, type: 'invoice' | 'received-invoi
     return new Intl.DateTimeFormat("es-ES").format(date)
   }
 
+  // Obtener los taxRate únicos de las líneas
+  const taxRates = Array.from(new Set((invoiceData.lines || []).map((line: any) => line.taxRate))).filter(Boolean)
+  const taxRatesStr = taxRates.length > 0 ? taxRates.map(String).map(r => `${r}%`).join(', ') : ''
+
   return `
-    <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px;">
-        <div>
-          <h1 style="margin: 0; color: #333; font-size: 24px;">
-            ${type === 'invoice' ? 'FACTURA' : 'FACTURA RECIBIDA'} #${invoiceData.number}
-          </h1>
-          <p style="margin: 5px 0; color: #666;">
-            Fecha: ${formatDate(invoiceData.date)}
-            ${invoiceData.dueDate ? ` | Vencimiento: ${formatDate(invoiceData.dueDate)}` : ''}
-          </p>
+    <div style="font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; background: #fff; padding: 32px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #444; padding-bottom: 8px; margin-bottom: 8px;">
+        <div style="font-size: 15px; line-height: 1.5;">
+          <div style="font-weight: bold;">${invoiceData.business?.name || ''}</div>
+          <div>${invoiceData.business?.fiscalAddress || ''}</div>
+          <div>${invoiceData.business?.nif ? 'NIF: ' + invoiceData.business.nif : ''}</div>
         </div>
         <div style="text-align: right;">
-          <div style="font-size: 18px; font-weight: bold; color: #333;">
-            ${invoiceData.business?.name || 'Empresa'}
-          </div>
-          <div style="font-size: 12px; color: #666;">
-            NIF: ${invoiceData.business?.nif || ''}
-          </div>
+          <div style="font-size: 13px; color: #222;">Nº de factura <span style="color: #d00; font-weight: bold;">${invoiceData.number || ''}</span></div>
         </div>
       </div>
-
-      <div style="margin-bottom: 30px;">
-        <div style="margin-bottom: 20px;">
-          <h3 style="margin: 0 0 10px 0; color: #333; font-size: 16px;">
-            ${type === 'invoice' ? 'Cliente' : 'Proveedor'}
-          </h3>
-          <div style="background: #f9f9f9; padding: 15px; border-radius: 5px;">
-            <div style="font-weight: bold; margin-bottom: 5px;">
-              ${type === 'invoice' ? invoiceData.client?.name : invoiceData.provider?.name || invoiceData.providerName}
-            </div>
-            <div style="font-size: 12px; color: #666;">
-              ${type === 'invoice' ? invoiceData.client?.address : invoiceData.provider?.address || ''}
-            </div>
-            <div style="font-size: 12px; color: #666;">
-              NIF: ${type === 'invoice' ? invoiceData.client?.nif : invoiceData.provider?.nif || invoiceData.providerNIF}
-            </div>
-          </div>
-        </div>
-
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px;">
+        <div style="font-size: 28px; font-weight: bold; color: #222; border-bottom: 4px solid #889; display: inline-block; padding-right: 16px;">FACTURA</div>
+        <div style="font-size: 14px;">Fecha: ${formatDate(invoiceData.date)}</div>
       </div>
-
-      ${invoiceData.lines && invoiceData.lines.length > 0 ? `
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
-          <thead>
-            <tr style="background: #f5f5f5;">
-              <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Descripción</th>
-              <th style="border: 1px solid #ddd; padding: 10px; text-align: center;">Cantidad</th>
-              <th style="border: 1px solid #ddd; padding: 10px; text-align: right;">Precio</th>
-              <th style="border: 1px solid #ddd; padding: 10px; text-align: center;">IVA</th>
-              <th style="border: 1px solid #ddd; padding: 10px; text-align: right;">Total</th>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+        <div style="width: 48%; border: 2px solid #222; border-radius: 4px; padding: 8px 12px;">
+          <div style="font-weight: bold; margin-bottom: 4px;">Cliente</div>
+          <div><strong>Nombre:</strong> ${invoiceData.client?.name || ''}</div>
+          <div><strong>Dirección:</strong> ${invoiceData.client?.address || ''}</div>
+          <div><strong>Ciudad:</strong> ${invoiceData.client?.city || ''}</div>
+          <div><strong>NIF:</strong> ${invoiceData.client?.nif || ''}</div>
+        </div>
+        <div style="width: 48%; border: 2px solid #222; border-radius: 4px; padding: 8px 12px;">
+          <div style="font-weight: bold; margin-bottom: 4px;">Varios</div>
+          <div><strong>Fecha:</strong> ${formatDate(invoiceData.date)}</div>
+        </div>
+      </div>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 0;">
+        <thead>
+          <tr style="background: #f5f5f5;">
+            <th style="border: 1px solid #bbb; padding: 8px; text-align: center;">Cantidad</th>
+            <th style="border: 1px solid #bbb; padding: 8px; text-align: left;">Descripción</th>
+            <th style="border: 1px solid #bbb; padding: 8px; text-align: right;">Precio unitario</th>
+            <th style="border: 1px solid #bbb; padding: 8px; text-align: right;">TOTAL</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${invoiceData.lines && invoiceData.lines.length > 0 ? invoiceData.lines.map((line: any) => `
+            <tr>
+              <td style="border: 1px solid #bbb; padding: 8px; text-align: center;">${line.quantity}</td>
+              <td style="border: 1px solid #bbb; padding: 8px;">${line.description}</td>
+              <td style="border: 1px solid #bbb; padding: 8px; text-align: right;">${formatCurrency(line.unitPrice)}</td>
+              <td style="border: 1px solid #bbb; padding: 8px; text-align: right; background: #f9f7e0;">${formatCurrency(line.quantity * line.unitPrice * (1 + (line.taxRate || 0) / 100))}</td>
             </tr>
-          </thead>
-          <tbody>
-            ${invoiceData.lines.map((line: any) => `
-              <tr>
-                <td style="border: 1px solid #ddd; padding: 10px;">${line.description}</td>
-                <td style="border: 1px solid #ddd; padding: 10px; text-align: center;">${line.quantity}</td>
-                <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">${formatCurrency(line.unitPrice)}</td>
-                <td style="border: 1px solid #ddd; padding: 10px; text-align: center;">${line.taxRate}%</td>
-                <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">${formatCurrency(line.quantity * line.unitPrice * (1 + line.taxRate / 100))}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      ` : ''}
-
-      <div style="text-align: right; margin-top: 30px;">
-        <table style="margin-left: auto; border-collapse: collapse;">
+          `).join('') : ''}
+        </tbody>
+      </table>
+      <div style="display: flex; justify-content: flex-end; margin-top: 0;">
+        <table style="margin-left: auto; border-collapse: collapse; min-width: 260px;">
           <tr>
-            <td style="padding: 5px 15px; font-weight: bold;">Subtotal:</td>
-            <td style="padding: 5px 15px; text-align: right;">${formatCurrency(invoiceData.subtotal || 0)}</td>
+            <td style="padding: 4px 10px;">Subtotal:</td>
+            <td style="padding: 4px 10px; text-align: right;">${formatCurrency(invoiceData.subtotal || 0)}</td>
           </tr>
           <tr>
-            <td style="padding: 5px 15px; font-weight: bold;">IVA:</td>
-            <td style="padding: 5px 15px; text-align: right;">${formatCurrency(invoiceData.taxAmount || 0)}</td>
+            <td style="padding: 4px 10px;">Impuestos${taxRatesStr ? ` (${taxRatesStr})` : ''}:</td>
+            <td style="padding: 4px 10px; text-align: right;">${formatCurrency(invoiceData.taxAmount || 0)}</td>
           </tr>
-          <tr style="border-top: 2px solid #333;">
-            <td style="padding: 5px 15px; font-weight: bold; font-size: 16px;">TOTAL:</td>
-            <td style="padding: 5px 15px; text-align: right; font-weight: bold; font-size: 16px;">${formatCurrency(invoiceData.total || 0)}</td>
+          <tr>
+            <td style="padding: 4px 10px; font-weight: bold; font-size: 16px;">TOTAL:</td>
+            <td style="padding: 4px 10px; text-align: right; font-weight: bold; font-size: 16px;">${formatCurrency(invoiceData.total || 0)}</td>
           </tr>
         </table>
       </div>
-
-      ${invoiceData.paymentMethod ? `
-        <div style="margin-top: 30px; padding: 20px; background: #f9f9f9; border-radius: 5px;">
-          <h3 style="margin: 0 0 15px 0; color: #333; font-size: 16px;">Método de Pago</h3>
+      <div style="display: flex; margin-top: 16px;">
+        <div style="width: 60%; border: 2px solid #222; border-radius: 4px; padding: 10px 14px; margin-right: 16px; background: #fff;">
+          <div style="font-weight: bold; margin-bottom: 6px; font-size: 13px;">Medio de pago</div>
           ${invoiceData.paymentMethod === 'bank' && invoiceData.bank ? `
-            <div style="margin-bottom: 10px;">
-              <strong style="color: #333;">Transferencia Bancaria:</strong><br/>
-              <div style="margin-left: 20px; margin-top: 5px;">
-                <div style="color: #333;"><strong>Banco:</strong> ${invoiceData.bank.bankName || 'N/A'}</div>
-                <div style="color: #333;"><strong>IBAN:</strong> ${invoiceData.bank.accountNumber || 'N/A'}</div>
-                <div style="color: #333;"><strong>Titular:</strong> ${invoiceData.bank.accountHolder || 'N/A'}</div>
-              </div>
-            </div>
+            <div style="font-size: 12px; font-weight: bold; margin-bottom: 2px;">TRANSFERENCIA</div>
+            <div style="font-size: 12px; margin-bottom: 2px;">${invoiceData.bank.accountNumber ? invoiceData.bank.accountNumber : ''}</div>
+            <div style="font-size: 12px;"><strong>Banco:</strong> ${invoiceData.bank.bankName || ''}</div>
+            <div style="font-size: 12px;"><strong>IBAN:</strong> ${invoiceData.bank.accountNumber || ''}</div>
+            <div style="font-size: 12px;"><strong>Nombre:</strong> ${invoiceData.bank.accountHolder || ''}</div>
           ` : ''}
           ${invoiceData.paymentMethod === 'bizum' ? `
-            <div style="margin-bottom: 10px;">
-              <strong style="color: #333;">Bizum:</strong><br/>
-              <div style="margin-left: 20px; margin-top: 5px;">
-                <div style="color: #333;"><strong>Titular:</strong> ${invoiceData.bizumHolder || 'N/A'}</div>
-                <div style="color: #333;"><strong>Número:</strong> ${invoiceData.bizumNumber || 'N/A'}</div>
-              </div>
-            </div>
-          ` : ''}
-          ${invoiceData.paymentMethod === 'cash' ? `
-            <div style="margin-bottom: 10px;">
-              <strong style="color: #333;">Efectivo:</strong><br/>
-              <div style="margin-left: 20px; margin-top: 5px;">
-                <div style="color: #333;">Pago en efectivo al recibir la factura</div>
-              </div>
-            </div>
+            <div style="font-size: 12px; font-weight: bold; margin-bottom: 2px;">BIZUM</div>
+            <div style="font-size: 12px; margin-bottom: 2px;">${invoiceData.bizumNumber || ''}</div>
+            <div style="font-size: 12px;"><strong>Titular:</strong> ${invoiceData.bizumHolder || ''}</div>
           ` : ''}
         </div>
-      ` : ''}
-
-      <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 10px; color: #666; text-align: center;">
-        <p>Documento generado automáticamente por FactuOne</p>
-        <p>Fecha de generación: ${new Date().toLocaleDateString('es-ES')}</p>
+        <div style="width: 40%; border: 2px solid #222; border-radius: 4px; padding: 10px 14px; background: #f9f7e0;">
+          <div style="font-weight: bold; margin-bottom: 6px; font-size: 13px;">Nota</div>
+        </div>
+      </div>
+      <div style="margin-top: 32px; text-align: center; font-size: 11px; color: #888;">
+        Factura generada por FactuOne
       </div>
     </div>
   `

@@ -271,6 +271,27 @@ export function formatCurrency(amount: number | string | null | undefined): stri
 - ✅ **Menor complejidad** de despliegue
 - ✅ **Mejor experiencia de usuario** (generación instantánea)
 
+### 3.7 Inclusión de datos bancarios en PDF y XML (Enero 2025)
+
+**✅ IMPLEMENTADO:** El número de cuenta bancaria (IBAN), el nombre del banco y el titular se incluyen automáticamente en la factura exportada, tanto en PDF como en XML, cuando el método de pago es transferencia bancaria.
+
+- **PDF:** En la sección "Método de Pago" de la factura PDF, se muestra:
+  - **Banco:** Nombre del banco
+  - **IBAN:** Número de cuenta bancaria internacional
+  - **Titular:** Nombre del titular de la cuenta
+
+  Ejemplo visual:
+
+  ```
+  Método de Pago
+  Transferencia Bancaria:
+  Banco: Caixa Bank
+  IBAN: ES91 0187 0359 7786 9805 1100
+  Titular: Axel AI Developer
+  ```
+
+- **XML Facturae:** En el XML generado, estos datos se incluyen en el nodo `<Installment>` y como referencia legal en `<LegalLiterals>`, cumpliendo con el estándar Facturae 3.2.x.
+
 ---
 
 ## 4. Arquitectura y stack actual
@@ -584,3 +605,59 @@ export function formatCurrency(amount: number | string | null | undefined): stri
 ---
 
 *Este documento se actualiza regularmente. Última actualización: Enero 2025 - Sistema de PDFs client-side completamente funcional, migración exitosa de Puppeteer, análisis de cumplimiento normativo completado.*
+
+## 11. Diseño y generación del PDF de factura
+
+### 11.1 ¿Cómo se genera el diseño de la factura PDF?
+
+La exportación de facturas en PDF utiliza una arquitectura **client-side** basada en React, `jsPDF` y `html2canvas`. El flujo es el siguiente:
+
+1. **Obtención de datos:**
+   - Al pulsar el botón de descarga, el frontend solicita los datos completos de la factura al endpoint `/api/invoices/[id]/data`.
+
+2. **Generación de HTML dinámico:**
+   - Se utiliza la función `generateInvoiceHTML` (en `components/ui/pdf-download-button.tsx`) para crear una plantilla HTML personalizada con los datos de la factura.
+   - Esta plantilla incluye todos los elementos visuales: cabecera, datos del emisor y cliente, tabla de líneas, totales, y la sección de método de pago (incluyendo datos bancarios si corresponde).
+   - El diseño es responsivo y profesional, con estilos en línea para asegurar la compatibilidad en la conversión a imagen.
+
+3. **Conversión a imagen:**
+   - Se renderiza el HTML en un elemento temporal oculto en el DOM.
+   - `html2canvas` captura ese HTML y lo convierte en una imagen de alta resolución.
+
+4. **Generación y descarga del PDF:**
+   - `jsPDF` inserta la imagen generada en un documento PDF tamaño A4.
+   - El archivo PDF se descarga automáticamente con el nombre de la factura.
+
+#### Ejemplo de plantilla HTML (simplificado):
+
+```jsx
+<div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px;">
+    <div>
+      <h1>FACTURA #{invoiceData.number}</h1>
+      <p>Fecha: {fecha} | Vencimiento: {vencimiento}</p>
+    </div>
+    <div style="text-align: right;">
+      <div style="font-size: 18px; font-weight: bold;">{business.name}</div>
+      <div style="font-size: 12px;">NIF: {business.nif}</div>
+    </div>
+  </div>
+  ...
+  <div style="margin-top: 30px; padding: 20px; background: #f9f9f9; border-radius: 5px;">
+    <h3>Método de Pago</h3>
+    <div>
+      <strong>Transferencia Bancaria:</strong><br/>
+      <div><strong>Banco:</strong> {bank.bankName}</div>
+      <div><strong>IBAN:</strong> {bank.accountNumber}</div>
+      <div><strong>Titular:</strong> {bank.accountHolder}</div>
+    </div>
+  </div>
+</div>
+```
+
+### 11.2 Ventajas del enfoque
+- El diseño es **totalmente personalizable** y puede evolucionar fácilmente.
+- Permite mostrar información bancaria, branding, y cualquier otro dato relevante.
+- La conversión a PDF es instantánea y funciona igual en todos los entornos.
+
+---
