@@ -309,6 +309,62 @@ export const userModuleExclusions = table("user_module_exclusions", {
   updatedAt: t.datetime("updated_at").default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`).notNull(),
 }, (table) => [t.unique().on(table.userId, table.businessId, table.module, table.entityId)]);
 
+// Tabla para registro VERI*FACTU
+export const verifactuRegistry = table("verifactu_registry", {
+  ...stringId,
+  businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
+  invoiceId: t.varchar("invoice_id", { length: 36 }).notNull().references(() => invoices.id),
+  invoiceType: t.mysqlEnum("invoice_type", ["sent", "received"]).notNull(),
+  sequenceNumber: t.int("sequence_number").notNull(), // Número secuencial por negocio
+  previousHash: t.varchar("previous_hash", { length: 128 }), // Hash del registro anterior
+  currentHash: t.varchar("current_hash", { length: 128 }).notNull(), // Hash del registro actual
+  qrCode: t.text("qr_code").notNull(), // Contenido del código QR
+  qrUrl: t.varchar("qr_url", { length: 500 }).notNull(), // URL del QR
+  xmlContent: t.text("xml_content").notNull(), // XML completo para envío
+  signedXml: t.text("signed_xml"), // XML firmado con XAdES
+  transmissionStatus: t.mysqlEnum("transmission_status", ["pending", "sending", "sent", "error", "rejected"]).notNull().default("pending"),
+  transmissionDate: t.datetime("transmission_date"), // Fecha de envío a AEAT
+  aeatResponse: t.text("aeat_response"), // Respuesta completa de AEAT
+  aeatCsv: t.varchar("aeat_csv", { length: 50 }), // CSV de confirmación AEAT
+  errorMessage: t.text("error_message"), // Mensaje de error si falla
+  retryCount: t.int("retry_count").default(0), // Número de reintentos
+  nextRetryAt: t.datetime("next_retry_at"), // Próximo intento de envío
+  isVerifiable: t.boolean("is_verifiable").default(false).notNull(), // Si es sistema VERI*FACTU
+  ...timestamps,
+}, (table) => [
+  t.unique().on(table.businessId, table.sequenceNumber),
+  t.index("idx_invoice").on(table.invoiceId),
+  t.index("idx_status").on(table.transmissionStatus),
+  t.index("idx_retry").on(table.nextRetryAt)
+]);
+
+// Configuración VERI*FACTU por negocio
+export const verifactuConfig = table("verifactu_config", {
+  ...stringId,
+  businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
+  enabled: t.boolean("enabled").default(false).notNull(), // Si está activo VERI*FACTU
+  mode: t.mysqlEnum("mode", ["verifactu", "requerimiento"]).notNull().default("verifactu"), // Modo de operación
+  certificatePath: t.varchar("certificate_path", { length: 500 }), // Ruta al certificado digital
+  certificatePassword: t.varchar("certificate_password", { length: 255 }), // Contraseña cifrada
+  environment: t.mysqlEnum("environment", ["production", "testing"]).notNull().default("testing"),
+  lastSequenceNumber: t.int("last_sequence_number").default(0).notNull(), // Último número de secuencia usado
+  flowControlSeconds: t.int("flow_control_seconds").default(60).notNull(), // Segundos entre envíos
+  maxRecordsPerSubmission: t.int("max_records_per_submission").default(100).notNull(),
+  autoSubmit: t.boolean("auto_submit").default(true).notNull(), // Envío automático
+  includeInPdf: t.boolean("include_in_pdf").default(true).notNull(), // Incluir QR y leyenda en PDF
+  ...timestamps,
+}, (table) => [t.unique().on(table.businessId)]);
+
+// Tabla de eventos VERI*FACTU (para auditoría detallada)
+export const verifactuEvents = table("verifactu_events", {
+  ...stringId,
+  businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
+  registryId: t.varchar("registry_id", { length: 36 }).references(() => verifactuRegistry.id),
+  eventType: t.varchar("event_type", { length: 50 }).notNull(), // created, signed, sent, confirmed, error
+  eventData: t.text("event_data"), // Datos del evento en JSON
+  createdAt: t.datetime("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => [t.index("idx_registry").on(table.registryId)]);
+
 // DEFINICIÓN DE RELACIONES
 export const clientsRelations = relations(clients, ({ many }) => ({
   invoices: many(invoices),
@@ -449,3 +505,40 @@ export type NewAutomationLine = typeof automationLines.$inferInsert;
 
 export type AutomationExecution = typeof automationExecutions.$inferSelect;
 export type NewAutomationExecution = typeof automationExecutions.$inferInsert;
+
+// Relaciones VERI*FACTU
+export const verifactuRegistryRelations = relations(verifactuRegistry, ({ one, many }) => ({
+  business: one(businesses, {
+    fields: [verifactuRegistry.businessId],
+    references: [businesses.id],
+  }),
+  invoice: one(invoices, {
+    fields: [verifactuRegistry.invoiceId],
+    references: [invoices.id],
+  }),
+  events: many(verifactuEvents),
+}));
+
+export const verifactuConfigRelations = relations(verifactuConfig, ({ one }) => ({
+  business: one(businesses, {
+    fields: [verifactuConfig.businessId],
+    references: [businesses.id],
+  }),
+}));
+
+export const verifactuEventsRelations = relations(verifactuEvents, ({ one }) => ({
+  registry: one(verifactuRegistry, {
+    fields: [verifactuEvents.registryId],
+    references: [verifactuRegistry.id],
+  }),
+}));
+
+// Tipos VERI*FACTU
+export type VerifactuRegistry = typeof verifactuRegistry.$inferSelect;
+export type NewVerifactuRegistry = typeof verifactuRegistry.$inferInsert;
+
+export type VerifactuConfig = typeof verifactuConfig.$inferSelect;
+export type NewVerifactuConfig = typeof verifactuConfig.$inferInsert;
+
+export type VerifactuEvent = typeof verifactuEvents.$inferSelect;
+export type NewVerifactuEvent = typeof verifactuEvents.$inferInsert;

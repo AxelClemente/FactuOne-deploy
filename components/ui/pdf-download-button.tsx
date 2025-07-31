@@ -27,6 +27,14 @@ export function PDFDownloadButton({ invoiceId, invoiceNumber, type, children }: 
       const response = await fetch(`/api/${type === 'invoice' ? 'invoices' : 'received-invoices'}/${invoiceId}/data`)
       if (!response.ok) throw new Error('No se pudieron obtener los datos de la factura')
       const data = await response.json()
+      
+      // Obtener datos del registro VERI*FACTU si existe
+      const verifactuResponse = await fetch(`/api/${type === 'invoice' ? 'invoices' : 'received-invoices'}/${invoiceId}/verifactu`)
+      if (verifactuResponse.ok) {
+        const verifactuData = await verifactuResponse.json()
+        data.verifactu = verifactuData
+      }
+      
       setInvoiceData(data)
       setShowPreview(true)
     } catch (error) {
@@ -42,6 +50,14 @@ export function PDFDownloadButton({ invoiceId, invoiceNumber, type, children }: 
       const response = await fetch(`/api/${type === 'invoice' ? 'invoices' : 'received-invoices'}/${invoiceId}/data`)
       if (!response.ok) throw new Error('No se pudieron obtener los datos de la factura')
       const data = await response.json()
+      
+      // Obtener datos del registro VERI*FACTU si existe
+      const verifactuResponse = await fetch(`/api/${type === 'invoice' ? 'invoices' : 'received-invoices'}/${invoiceId}/verifactu`)
+      if (verifactuResponse.ok) {
+        const verifactuData = await verifactuResponse.json()
+        data.verifactu = verifactuData
+      }
+      
       const html = generateInvoiceHTML(data, type)
       const tempDiv = document.createElement('div')
       tempDiv.innerHTML = html
@@ -197,6 +213,16 @@ function generateInvoiceHTML(invoiceData: any, type: 'invoice' | 'received-invoi
           <div style="font-weight: bold; margin-bottom: 6px; font-size: 13px;">Nota</div>
         </div>
       </div>
+      ${invoiceData.verifactu ? `
+        <div style="margin-top: 20px; text-align: center;">
+          <img src="${invoiceData.verifactu.qrCode}" alt="Código QR VERI*FACTU" style="width: 150px; height: 150px;" />
+          ${invoiceData.verifactu.isVerifiable ? `
+            <p style="font-size: 11px; margin-top: 8px; color: #444; font-weight: bold;">
+              Factura verificable en la sede electrónica de la AEAT
+            </p>
+          ` : ''}
+        </div>
+      ` : ''}
       <div style="margin-top: 32px; text-align: center; font-size: 11px; color: #888;">
         Factura generada por FactuOne
       </div>

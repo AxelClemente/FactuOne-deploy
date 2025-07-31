@@ -10,6 +10,7 @@ import { eq, and, sql, gte, lte, or, like } from "drizzle-orm"
 import { v4 as uuidv4 } from "uuid"
 import { createNotification } from "@/lib/notifications"
 import { auditHelpers } from "@/lib/audit"
+import { VerifactuService } from "@/lib/verifactu-service"
 import { getBanksWithStats } from "@/app/(dashboard)/banks/actions"
 
 // Esquemas de validación
@@ -219,7 +220,37 @@ export async function updateInvoiceStatus(invoiceId: string, status: "draft" | "
       return { success: false, error: "Factura no encontrada" }
     }
 
+    console.log('💰 Actualizando estado de factura:', { invoiceId, oldStatus: existingInvoice.status, newStatus: status })
+    
     await db.update(invoices).set({ status }).where(eq(invoices.id, invoiceId))
+    
+    // 🎯 INTEGRACIÓN VERI*FACTU: Crear registro cuando se marca como pagada
+    if (status === "paid" && existingInvoice.status !== "paid") {
+      console.log('✨ VERI*FACTU: Factura marcada como pagada, creando registro...')
+      try {
+        const businessId = existingInvoice.businessId
+        
+        // Verificar si VERI*FACTU está habilitado para este negocio
+        const verifactuConfig = await VerifactuService.getConfig(businessId)
+        
+        if (verifactuConfig?.enabled) {
+          console.log('🔥 VERI*FACTU habilitado, creando registro...')
+          
+          const registry = await VerifactuService.createRegistry({
+            invoiceId,
+            invoiceType: 'sent',
+            businessId
+          })
+          
+          console.log('✅ Registro VERI*FACTU creado:', registry.id)
+        } else {
+          console.log('⚠️ VERI*FACTU no está habilitado para este negocio')
+        }
+      } catch (verifactuError) {
+        console.error('❌ Error creando registro VERI*FACTU:', verifactuError)
+        // No fallar la actualización por errores de VERI*FACTU
+      }
+    }
     
     // Registrar evento de auditoría
     await auditHelpers.logInvoiceStatusChanged(invoiceId, existingInvoice.status, status)
