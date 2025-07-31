@@ -212,3 +212,63 @@ export async function retryVerifactuSubmission(registryId: string) {
     }
   }
 }
+
+export async function activateRegistryForRequirement(registryId: string) {
+  const user = await getCurrentUser()
+  if (!user) throw new Error("No autorizado")
+
+  const businessId = await getActiveBusiness()
+  if (!businessId) throw new Error("No se encontró el negocio activo")
+
+  const canEdit = await hasPermission(user.id, businessId, "invoices", "create")
+  if (!canEdit) throw new Error("Sin permisos para activar registros")
+
+  try {
+    const db = await getDb()
+    
+    // Verificar que el registro pertenece al negocio
+    const [registry] = await db
+      .select()
+      .from(verifactuRegistry)
+      .where(
+        and(
+          eq(verifactuRegistry.id, registryId),
+          eq(verifactuRegistry.businessId, businessId)
+        )
+      )
+
+    if (!registry) {
+      throw new Error("Registro no encontrado")
+    }
+
+    if (registry.transmissionStatus !== 'dormant') {
+      throw new Error("Solo se pueden activar registros en estado dormant")
+    }
+
+    // Cambiar estado de dormant a pending para procesamiento
+    await db
+      .update(verifactuRegistry)
+      .set({
+        transmissionStatus: 'pending',
+        nextRetryAt: new Date(), // Procesar inmediatamente
+        activatedAt: new Date()  // Marcar cuándo se activó manualmente
+      })
+      .where(eq(verifactuRegistry.id, registryId))
+
+    await VerifactuService.createEvent(businessId, 'requirement_activation', { 
+      manualActivation: true,
+      previousStatus: 'dormant',
+      activatedBy: user.id
+    }, registryId)
+
+    revalidatePath("/verifactu")
+    
+    return { success: true }
+  } catch (error) {
+    console.error("Error activando registro para requerimiento:", error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : "Error al activar el registro" 
+    }
+  }
+}

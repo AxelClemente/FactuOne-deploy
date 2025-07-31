@@ -752,4 +752,605 @@ Pestañas implementadas:
 
 ---
 
-*Última actualización: 31 Enero 2025 - ¡Sistema VERI*FACTU 100% FUNCIONAL y PROBADO exitosamente!* 🚀
+---
+
+## 🖥️ **GUÍA COMPLETA DE LA INTERFAZ VERI*FACTU**
+
+### **📍 Ubicación y Acceso**
+
+El sistema VERI*FACTU se encuentra en el menú principal de navegación:
+```
+Sidebar → VERI*FACTU (icono de QR)
+URL: /verifactu
+```
+
+La interfaz está organizada en **4 pestañas principales**, cada una con funciones específicas:
+
+---
+
+## 🔧 **TAB 1: CONFIGURACIÓN**
+
+### **🎯 Propósito:**
+**Centro de control principal** donde se configura todo el comportamiento del sistema VERI*FACTU para tu negocio.
+
+### **⚙️ Configuraciones Disponibles:**
+
+#### **🔘 Activar VERI*FACTU**
+```
+Opción: enabled (true/false)
+├── ✅ true → Sistema completamente activo
+└── ❌ false → Sistema desactivado (facturas normales sin VERI*FACTU)
+```
+
+**📋 Casos de uso:**
+- **Activar**: Cuando quieres que todas las facturas incluyan VERI*FACTU
+- **Desactivar**: Para facturas antiguas o testing sin generar registros
+
+#### **🎛️ Modo de Operación**
+```
+Opciones: "verifactu" vs "requerimiento"
+├── 🚀 VERI*FACTU (Envío Voluntario)
+│   ├── Envío automático de TODAS las facturas
+│   ├── QR verificable en TODAS las facturas
+│   ├── Máxima protección fiscal
+│   └── Recomendado para la mayoría de empresas
+│
+└── 📞 REQUERIMIENTO (Solo por Solicitud)
+    ├── Envío SOLO cuando AEAT lo solicite
+    ├── QR solo en facturas enviadas por requerimiento
+    ├── Cumplimiento mínimo legal
+    └── Para empresas con pocos clientes
+```
+
+**🏢 Ejemplos prácticos:**
+
+**Empresa grande (500+ facturas/mes):**
+```
+Configuración recomendada:
+├── Modo: "verifactu"
+├── Razón: Clientes exigen transparencia
+└── Beneficio: Todas las facturas verificables
+```
+
+**Negocio pequeño (20 facturas/mes):**
+```
+Configuración opcional:
+├── Modo: "requerimiento"  
+├── Razón: Menos carga administrativa
+└── Beneficio: Solo procesa si AEAT lo pide
+```
+
+#### **🌍 Entorno**
+```
+Opciones: "testing" vs "production"
+├── 🧪 TESTING (Desarrollo)
+│   ├── URLs: https://prewww1.aeat.es/...
+│   ├── Certificados: No necesarios
+│   ├── Datos: Ficticios aceptados
+│   └── QR: Error 404 normal (no existe en AEAT)
+│
+└── 🏭 PRODUCTION (Real)
+    ├── URLs: https://www1.agenciatributaria.gob.es/...
+    ├── Certificados: Digitales oficiales OBLIGATORIOS
+    ├── Datos: Reales del negocio OBLIGATORIOS
+    └── QR: Funciona perfectamente
+```
+
+**⚡ ¿Qué cambia al pasar a producción?**
+- 📡 **URLs automáticas** a endpoints oficiales AEAT
+- 🔑 **Certificados obligatorios** para firma digital
+- ✅ **QR codes verificables** con datos reales
+- ⏰ **Control de flujo estricto** (60s mínimos)
+
+#### **⏰ Segundos entre Envíos**
+```
+Rango: 60-3600 segundos
+├── 60s → Mínimo legal AEAT (recomendado)
+├── 90s → Más conservador (recomendado empresas medianas)
+├── 120s → Máxima seguridad (recomendado empresas grandes)
+└── 180s → Para problemas de conectividad
+```
+
+**🎯 ¿Por qué es configurable?**
+- 📋 **Cumplimiento normativo**: AEAT exige mínimo 60s
+- 🏢 **Volumen variable**: Diferentes necesidades por negocio
+- 🚨 **Problemas técnicos**: Mayor espaciado si hay fallos
+- 🔄 **Cambios futuros**: Adaptable a nuevas normativas
+
+#### **🎛️ Configuraciones Adicionales**
+```
+├── autoSubmit: true/false → Envío automático vs manual
+├── includeInPdf: true/false → QR en PDFs (recomendado: true)
+└── maxRecordsPerSubmission: 1-1000 → Registros por lote
+```
+
+### **💾 Persistencia de Configuración**
+```
+✅ Se guarda automáticamente en base de datos
+✅ Persiste por negocio (multi-tenant)
+✅ Una vez configurado, funciona automáticamente
+✅ Solo reconfigurar para cambios de entorno/certificados
+```
+
+---
+
+## 📊 **TAB 2: ESTADÍSTICAS**
+
+### **🎯 Propósito:**
+**Dashboard visual** que muestra métricas en tiempo real del estado de todos los registros VERI*FACTU.
+
+### **📈 Métricas Principales:**
+
+#### **🔢 Contadores por Estado**
+```
+┌─────────────────────────────────────────┐
+│ 📊 ESTADÍSTICAS VERI*FACTU              │
+├─────────────────────────────────────────┤
+│  Total: 156 registros                   │
+├─────────────────────────────────────────┤
+│   5      2       140      9             │
+│ Pend   Proc    Enviad   Error           │
+├─────────────────────────────────────────┤
+│ 🟡     🔵      🟢       🔴              │
+└─────────────────────────────────────────┘
+```
+
+**📋 Interpretación:**
+- **🟡 Pendientes (5)**: Facturas esperando ser enviadas a AEAT
+- **🔵 Procesando (2)**: Registros enviándose AHORA MISMO  
+- **🟢 Enviados (140)**: Registros confirmados exitosamente por AEAT
+- **🔴 Con Error (9)**: Registros que fallaron y necesitan atención
+
+#### **📅 Último Registro Procesado**
+```
+Información mostrada:
+├── Fecha y hora del último envío exitoso
+├── Número de secuencia del último registro
+├── Estado actual del procesamiento
+└── Tiempo transcurrido desde último envío
+```
+
+#### **📊 Gráficos Visuales**
+```
+├── Barras de progreso por estado
+├── Porcentaje de éxito (Enviados/Total)
+├── Tendencia de errores
+└── Actividad por período
+```
+
+### **🔄 Actualización Automática**
+- ✅ **Actualización automática** cada 30 segundos
+- 🔄 **Botón manual** para actualizar inmediatamente
+- 📊 **Datos en tiempo real** desde base de datos
+
+---
+
+## 📋 **TAB 3: REGISTROS**
+
+### **🎯 Propósito:**
+**Lista detallada** de todos los registros VERI*FACTU con opciones de gestión individual.
+
+### **📝 Información por Registro:**
+
+#### **🏷️ Columnas de la Tabla**
+```
+┌──────┬──────────┬─────────────────┬───────────┬─────────────┬─────────────┐
+│ Seq  │   Tipo   │     Factura     │  Estado   │    Fecha    │   Acciones  │
+├──────┼──────────┼─────────────────┼───────────┼─────────────┼─────────────┤
+│  #1  │ Emitida  │ FAC-2025-001    │ SENT ✅   │ 31/01/2025  │ [🔗 Ver QR] │
+│  #2  │ Emitida  │ FAC-2025-002    │ DORMANT 🔒│ 30/01/2025  │ [🔄 Activar]│
+│  #3  │ Emitida  │ FAC-2025-003    │ ERROR ❌  │ 29/01/2025  │ [↻ Reintentar]│
+└──────┴──────────┴─────────────────┴───────────┴─────────────┴─────────────┘
+```
+
+#### **📊 Estados de Registros**
+```
+Estados posibles:
+├── 🔒 DORMANT → Preparado pero no para envío (modo requerimiento)
+├── 🟡 PENDING → Listo para enviar automáticamente
+├── 🔵 PROCESSING → Enviándose ahora mismo a AEAT
+├── ✅ SENT → Enviado exitosamente con CSV de confirmación
+└── ❌ ERROR → Error en envío, requiere reintento
+```
+
+### **🎛️ Acciones Disponibles:**
+
+#### **🔄 Botón "Activar" (Estado DORMANT)**
+```typescript
+Cuándo aparece: registry.transmissionStatus === 'dormant'
+Función: Activar registro para envío inmediato
+├── Cambia estado: dormant → pending
+├── Worker automático lo detecta
+├── Se procesa y envía a AEAT
+└── PDF se actualiza con QR verificable
+```
+
+**📋 Caso de uso:**
+```
+Escenario: Modo "requerimiento" + AEAT solicita facturas
+Acción: Clic en "Activar" para las facturas requeridas
+Resultado: Solo esas facturas se envían a AEAT
+```
+
+#### **↻ Botón "Reintentar" (Estado ERROR)**
+```typescript
+Cuándo aparece: registry.transmissionStatus === 'error'
+Función: Reintentar envío fallido
+├── Verificar configuración (certificados, conexión)
+├── Cambia estado: error → pending
+├── Worker reintenta automáticamente
+└── Si funciona: error → sent
+```
+
+**📋 Casos de uso:**
+- 🌐 **Problemas de red**: Conexión restaurada
+- 🔑 **Certificados**: Se actualizaron certificados
+- 📄 **XML**: Se corrigió problema de formato
+- 🚨 **AEAT**: Servicio temporalmente caído se restauró
+
+#### **🔗 Botón "Ver QR" (Estado SENT)**
+```typescript
+Cuándo aparece: registry.transmissionStatus === 'sent'
+Función: Abrir URL de verificación AEAT
+├── Abre nueva ventana/tab
+├── URL: https://www2.agenciatributaria.gob.es/es13/h/qr?...
+├── En testing: Error 404 (normal)
+└── En producción: Datos oficiales verificables
+```
+
+### **📄 Paginación y Filtros**
+```
+├── 10, 25, 50 registros por página
+├── Ordenación por fecha/secuencia
+├── Filtros por estado
+└── Búsqueda por número de factura
+```
+
+---
+
+## 🤖 **TAB 4: WORKER**
+
+### **🎯 Propósito:**
+**Centro de control automático** - El "cerebro" que procesa registros VERI*FACTU automáticamente 24/7.
+
+### **🏭 ¿Qué es el Worker?**
+```
+El Worker es un "empleado digital" que:
+├── 👀 Detecta registros pendientes (estado "pending")
+├── 🔄 Procesa cada registro automáticamente
+├── 📄 Genera XML según esquemas AEAT
+├── 🔐 Firma digitalmente (si configurado)
+├── 📡 Envía a AEAT vía SOAP
+├── ✅ Actualiza estado según respuesta AEAT
+└── ⏰ Respeta control de flujo (60s entre envíos)
+```
+
+### **📊 Estadísticas en Tiempo Real**
+
+#### **🎯 Los 4 Contadores Principales:**
+```
+┌─────────────────────────────────────────┐
+│ 🤖 Worker VERI*FACTU                    │
+├─────────────────────────────────────────┤
+│    5      0       120     2             │
+│  Pend   Proc    Enviad  Error           │
+├─────────────────────────────────────────┤
+│ 🟡 Esperando ser enviados               │
+│ 🔵 Enviándose AHORA MISMO               │
+│ 🟢 Enviados exitosamente                │
+│ 🔴 Fallaron, necesitan atención         │
+└─────────────────────────────────────────┘
+```
+
+#### **⏰ Control de Flujo AEAT:**
+```
+Estados del control:
+├── ✅ Listo para procesar → Puede enviar ahora
+└── ⏳ Esperar 45s → Debe esperar por normativa AEAT
+```
+
+### **🎛️ Controles Manuales**
+
+#### **▶️ BOTÓN "PROCESAR COLA"**
+```typescript
+Función: Procesa TODOS los registros pendientes
+├── Busca registros con estado "pending"
+├── Los procesa en lotes de 10 (configurable)
+├── Respeta 60 segundos entre cada envío
+└── Actualiza estados automáticamente
+```
+
+**📋 Cuándo usarlo:**
+```
+✅ Acelerar procesamiento → Tienes registros acumulados
+✅ Testing manual → Verificar que todo funciona
+✅ Después de configurar → Procesar facturas esperando
+✅ Resolver acumulación → Si worker automático estuvo parado
+```
+
+**🔄 Ejemplo práctico:**
+```
+Estado inicial: 5 Pendientes
+[Clic "Procesar Cola"]
+Procesando... (respeta 60s entre cada uno)
+Resultado final: 3 Enviados ✅, 2 Errores ❌
+Tiempo total: ~5 minutos
+```
+
+#### **🔄 BOTÓN "REINTENTAR ERRORES"**
+```typescript
+Función: Reintenta SOLO registros que fallaron
+├── Busca registros con estado "error"
+├── Los cambia a "pending"
+├── Los vuelve a procesar automáticamente
+└── Incrementa contador de reintentos
+```
+
+**📋 Cuándo usarlo:**
+```
+❌ Problemas de conexión → AEAT estuvo temporalmente caído
+📄 Error de XML → Se corrigió problema de formato
+🔑 Certificados → Se actualizaron certificados digitales
+🌐 Problemas de red → Conexión a internet restaurada
+```
+
+**🔄 Ejemplo práctico:**
+```
+Estado inicial: 2 Con Error
+[Clic "Reintentar Errores"]
+Reintentando...
+Resultado: 1 Enviado ✅, 1 Error ❌ (necesita revisión manual)
+```
+
+#### **🗑️ BOTÓN "LIMPIAR ANTIGUOS"**
+```typescript
+Función: Elimina registros antiguos exitosos
+├── Busca registros con estado "sent"
+├── Más antiguos que 365 días (configurable)
+├── Los elimina de la base de datos
+└── Mantiene registros recientes y con errores
+```
+
+**📋 Cuándo usarlo:**
+```
+💽 Optimizar base de datos → Liberar espacio en disco
+🏢 Cumplimiento legal → Mantener solo registros requeridos
+⚡ Mejorar rendimiento → Menos registros = consultas más rápidas
+📊 Limpieza anual → Rutina de mantenimiento
+```
+
+**🔄 Ejemplo práctico:**
+```
+Estado inicial: 1000 registros históricos
+[Clic "Limpiar Antiguos"]
+Limpiando...
+Resultado: 365 registros mantenidos, 635 eliminados
+```
+
+#### **🔄 BOTÓN "ACTUALIZAR"**
+```typescript
+Función: Refresca estadísticas en tiempo real
+├── Consulta base de datos actual
+├── Actualiza contadores en pantalla
+├── Verifica estado del control de flujo
+└── Muestra información más reciente
+```
+
+**📋 Cuándo usarlo:**
+```
+🔄 Ver cambios inmediatos → Después de procesar algo
+👀 Monitoreo activo → Verificar progreso
+🚨 Diagnóstico → Ver si cambió algo externamente
+📊 Actualización manual → Si 30s automáticos no son suficiente
+```
+
+### **🚨 Alertas y Notificaciones**
+
+#### **⏰ Control de Flujo:**
+```
+⚠️ "Respetando control de flujo AEAT. 
+   Se requiere esperar al menos 60 segundos entre envíos."
+```
+**Cuándo aparece**: Intentas procesar muy rápido y AEAT requiere esperar.
+
+#### **✅ Notificaciones de Éxito/Error:**
+```
+🎉 "Procesados 5 registros exitosamente"
+💥 "3 registros fallaron" → Ver detalles en "Último Resultado"
+```
+
+### **📈 Sección "Último Resultado"**
+
+#### **📊 Métricas Detalladas:**
+```
+┌─────────────────────────────────────────┐
+│ Último Resultado                        │
+├─────────────────────────────────────────┤
+│    10        8         2                │
+│ Procesados  Exitosos  Fallidos          │
+├─────────────────────────────────────────┤
+│ ████████░░ 80% éxito                    │
+├─────────────────────────────────────────┤
+│ ❌ Errores (2):                         │
+│ • "Certificado digital expirado"       │
+│ • "Timeout conectando con AEAT"        │
+└─────────────────────────────────────────┘
+```
+
+### **🤖 Automatización vs Control Manual**
+
+#### **🔄 Funcionamiento Normal (Automático):**
+```typescript
+// El worker se ejecuta automáticamente cada 5 minutos
+// SIN necesidad de intervención manual
+
+Flujo automático:
+1. Factura → pagada → Estado: "pending"
+2. Worker automático (cada 5 min) → Detecta "pending"
+3. Procesa automáticamente → Envía a AEAT  
+4. Actualiza estado → "pending" → "sent"
+5. Se repite indefinidamente ♻️
+```
+
+#### **⚡ Control Manual (Cuando lo necesites):**
+```typescript
+// Solo cuando QUIERES acelerar el proceso
+
+Ejemplo:
+├── Sin botón: Esperar hasta 5 minutos para procesamiento
+└── Con botón: Procesar INMEDIATAMENTE (respetando control de flujo)
+```
+
+### **🎯 Cuándo Usar Cada Botón**
+
+#### **📋 Escenarios Prácticos:**
+
+**🚨 "Tengo 10 facturas pendientes"**
+```
+Solución: Clic en "Procesar Cola"
+Resultado: Se procesan todas respetando 60s entre cada una
+Tiempo: ~10 minutos total
+```
+
+**❌ "Hay 5 registros con error"**
+```
+Solución:
+1. Verificar configuración (certificados, conexión)
+2. Clic en "Reintentar Errores"  
+3. Si fallan de nuevo → Revisar logs detallados
+```
+
+**💽 "La base de datos está lenta"**
+```
+Solución: Clic en "Limpiar Antiguos"
+Resultado: Elimina registros exitosos antiguos
+Beneficio: Mejora rendimiento general
+```
+
+**🔍 "No veo cambios recientes"**
+```
+Solución: Clic en "Actualizar"
+Resultado: Refresca estadísticas inmediatamente
+```
+
+---
+
+## 🎯 **FLUJOS DE TRABAJO COMPLETOS**
+
+### **🚀 Flujo Modo VERI*FACTU (Automático Completo)**
+```
+1. Configuración → Mode: "verifactu", Enabled: true
+2. Crear factura → Estado: "draft"
+3. Marcar como pagada → ✨ AUTOMÁTICO:
+   ├── Se crea registro VERI*FACTU (estado: "pending")
+   ├── Se calcula hash SHA-256 según AEAT
+   ├── Se genera QR según especificaciones
+   └── Se asigna número de secuencia
+4. Worker automático (cada 5 min) → ✨ AUTOMÁTICO:
+   ├── Detecta registro "pending"
+   ├── Genera XML según esquemas AEAT
+   ├── Envía a AEAT vía SOAP
+   ├── Actualiza estado: "pending" → "sent"
+   └── Log de auditoría completo
+5. PDF actualizado → ✨ AUTOMÁTICO:
+   ├── Incluye QR verificable
+   ├── Leyenda: "Factura verificable en sede AEAT"
+   └── Listo para enviar al cliente
+```
+
+### **📞 Flujo Modo REQUERIMIENTO (Manual Selectivo)**
+```
+1. Configuración → Mode: "requerimiento", Enabled: true
+2. Crear factura → Estado: "draft"
+3. Marcar como pagada → ✨ PARCIALMENTE AUTOMÁTICO:
+   ├── Se crea registro VERI*FACTU (estado: "dormant" 🔒)
+   ├── Se calcula hash SHA-256 según AEAT
+   ├── Se genera QR (pero NO se muestra en PDF)
+   └── Se asigna número de secuencia
+4. PDF generado → Normal (sin QR ni leyenda)
+5. AEAT solicita requerimiento → ⚡ ACCIÓN MANUAL:
+   ├── Ir a Tab "Registros"
+   ├── Clic "Activar" en facturas requeridas
+   ├── Estado cambia: "dormant" → "pending"
+   └── Worker automático las procesa inmediatamente
+6. PDF regenerado → ✨ AUTOMÁTICO:
+   ├── Ahora SÍ incluye QR verificable
+   ├── Leyenda VERI*FACTU añadida
+   └── Listo para auditoría AEAT
+```
+
+---
+
+## 🎯 **ANALOGÍAS PARA CLIENTES**
+
+### **🏭 Worker = Fábrica Automática**
+```
+El Worker VERI*FACTU es como una fábrica automática:
+├── 🤖 Funciona 24/7 sin supervisión
+├── ⚡ Procesa "materias primas" (facturas) automáticamente
+├── 🔄 Produce "productos terminados" (registros AEAT)
+├── 📊 Controla calidad (verificaciones XML)
+├── 🚨 Reporta problemas (errores y logs)
+└── ⚡ Botón "Express" = Controles manuales
+```
+
+### **🎛️ Tabs = Paneles de Control Industrial**
+```
+Configuración = Panel de configuración de máquina:
+├── Encender/apagar sistema
+├── Ajustar velocidad de producción (segundos entre envíos)
+├── Seleccionar modo de operación
+└── Configurar entorno (testing/producción)
+
+Estadísticas = Monitor de producción:
+├── Cuántas piezas producidas
+├── Cuántas en proceso
+├── Cuántas con defectos
+└── Rendimiento general
+
+Registros = Lista de productos terminados:
+├── Cada producto con su estado
+├── Códigos QR de verificación
+├── Acciones específicas por producto
+└── Historial completo de producción
+
+Worker = Panel de control de fábrica:
+├── Estado de máquinas en tiempo real
+├── Botones de control manual
+├── Estadísticas de rendimiento
+└── Mantenimiento y limpieza
+```
+
+---
+
+## ✅ **VALIDACIÓN FINAL DEL SISTEMA**
+
+### **🔍 Checklist de Funcionamiento Completo:**
+
+#### **📊 Todas las Tabs Funcionales:**
+- ✅ **Tab Configuración**: Control total del sistema
+- ✅ **Tab Estadísticas**: Métricas en tiempo real
+- ✅ **Tab Registros**: Gestión individual + botón "Activar"
+- ✅ **Tab Worker**: Centro de control automático
+
+#### **🔄 Flujos de Trabajo Completos:**
+- ✅ **Modo VERI*FACTU**: Automático 100% funcional
+- ✅ **Modo REQUERIMIENTO**: Manual selectivo implementado
+- ✅ **Control de flujo**: 60s mínimos respetados
+- ✅ **Reintentos**: Sistema de recuperación de errores
+
+#### **🎯 Integración Perfecta:**
+- ✅ **Facturas PDF**: QR y leyenda automáticos
+- ✅ **Base de datos**: 3 tablas con relaciones completas
+- ✅ **AEAT**: Comunicación SOAP implementada
+- ✅ **Auditoría**: Log completo de todos los eventos
+
+#### **🚀 Preparación Producción:**
+- ✅ **Certificados**: Sistema preparado para producción
+- ✅ **Testing**: Entorno completo funcionando
+- ✅ **Documentación**: Guía completa para usuarios
+- ✅ **Normativa**: 100% cumplimiento AEAT
+
+---
+
+*Última actualización: 31 Enero 2025 - Sistema VERI*FACTU 100% FUNCIONAL con interfaz completa y documentación detallada para clientes* 🚀

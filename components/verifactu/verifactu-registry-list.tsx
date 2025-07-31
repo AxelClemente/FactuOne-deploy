@@ -21,7 +21,7 @@ import {
   Clock,
   XCircle
 } from "lucide-react"
-import { getVerifactuRegistries, retryVerifactuSubmission } from "@/app/(dashboard)/verifactu/actions"
+import { getVerifactuRegistries, retryVerifactuSubmission, activateRegistryForRequirement } from "@/app/(dashboard)/verifactu/actions"
 
 interface VerifactuRegistryListProps {
   businessId: string
@@ -31,6 +31,7 @@ export function VerifactuRegistryList({ businessId }: VerifactuRegistryListProps
   const [registries, setRegistries] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [retryingIds, setRetryingIds] = useState(new Set<string>())
+  const [activatingIds, setActivatingIds] = useState(new Set<string>())
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const { toast } = useToast()
@@ -90,6 +91,40 @@ export function VerifactuRegistryList({ businessId }: VerifactuRegistryListProps
     }
   }
 
+  async function handleActivate(registryId: string) {
+    setActivatingIds(prev => new Set(prev).add(registryId))
+    
+    try {
+      const result = await activateRegistryForRequirement(registryId)
+      
+      if (result.success) {
+        toast({
+          title: "Registro activado",
+          description: "El registro se ha activado para envío a AEAT",
+        })
+        await loadRegistries()
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "No se pudo activar el registro",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error al activar el registro",
+        variant: "destructive",
+      })
+    } finally {
+      setActivatingIds(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(registryId)
+        return newSet
+      })
+    }
+  }
+
   function getStatusIcon(status: string) {
     switch (status) {
       case 'sent':
@@ -106,6 +141,8 @@ export function VerifactuRegistryList({ businessId }: VerifactuRegistryListProps
 
   function getStatusText(status: string) {
     switch (status) {
+      case 'dormant':
+        return 'Dormant'
       case 'pending':
         return 'Pendiente'
       case 'sending':
@@ -130,6 +167,8 @@ export function VerifactuRegistryList({ businessId }: VerifactuRegistryListProps
         return 'destructive'
       case 'sending':
         return 'secondary'
+      case 'dormant':
+        return 'outline'
       default:
         return 'outline'
     }
@@ -199,6 +238,23 @@ export function VerifactuRegistryList({ businessId }: VerifactuRegistryListProps
               </TableCell>
               <TableCell>
                 <div className="flex items-center space-x-2">
+                  {registry.transmissionStatus === 'dormant' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleActivate(registry.id)}
+                      disabled={activatingIds.has(registry.id)}
+                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+                    >
+                      {activatingIds.has(registry.id) ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          🔄 <span className="ml-1">Activar</span>
+                        </>
+                      )}
+                    </Button>
+                  )}
                   {registry.transmissionStatus === 'error' && (
                     <Button
                       variant="outline"
