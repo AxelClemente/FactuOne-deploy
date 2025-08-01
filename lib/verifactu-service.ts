@@ -15,6 +15,12 @@ import { eq, and, desc, isNull } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 import { generateVerifactuHash, formatAmountForVerifactu, formatDateForVerifactu } from './verifactu-hash'
 import { generateQRDataURL } from './verifactu-qr'
+import { 
+  encryptCertificatePassword, 
+  decryptCertificatePassword, 
+  serializeEncryptedData, 
+  deserializeEncryptedData 
+} from './encryption'
 
 interface CreateRegistryParams {
   invoiceId: string
@@ -57,6 +63,154 @@ export class VerifactuService {
         businessId,
         ...config
       })
+    }
+  }
+
+  /**
+   * Almacena contraseña de certificado de forma segura (encriptada)
+   */
+  static async updateCertificatePassword(businessId: string, password: string): Promise<void> {
+    try {
+      // Encriptar contraseña usando AES-256-GCM
+      const encryptedData = encryptCertificatePassword(password, businessId)
+      const serializedData = serializeEncryptedData(encryptedData)
+      
+      // Actualizar en base de datos
+      const db = await getDb()
+      await db
+        .update(verifactuConfig)
+        .set({ 
+          certificatePasswordEncrypted: serializedData 
+        })
+        .where(eq(verifactuConfig.businessId, businessId))
+      
+      console.log(`✅ Contraseña de certificado actualizada para negocio: ${businessId}`)
+    } catch (error) {
+      console.error('❌ Error actualizando contraseña encriptada:', error)
+      throw new Error('Error al guardar contraseña de certificado')
+    }
+  }
+
+  /**
+   * Obtiene contraseña de certificado desencriptada
+   */
+  static async getCertificatePassword(businessId: string): Promise<string | null> {
+    try {
+      const config = await this.getConfig(businessId)
+      
+      if (!config?.certificatePasswordEncrypted) {
+        return null
+      }
+      
+      // Deserializar y desencriptar contraseña
+      const encryptedData = deserializeEncryptedData(config.certificatePasswordEncrypted)
+      const password = decryptCertificatePassword(encryptedData, businessId)
+      
+      return password
+    } catch (error) {
+      console.error('❌ Error desencriptando contraseña:', error)
+      throw new Error('Error al obtener contraseña de certificado')
+    }
+  }
+
+  /**
+   * Actualiza certificado y contraseña de forma completa
+   */
+  static async updateCertificateAndPassword(
+    businessId: string, 
+    certificatePath: string, 
+    password: string,
+    validUntil?: Date
+  ): Promise<void> {
+    try {
+      // Encriptar contraseña
+      const encryptedData = encryptCertificatePassword(password, businessId)
+      const serializedData = serializeEncryptedData(encryptedData)
+      
+      // Actualizar configuración completa
+      await this.upsertConfig(businessId, {
+        certificatePath: certificatePath,
+        certificatePasswordEncrypted: serializedData,
+        certificateUploadedAt: new Date(),
+        certificateValidUntil: validUntil || null
+      })
+      
+      console.log(`✅ Certificado y contraseña actualizados para negocio: ${businessId}`)
+    } catch (error) {
+      console.error('❌ Error actualizando certificado completo:', error)
+      throw new Error('Error al actualizar certificado y contraseña')
+    }
+  }
+
+  /**
+   * Verifica si el certificado está configurado y no ha expirado
+   */
+  static async isCertificateValid(businessId: string): Promise<boolean> {
+    try {
+      const config = await this.getConfig(businessId)
+      
+      if (!config?.certificatePath || !config?.certificatePasswordEncrypted) {
+        return false
+      }
+      
+      // Verificar si ha expirado
+      if (config.certificateValidUntil) {
+        const now = new Date()
+        const validUntil = new Date(config.certificateValidUntil)
+        
+        if (now > validUntil) {
+          console.warn(`⚠️ Certificado expirado para negocio ${businessId}. Válido hasta: ${validUntil}`)
+          return false
+        }
+      }
+      
+      return true
+    } catch (error) {
+      console.error('❌ Error verificando validez del certificado:', error)
+      return false
+    }
+  }
+
+  /**
+   * Obtiene información de estado del certificado
+   */
+  static async getCertificateStatus(businessId: string): Promise<{
+    hasPath: boolean
+    hasPassword: boolean
+    isValid: boolean
+    expiresAt?: Date
+    daysUntilExpiry?: number
+  }> {
+    try {
+      const config = await this.getConfig(businessId)
+      
+      const hasPath = !!config?.certificatePath
+      const hasPassword = !!config?.certificatePasswordEncrypted
+      const expiresAt = config?.certificateValidUntil ? new Date(config.certificateValidUntil) : undefined
+      
+      let daysUntilExpiry: number | undefined
+      if (expiresAt) {
+        const now = new Date()
+        const timeDiff = expiresAt.getTime() - now.getTime()
+        daysUntilExpiry = Math.ceil(timeDiff / (1000 * 3600 * 24))
+      }
+      
+      const isValid = await this.isCertificateValid(businessId)
+      
+      return {
+        hasPath,
+        hasPassword,
+        isValid,
+        expiresAt,
+        daysUntilExpiry
+      }
+    } catch (error) {
+      console.error('❌ Error obteniendo estado del certificado:', error)
+      return {
+        hasPath: false,
+        hasPassword: false,
+        isValid: false
+      }
     }
   }
 

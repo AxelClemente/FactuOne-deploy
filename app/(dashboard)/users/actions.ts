@@ -376,3 +376,208 @@ export async function getUserPermissions(userId: string, businessId: string) {
   }
   return perms;
 }
+
+// Actualizar permisos de un usuario
+export async function updateUserPermissions(
+  userId: string,
+  businessId: string,
+  permissions: Record<string, { canView: boolean; canCreate: boolean; canEdit: boolean; canDelete: boolean }>
+) {
+  try {
+    // Verificar que el usuario actual es administrador del negocio
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return {
+        success: false,
+        error: "No has iniciado sesión",
+      }
+    }
+
+    const db = await getDb();
+
+    // Verificar que el usuario actual es administrador del negocio
+    const currentUserBusiness = await db
+      .select()
+      .from(schema.businessUsers)
+      .where(
+        and(
+          eq(schema.businessUsers.userId, currentUser.id),
+          eq(schema.businessUsers.businessId, businessId),
+          eq(schema.businessUsers.role, "admin")
+        )
+      )
+      .then((rows) => rows[0]);
+
+    if (!currentUserBusiness) {
+      return {
+        success: false,
+        error: "No tienes permisos de administrador para actualizar permisos en este negocio",
+      }
+    }
+
+    // Verificar que el usuario objetivo existe y pertenece al negocio
+    const targetUserBusiness = await db
+      .select()
+      .from(schema.businessUsers)
+      .where(
+        and(
+          eq(schema.businessUsers.userId, userId),
+          eq(schema.businessUsers.businessId, businessId)
+        )
+      )
+      .then((rows) => rows[0]);
+
+    if (!targetUserBusiness) {
+      return {
+        success: false,
+        error: "El usuario no existe en este negocio",
+      }
+    }
+
+    // Actualizar permisos
+    const modules = Object.keys(permissions);
+    for (const mod of modules) {
+      const perm = permissions[mod];
+      // Elimina permisos previos si existen
+      await db.delete(schema.userPermissions).where(
+        and(
+          eq(schema.userPermissions.userId, userId),
+          eq(schema.userPermissions.businessId, businessId),
+          eq(schema.userPermissions.module, mod)
+        )
+      );
+      await db.insert(schema.userPermissions).values({
+        id: uuidv4(),
+        userId,
+        businessId,
+        module: mod,
+        canView: perm.canView,
+        canCreate: perm.canCreate,
+        canEdit: perm.canEdit,
+        canDelete: perm.canDelete,
+      });
+    }
+
+    revalidatePath("/users")
+    revalidatePath(`/users/${userId}/edit`)
+
+    return {
+      success: true
+    }
+  } catch (error) {
+    console.error("Error al actualizar permisos del usuario:", error)
+    return {
+      success: false,
+      error: "Error al actualizar los permisos del usuario"
+    }
+  }
+}
+
+// Desactivar un usuario de un negocio
+export async function deactivateUser(userId: string, businessId: string) {
+  try {
+    // Verificar que el usuario actual es administrador del negocio
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return {
+        success: false,
+        error: "No has iniciado sesión",
+      }
+    }
+
+    const db = await getDb();
+
+    // Verificar que el usuario actual es administrador del negocio
+    const currentUserBusiness = await db
+      .select()
+      .from(schema.businessUsers)
+      .where(
+        and(
+          eq(schema.businessUsers.userId, currentUser.id),
+          eq(schema.businessUsers.businessId, businessId),
+          eq(schema.businessUsers.role, "admin")
+        )
+      )
+      .then((rows) => rows[0]);
+
+    if (!currentUserBusiness) {
+      return {
+        success: false,
+        error: "No tienes permisos de administrador para desactivar usuarios en este negocio",
+      }
+    }
+
+    // Verificar que el usuario objetivo existe y pertenece al negocio
+    const targetUserBusiness = await db
+      .select()
+      .from(schema.businessUsers)
+      .where(
+        and(
+          eq(schema.businessUsers.userId, userId),
+          eq(schema.businessUsers.businessId, businessId)
+        )
+      )
+      .then((rows) => rows[0]);
+
+    if (!targetUserBusiness) {
+      return {
+        success: false,
+        error: "El usuario no existe en este negocio",
+      }
+    }
+
+    // Prevenir que el usuario se desactive a sí mismo
+    if (currentUser.id === userId) {
+      return {
+        success: false,
+        error: "No puedes desactivarte a ti mismo",
+      }
+    }
+
+    // Si el usuario a desactivar es admin, verificar que no es el último admin
+    if (targetUserBusiness.role === "admin") {
+      const adminCount = await db
+        .select()
+        .from(schema.businessUsers)
+        .where(
+          and(
+            eq(schema.businessUsers.businessId, businessId),
+            eq(schema.businessUsers.role, "admin"),
+            eq(schema.businessUsers.isActive, true)
+          )
+        )
+        .then((rows) => rows.length);
+
+      if (adminCount <= 1) {
+        return {
+          success: false,
+          error: "No puedes desactivar el último administrador del negocio",
+        }
+      }
+    }
+
+    // Desactivar usuario
+    await db
+      .update(schema.businessUsers)
+      .set({ isActive: false })
+      .where(
+        and(
+          eq(schema.businessUsers.userId, userId),
+          eq(schema.businessUsers.businessId, businessId)
+        )
+      );
+
+    revalidatePath("/users")
+    revalidatePath(`/users/${userId}`)
+
+    return {
+      success: true
+    }
+  } catch (error) {
+    console.error("Error al desactivar usuario:", error)
+    return {
+      success: false,
+      error: "Error al desactivar el usuario"
+    }
+  }
+}

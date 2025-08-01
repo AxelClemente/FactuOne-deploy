@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { getActiveBusiness } from '@/lib/getActiveBusiness'
-import { getDb } from '@/lib/db'
-import { verifactuConfig } from '@/app/db/schema'
-import { eq } from 'drizzle-orm'
+import { VerifactuService } from '@/lib/verifactu-service'
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,44 +24,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Contraseña requerida' }, { status: 400 })
     }
 
-    const db = await getDb()
-    
     // Verificar si existe configuración
-    const [existingConfig] = await db
-      .select()
-      .from(verifactuConfig)
-      .where(eq(verifactuConfig.businessId, businessId))
-      .limit(1)
+    const existingConfig = await VerifactuService.getConfig(businessId)
 
     if (existingConfig) {
-      // Actualizar solo la contraseña
-      await db
-        .update(verifactuConfig)
-        .set({
-          certificatePasswordEncrypted: password.trim(), // Por ahora sin encriptar
-          updatedAt: new Date()
-        })
-        .where(eq(verifactuConfig.businessId, businessId))
+      // Actualizar solo la contraseña usando encriptación
+      await VerifactuService.updateCertificatePassword(businessId, password.trim())
     } else {
-      // Crear configuración básica con solo la contraseña
-      await db
-        .insert(verifactuConfig)
-        .values({
-          id: crypto.randomUUID(),
-          businessId,
-          enabled: false,
-          mode: 'verifactu',
-          environment: 'testing',
-          certificatePath: null,
-          certificatePasswordEncrypted: password.trim(),
-          lastSequenceNumber: 0,
-          flowControlSeconds: 60,
-          maxRecordsPerSubmission: 100,
-          autoSubmit: true,
-          includeInPdf: true,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        })
+      // Crear configuración básica con contraseña encriptada
+      await VerifactuService.upsertConfig(businessId, {
+        enabled: false,
+        mode: 'verifactu',
+        environment: 'testing',
+        certificatePath: null,
+        lastSequenceNumber: 0,
+        flowControlSeconds: 60,
+        maxRecordsPerSubmission: 100,
+        autoSubmit: true,
+        includeInPdf: true
+      })
+      
+      // Actualizar la contraseña de forma segura
+      await VerifactuService.updateCertificatePassword(businessId, password.trim())
     }
 
     return NextResponse.json({

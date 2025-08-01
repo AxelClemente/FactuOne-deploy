@@ -207,11 +207,9 @@ export class VerifactuWorker {
       )
       
       // 3. Obtener certificado si es necesario
-      let certificatePassword: string | undefined
-      
       if (config.environment === 'production' || (config.environment === 'testing' && config.certificatePath)) {
         certificatePath = config.certificatePath
-        certificatePassword = config.certificatePasswordEncrypted
+        // certificatePassword se obtiene más tarde de forma desencriptada
         
         // Si es una URL de blob, descargar temporalmente
         if (certificatePath?.includes('blob.vercel-storage.com')) {
@@ -236,13 +234,22 @@ export class VerifactuWorker {
         }
       }
       
-      // 4. Firmar XML si es necesario
+      // 4. Obtener contraseña desencriptada y firmar XML si es necesario
       let finalXml = xmlContent
-      if (certificatePath && certificatePassword) {
+      let decryptedPassword: string | null = null
+      
+      if (certificatePath) {
+        // Obtener contraseña desencriptada de forma segura
+        decryptedPassword = await VerifactuService.getCertificatePassword(fullRegistry.business.id)
+        
+        if (!decryptedPassword) {
+          throw new Error('No hay contraseña configurada para el certificado digital')
+        }
+        
         const signResult = await VerifactuSigner.signXML(
           xmlContent,
           certificatePath,
-          certificatePassword
+          decryptedPassword
         )
         
         if (!signResult.success) {
@@ -256,7 +263,7 @@ export class VerifactuWorker {
       const soapConfig = config.environment === 'production' 
         ? VerifactuSoapConfigFactory.production(
             certificatePath!,
-            certificatePassword!,
+            decryptedPassword!,
             config.useSello
           )
         : VerifactuSoapConfigFactory.testing(config.useSello)
@@ -333,13 +340,14 @@ export class VerifactuWorker {
    */
   private static async checkFlowControl(businessId: string, delaySeconds: number): Promise<boolean> {
     try {
+      const db = await getDb()
       const lastSent = await db
         .select()
         .from(schema.verifactuRegistry)
         .where(
           and(
             eq(schema.verifactuRegistry.businessId, businessId),
-            eq(schema.verifactuRegistry.status, 'sent')
+            eq(schema.verifactuRegistry.transmissionStatus, 'sent')
           )
         )
         .orderBy(schema.verifactuRegistry.sentAt)
@@ -369,13 +377,14 @@ export class VerifactuWorker {
    * Obtiene registros pendientes para procesar
    */
   private static async getPendingRegistries(businessId: string, limit: number) {
+    const db = await getDb()
     return await db
       .select()
       .from(schema.verifactuRegistry)
       .where(
         and(
           eq(schema.verifactuRegistry.businessId, businessId),
-          eq(schema.verifactuRegistry.status, 'pending')
+          eq(schema.verifactuRegistry.transmissionStatus, 'pending')
         )
       )
       .orderBy(schema.verifactuRegistry.createdAt)
@@ -387,6 +396,7 @@ export class VerifactuWorker {
    */
   private static async getFullRegistryData(registryId: string) {
     try {
+      const db = await getDb()
       // Obtener el registro
       const registry = await db
         .select()
@@ -460,6 +470,7 @@ export class VerifactuWorker {
    */
   private static async logEvent(businessId: string, eventType: string, eventData: any) {
     try {
+      const db = await getDb()
       await db.insert(schema.verifactuEvents).values({
         id: crypto.randomUUID(),
         businessId,
@@ -491,14 +502,15 @@ export class VerifactuWorker {
     nextProcessingEligible?: Date
   }> {
     try {
+      const db = await getDb()
       const stats = await db
         .select({
-          status: schema.verifactuRegistry.status,
+          status: schema.verifactuRegistry.transmissionStatus,
           count: db.$count()
         })
         .from(schema.verifactuRegistry)
         .where(eq(schema.verifactuRegistry.businessId, businessId))
-        .groupBy(schema.verifactuRegistry.status)
+        .groupBy(schema.verifactuRegistry.transmissionStatus)
       
       const statusCounts = stats.reduce((acc, stat) => {
         acc[stat.status] = stat.count
@@ -512,7 +524,7 @@ export class VerifactuWorker {
         .where(
           and(
             eq(schema.verifactuRegistry.businessId, businessId),
-            eq(schema.verifactuRegistry.status, 'sent')
+            eq(schema.verifactuRegistry.transmissionStatus, 'sent')
           )
         )
         .orderBy(schema.verifactuRegistry.sentAt)
@@ -554,13 +566,14 @@ export class VerifactuWorker {
       const cutoffDate = new Date()
       cutoffDate.setDate(cutoffDate.getDate() - retentionDays)
       
+      const db = await getDb()
       const deleted = await db
         .delete(schema.verifactuRegistry)
         .where(
           and(
             eq(schema.verifactuRegistry.businessId, businessId),
             lt(schema.verifactuRegistry.createdAt, cutoffDate),
-            eq(schema.verifactuRegistry.status, 'sent') // Solo eliminar los enviados exitosamente
+            eq(schema.verifactuRegistry.transmissionStatus, 'sent') // Solo eliminar los enviados exitosamente
           )
         )
       

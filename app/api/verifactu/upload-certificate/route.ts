@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
 import { getCurrentUser } from '@/lib/auth'
 import { getActiveBusiness } from '@/lib/getActiveBusiness'
-import { getDb } from '@/lib/db'
-import { verifactuConfig } from '@/app/db/schema'
-import { eq } from 'drizzle-orm'
-import { randomUUID } from 'crypto'
+import { VerifactuService } from '@/lib/verifactu-service'
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,48 +41,19 @@ export async function POST(request: NextRequest) {
 
     console.log('📁 Certificado subido a Blob:', blob.url)
 
-    // Guardar configuración en BD
-    const db = await getDb()
-    
-    // Verificar si ya existe configuración
-    const [existingConfig] = await db
-      .select()
-      .from(verifactuConfig)
-      .where(eq(verifactuConfig.businessId, businessId))
-      .limit(1)
-
-    if (existingConfig) {
-      // Actualizar configuración existente
-      await db
-        .update(verifactuConfig)
-        .set({
-          certificatePath: blob.url, // Guardamos la URL del blob
-          certificatePasswordEncrypted: password || null, // Por ahora sin encriptar
-          certificateUploadedAt: new Date(),
-          updatedAt: new Date()
-        })
-        .where(eq(verifactuConfig.businessId, businessId))
+    // Guardar certificado y contraseña de forma segura
+    if (password) {
+      await VerifactuService.updateCertificateAndPassword(
+        businessId,
+        blob.url,
+        password
+      )
     } else {
-      // Crear nueva configuración
-      await db
-        .insert(verifactuConfig)
-        .values({
-          id: randomUUID(),
-          businessId,
-          enabled: false,
-          mode: 'verifactu',
-          environment: 'testing',
-          certificatePath: blob.url,
-          certificatePasswordEncrypted: password || null,
-          certificateUploadedAt: new Date(),
-          lastSequenceNumber: 0,
-          flowControlSeconds: 60,
-          maxRecordsPerSubmission: 100,
-          autoSubmit: true,
-          includeInPdf: true,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        })
+      // Solo actualizar certificado sin contraseña
+      await VerifactuService.upsertConfig(businessId, {
+        certificatePath: blob.url,
+        certificateUploadedAt: new Date()
+      })
     }
 
     return NextResponse.json({
