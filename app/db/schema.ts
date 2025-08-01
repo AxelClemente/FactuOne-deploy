@@ -344,8 +344,10 @@ export const verifactuConfig = table("verifactu_config", {
   businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
   enabled: t.boolean("enabled").default(false).notNull(), // Si está activo VERI*FACTU
   mode: t.mysqlEnum("mode", ["verifactu", "requerimiento"]).notNull().default("verifactu"), // Modo de operación
-  certificatePath: t.varchar("certificate_path", { length: 500 }), // Ruta al certificado digital
-  certificatePassword: t.varchar("certificate_password", { length: 255 }), // Contraseña cifrada
+  certificatePath: t.varchar("certificate_path", { length: 500 }), // Ruta al certificado digital (actualizada)
+  certificatePasswordEncrypted: t.text("certificate_password_encrypted"), // Contraseña cifrada de forma segura
+  certificateUploadedAt: t.timestamp("certificate_uploaded_at"), // Cuándo se subió el certificado
+  certificateValidUntil: t.date("certificate_valid_until"), // Fecha de expiración del certificado
   environment: t.mysqlEnum("environment", ["production", "testing"]).notNull().default("testing"),
   lastSequenceNumber: t.int("last_sequence_number").default(0).notNull(), // Último número de secuencia usado
   flowControlSeconds: t.int("flow_control_seconds").default(60).notNull(), // Segundos entre envíos

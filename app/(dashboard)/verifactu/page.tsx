@@ -3,6 +3,7 @@ import { VerifactuConfigForm } from "@/components/verifactu/verifactu-config-for
 import { VerifactuStats } from "@/components/verifactu/verifactu-stats"
 import { VerifactuRegistryList } from "@/components/verifactu/verifactu-registry-list"
 import { VerifactuWorkerMonitor } from "@/components/verifactu/verifactu-worker-monitor"
+import { CertificateUploadForm } from "@/components/verifactu/certificate-upload-form"
 import { getActiveBusiness } from "@/lib/getActiveBusiness"
 import { getCurrentUser, hasPermission } from "@/lib/auth"
 import { redirect } from "next/navigation"
@@ -30,6 +31,7 @@ export default async function VerifactuPage() {
       <Tabs defaultValue="config" className="space-y-4">
         <TabsList>
           <TabsTrigger value="config">Configuración</TabsTrigger>
+          <TabsTrigger value="certificate">Certificado</TabsTrigger>
           <TabsTrigger value="stats">Estadísticas</TabsTrigger>
           <TabsTrigger value="registry">Registros</TabsTrigger>
           <TabsTrigger value="worker">Worker</TabsTrigger>
@@ -47,6 +49,10 @@ export default async function VerifactuPage() {
               <VerifactuConfigForm businessId={businessId} />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="certificate" className="space-y-4">
+          <CertificateUploadForm businessId={businessId} />
         </TabsContent>
 
         <TabsContent value="stats" className="space-y-4">

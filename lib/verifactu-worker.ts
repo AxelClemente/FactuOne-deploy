@@ -187,6 +187,9 @@ export class VerifactuWorker {
     registry: any,
     config: any
   ): Promise<void> {
+    let certificatePath: string | undefined
+    let isTemporaryCert = false
+    
     try {
       // 1. Obtener datos completos del registro
       const fullRegistry = await this.getFullRegistryData(registry.id)
@@ -203,13 +206,43 @@ export class VerifactuWorker {
         fullRegistry.contraparte
       )
       
-      // 3. Firmar XML si es necesario (producción)
+      // 3. Obtener certificado si es necesario
+      let certificatePassword: string | undefined
+      
+      if (config.environment === 'production' || (config.environment === 'testing' && config.certificatePath)) {
+        certificatePath = config.certificatePath
+        certificatePassword = config.certificatePasswordEncrypted
+        
+        // Si es una URL de blob, descargar temporalmente
+        if (certificatePath?.includes('blob.vercel-storage.com')) {
+          const tempPath = `/tmp/cert_${fullRegistry.business.id}_${Date.now()}.p12`
+          
+          const response = await fetch(certificatePath)
+          if (!response.ok) {
+            throw new Error('No se pudo descargar el certificado desde el almacenamiento')
+          }
+          
+          const fs = require('fs').promises
+          const certificateBuffer = await response.arrayBuffer()
+          await fs.writeFile(tempPath, Buffer.from(certificateBuffer))
+          
+          certificatePath = tempPath
+          isTemporaryCert = true
+          console.log('📥 Certificado descargado temporalmente:', tempPath)
+        }
+        
+        if (!certificatePath) {
+          throw new Error('No hay certificado configurado para firma digital')
+        }
+      }
+      
+      // 4. Firmar XML si es necesario
       let finalXml = xmlContent
-      if (config.environment === 'production' && config.certificatePath) {
+      if (certificatePath && certificatePassword) {
         const signResult = await VerifactuSigner.signXML(
           xmlContent,
-          config.certificatePath,
-          config.certificatePassword
+          certificatePath,
+          certificatePassword
         )
         
         if (!signResult.success) {
@@ -219,16 +252,16 @@ export class VerifactuWorker {
         finalXml = signResult.signedXml!
       }
       
-      // 4. Configurar cliente SOAP
+      // 5. Configurar cliente SOAP con certificado
       const soapConfig = config.environment === 'production' 
         ? VerifactuSoapConfigFactory.production(
-            config.certificatePath,
-            config.certificatePassword,
+            certificatePath!,
+            certificatePassword!,
             config.useSello
           )
         : VerifactuSoapConfigFactory.testing(config.useSello)
       
-      // 5. Enviar a AEAT
+      // 6. Enviar a AEAT
       const submitResult = await VerifactuSoapClient.submitRegistry(finalXml, soapConfig)
       
       if (submitResult.success) {
@@ -281,6 +314,17 @@ export class VerifactuWorker {
         .where(eq(schema.verifactuRegistry.id, registry.id))
       
       throw error
+    } finally {
+      // Limpiar certificado temporal si fue descargado
+      if (isTemporaryCert && certificatePath) {
+        try {
+          const fs = require('fs').promises
+          await fs.unlink(certificatePath)
+          console.log('🗑️ Certificado temporal eliminado:', certificatePath)
+        } catch (cleanupError) {
+          console.warn('⚠️ No se pudo eliminar certificado temporal:', cleanupError)
+        }
+      }
     }
   }
   

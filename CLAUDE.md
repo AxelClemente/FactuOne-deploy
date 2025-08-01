@@ -24,6 +24,24 @@ npx drizzle-kit studio     # Open Drizzle Studio for database exploration
 node test-db.js     # Test database connectivity
 ```
 
+### VERI*FACTU Certificate Management
+```bash
+# Migrate database for certificate fields (run once after updating code)
+node scripts/migrate-certificate-fields.js
+
+# Monitor certificates manually
+node scripts/certificate-monitor-cron.js
+
+# Monitor certificates via API (requires server running)
+node scripts/certificate-monitor-cron.js --api
+
+# Set up automatic certificate monitoring (add to crontab)
+# Check certificates every 6 hours:
+# 0 */6 * * * /usr/bin/node /path/to/app/scripts/certificate-monitor-cron.js
+# Check certificates daily at 09:00:
+# 0 9 * * * /usr/bin/node /path/to/app/scripts/certificate-monitor-cron.js
+```
+
 ### Deployment
 ```bash
 # Self-hosted deployment (see DEPLOY.md for full process)

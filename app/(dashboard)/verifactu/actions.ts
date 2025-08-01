@@ -8,6 +8,7 @@ import { getCurrentUser, hasPermission } from "@/lib/auth"
 import { getActiveBusiness } from "@/lib/getActiveBusiness"
 import { VerifactuService } from "@/lib/verifactu-service"
 import { revalidatePath } from "next/cache"
+import { randomUUID } from "crypto"
 
 // Schema de validación para configuración
 const configSchema = z.object({
@@ -269,6 +270,79 @@ export async function activateRegistryForRequirement(registryId: string) {
     return { 
       success: false, 
       error: error instanceof Error ? error.message : "Error al activar el registro" 
+    }
+  }
+}
+
+// Schema para certificados
+const certificateSchema = z.object({
+  certificatePath: z.string().optional(),
+  certificatePassword: z.string().optional(),
+})
+
+export async function updateCertificateConfig(data: z.infer<typeof certificateSchema>) {
+  const user = await getCurrentUser()
+  if (!user) throw new Error("No autorizado")
+
+  const businessId = await getActiveBusiness()
+  if (!businessId) throw new Error("No se encontró el negocio activo")
+
+  const canEdit = await hasPermission(user.id, businessId, "invoices", "create")
+  if (!canEdit) throw new Error("Sin permisos para modificar certificados")
+
+  try {
+    const validated = certificateSchema.parse(data)
+    const db = await getDb()
+    
+    // Obtener configuración actual
+    const [existingConfig] = await db
+      .select()
+      .from(verifactuConfig)
+      .where(eq(verifactuConfig.businessId, businessId))
+      .limit(1)
+
+    if (existingConfig) {
+      // Actualizar configuración existente
+      await db
+        .update(verifactuConfig)
+        .set({
+          certificatePath: validated.certificatePath || null,
+          certificatePasswordEncrypted: validated.certificatePassword || null,
+          updatedAt: new Date()
+        })
+        .where(eq(verifactuConfig.businessId, businessId))
+    } else {
+      // Crear nueva configuración con valores por defecto
+      await db
+        .insert(verifactuConfig)
+        .values({
+          id: randomUUID(),
+          businessId,
+          enabled: false,
+          mode: 'verifactu',
+          environment: 'testing',
+          certificatePath: validated.certificatePath || null,
+          certificatePasswordEncrypted: validated.certificatePassword || null,
+          lastSequenceNumber: 0,
+          flowControlSeconds: 60,
+          maxRecordsPerSubmission: 100,
+          autoSubmit: true,
+          includeInPdf: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+    }
+    
+    revalidatePath("/verifactu")
+    
+    return { success: true }
+  } catch (error) {
+    console.error("Error actualizando certificado:", error)
+    return { 
+      success: false, 
+      error: error instanceof z.ZodError 
+        ? "Datos de certificado inválidos" 
+        : "Error al actualizar el certificado" 
     }
   }
 }
