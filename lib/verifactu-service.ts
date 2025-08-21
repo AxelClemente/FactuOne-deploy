@@ -71,22 +71,22 @@ export class VerifactuService {
    */
   static async updateCertificatePassword(businessId: string, password: string): Promise<void> {
     try {
-      // Encriptar contraseña usando AES-256-GCM
-      const encryptedData = encryptCertificatePassword(password, businessId)
-      const serializedData = serializeEncryptedData(encryptedData)
+      // TEMPORAL: Para testing, guardar contraseña sin encriptar
+      // TODO: En producción, usar encriptación del lado del servidor
+      console.log('⚠️ MODO TESTING: Guardando contraseña sin encriptar')
       
       // Actualizar en base de datos
       const db = await getDb()
       await db
         .update(verifactuConfig)
         .set({ 
-          certificatePasswordEncrypted: serializedData 
+          certificatePasswordEncrypted: password // Temporal: sin encriptar
         })
         .where(eq(verifactuConfig.businessId, businessId))
       
       console.log(`✅ Contraseña de certificado actualizada para negocio: ${businessId}`)
     } catch (error) {
-      console.error('❌ Error actualizando contraseña encriptada:', error)
+      console.error('❌ Error actualizando contraseña:', error)
       throw new Error('Error al guardar contraseña de certificado')
     }
   }
@@ -95,6 +95,25 @@ export class VerifactuService {
    * Obtiene contraseña de certificado desencriptada
    */
   static async getCertificatePassword(businessId: string): Promise<string | null> {
+    try {
+      const config = await this.getConfig(businessId)
+      
+      // TEMPORAL: Para testing, devolver contraseña sin desencriptar
+      if (config?.certificatePasswordEncrypted) {
+        return config.certificatePasswordEncrypted
+      }
+      
+      return null
+    } catch (error) {
+      console.error('Error obteniendo contraseña:', error)
+      return null
+    }
+  }
+
+  /**
+   * Obtiene contraseña de certificado original (comentado temporalmente)
+   */
+  static async getCertificatePasswordOriginal(businessId: string): Promise<string | null> {
     try {
       const config = await this.getConfig(businessId)
       

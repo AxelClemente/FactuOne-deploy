@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     // Subir a Vercel Blob
     const filename = `certificate-${businessId}-${Date.now()}.${certificateFile.name.split('.').pop()}`
     const blob = await put(filename, certificateFile, {
-      access: 'private', // Importante: acceso privado
+      access: 'public', // NOTA: En plan gratuito solo funciona 'public'
       contentType: 'application/x-pkcs12'
     })
 

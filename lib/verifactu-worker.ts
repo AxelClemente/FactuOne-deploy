@@ -192,6 +192,7 @@ export class VerifactuWorker {
     
     try {
       // 1. Obtener datos completos del registro
+      console.log('🔄 VERI*FACTU Worker: Procesando registro', registry.id)
       const fullRegistry = await this.getFullRegistryData(registry.id)
       if (!fullRegistry) {
         throw new Error('No se pudieron obtener los datos completos del registro')
