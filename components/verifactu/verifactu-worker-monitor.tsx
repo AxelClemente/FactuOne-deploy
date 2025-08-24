@@ -37,7 +37,7 @@ interface ProcessingResult {
   lastProcessedAt: string
 }
 
-export function VerifactuWorkerMonitor() {
+export function VerifactuWorkerMonitor({ businessId }: { businessId: string }) {
   const [stats, setStats] = useState<WorkerStats | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [lastResult, setLastResult] = useState<ProcessingResult | null>(null)
@@ -46,7 +46,11 @@ export function VerifactuWorkerMonitor() {
   // Cargar estadísticas del worker
   const loadStats = async () => {
     try {
-      const response = await fetch('/api/verifactu/worker')
+      const response = await fetch('/api/verifactu/worker', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'stats', businessId })
+      })
       if (!response.ok) throw new Error('Error cargando estadísticas')
       
       const data = await response.json()
@@ -68,7 +72,7 @@ export function VerifactuWorkerMonitor() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ action, ...config })
+        body: JSON.stringify({ action, businessId, ...config })
       })
 
       if (!response.ok) throw new Error('Error ejecutando acción')

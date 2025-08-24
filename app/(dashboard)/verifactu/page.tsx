@@ -74,7 +74,7 @@ export default async function VerifactuPage() {
         </TabsContent>
 
         <TabsContent value="worker" className="space-y-4">
-          <VerifactuWorkerMonitor />
+          <VerifactuWorkerMonitor businessId={businessId} />
         </TabsContent>
       </Tabs>
     </div>
