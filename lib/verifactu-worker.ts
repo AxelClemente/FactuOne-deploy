@@ -351,14 +351,14 @@ export class VerifactuWorker {
             eq(schema.verifactuRegistry.transmissionStatus, 'sent')
           )
         )
-        .orderBy(schema.verifactuRegistry.sentAt)
+        .orderBy(schema.verifactuRegistry.transmissionDate)
         .limit(1)
       
       if (lastSent.length === 0) {
         return true // No hay envíos previos
       }
       
-      const lastSentTime = lastSent[0].sentAt
+      const lastSentTime = lastSent[0].transmissionDate
       if (!lastSentTime) {
         return true
       }
@@ -528,10 +528,10 @@ export class VerifactuWorker {
             eq(schema.verifactuRegistry.transmissionStatus, 'sent')
           )
         )
-        .orderBy(schema.verifactuRegistry.sentAt)
+        .orderBy(schema.verifactuRegistry.transmissionDate)
         .limit(1)
       
-      const lastProcessedAt = lastSent[0]?.sentAt
+      const lastProcessedAt = lastSent[0]?.transmissionDate
       const nextProcessingEligible = lastProcessedAt 
         ? new Date(lastProcessedAt.getTime() + (60 * 1000)) // 60 segundos después
         : new Date()
