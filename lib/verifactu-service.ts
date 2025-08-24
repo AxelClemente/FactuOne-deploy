@@ -142,9 +142,10 @@ export class VerifactuService {
     validUntil?: Date
   ): Promise<void> {
     try {
-      // Encriptar contraseña
-      const encryptedData = encryptCertificatePassword(password, businessId)
-      const serializedData = serializeEncryptedData(encryptedData)
+      // TEMPORAL: No encriptar contraseña para testing
+      // const encryptedData = encryptCertificatePassword(password, businessId)
+      // const serializedData = serializeEncryptedData(encryptedData)
+      const serializedData = password // Guardar sin encriptar temporalmente
       
       // Actualizar configuración completa
       await this.upsertConfig(businessId, {
