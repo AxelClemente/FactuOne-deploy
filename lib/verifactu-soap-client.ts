@@ -76,21 +76,36 @@ export class VerifactuSoapClient {
    * Crea un cliente SOAP configurado para la AEAT
    */
   private static async createSoapClient(config: SoapClientConfig): Promise<any> {
+    console.log('🚀 [SOAP CLIENT] Iniciando creación de cliente SOAP')
+    console.log('🔧 [SOAP CLIENT] Configuración recibida:', {
+      environment: config.environment,
+      mode: config.mode,
+      useSello: config.useSello,
+      hasCertificatePath: !!config.certificatePath,
+      hasPassword: !!config.certificatePassword,
+      certificatePathPreview: config.certificatePath?.substring(0, 50) + '...'
+    })
+    
     const endpoint = this.getEndpoint(config)
+    console.log('🌐 [SOAP CLIENT] Endpoint seleccionado:', endpoint)
+    console.log('📋 [SOAP CLIENT] URL completa del WSDL:', endpoint + '?wsdl')
     
     // Importación dinámica de soap para evitar problemas de ES modules
     let soapModule: any
     try {
       soapModule = await import('soap')
-      console.log('🔍 Soap module imported:', { soapModule, keys: Object.keys(soapModule) })
+      console.log('📦 [SOAP CLIENT] Soap module imported successfully')
     } catch (error) {
-      console.error('❌ Error importing soap:', error)
+      console.error('❌ [SOAP CLIENT] Error importing soap:', error)
       throw new Error('Failed to import soap library')
     }
     
     // Intentar diferentes formas de acceder a soap
     const soapClient = soapModule.default || soapModule
-    console.log('🔍 Soap client object:', { soapClient, createClientAsync: typeof soapClient.createClientAsync })
+    console.log('🔍 [SOAP CLIENT] Soap client validation:', { 
+      hasDefault: !!soapModule.default,
+      hasCreateClientAsync: typeof soapClient.createClientAsync === 'function'
+    })
     
     if (!soapClient || typeof soapClient.createClientAsync !== 'function') {
       throw new Error('soap.createClientAsync is not available - soap module not properly loaded')
@@ -100,20 +115,36 @@ export class VerifactuSoapClient {
     let httpsAgent: https.Agent
     
     if (config.certificatePath && config.certificatePassword) {
-      // SIEMPRE usar certificado para endpoints de AEAT (incluso para WSDL)
-      console.log('🔐 Configurando certificado para acceso a AEAT...')
-      const certBuffer = fs.readFileSync(config.certificatePath)
+      console.log('🔐 [SOAP CLIENT] Configurando certificado para acceso a AEAT...')
+      console.log('📂 [SOAP CLIENT] Ruta del certificado:', config.certificatePath)
+      console.log('🔑 [SOAP CLIENT] Contraseña proporcionada:', config.certificatePassword ? 'SÍ (****)' : 'NO')
       
-      httpsAgent = new https.Agent({
-        cert: certBuffer,
-        key: certBuffer,
-        passphrase: config.certificatePassword,
-        rejectUnauthorized: false, // Para certificados de prueba
-        keepAlive: true
-      })
-      console.log('✅ Certificado configurado en HTTPS agent')
+      try {
+        const certBuffer = fs.readFileSync(config.certificatePath)
+        console.log('📋 [SOAP CLIENT] Certificado leído exitosamente, tamaño:', certBuffer.length, 'bytes')
+        console.log('🔍 [SOAP CLIENT] Primeros 50 bytes del certificado:', certBuffer.toString('hex').substring(0, 100))
+        
+        httpsAgent = new https.Agent({
+          cert: certBuffer,
+          key: certBuffer,
+          passphrase: config.certificatePassword,
+          // Configuración específica para AEAT
+          rejectUnauthorized: true, // AEAT requiere validación SSL estricta
+          secureProtocol: 'TLSv1_2_method', // AEAT puede requerir TLS 1.2+
+          keepAlive: true,
+          maxSockets: 5
+        })
+        console.log('✅ [SOAP CLIENT] Certificado configurado en HTTPS agent exitosamente')
+      } catch (certError) {
+        console.error('❌ [SOAP CLIENT] Error leyendo certificado:', certError)
+        throw new Error(`Error loading certificate: ${certError instanceof Error ? certError.message : 'Unknown error'}`)
+      }
     } else {
-      console.log('⚠️ No hay certificado configurado - puede fallar el acceso a AEAT')
+      console.log('⚠️ [SOAP CLIENT] No hay certificado configurado - usando configuración básica')
+      console.log('🔍 [SOAP CLIENT] Debug certificado:', {
+        certificatePath: config.certificatePath,
+        certificatePassword: config.certificatePassword
+      })
       httpsAgent = new https.Agent({
         rejectUnauthorized: false,
         keepAlive: true
@@ -122,18 +153,42 @@ export class VerifactuSoapClient {
     
     // Opciones del cliente SOAP
     const soapOptions = {
-      timeout: config.timeout,
+      timeout: config.timeout || 30000,
       agent: httpsAgent,
-      // Headers adicionales para AEAT
+      // Headers específicos para AEAT
       headers: {
         'User-Agent': 'FactuOne-VERI*FACTU/1.0',
-        'Content-Type': 'text/xml; charset=utf-8'
-      }
+        'Content-Type': 'text/xml; charset=utf-8',
+        'SOAPAction': '', // AEAT puede requerir SOAPAction vacío
+        'Accept': 'text/xml, multipart/related',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      },
+      // Configuración adicional para WSDL con autenticación
+      wsdl_headers: {
+        'User-Agent': 'FactuOne-VERI*FACTU/1.0'
+      },
+      // Forzar parseo estricto del WSDL
+      strict: true,
+      // Configuración de codificación
+      encoding: 'utf8'
     }
     
+    console.log('⚙️ [SOAP CLIENT] Opciones del cliente SOAP:', {
+      timeout: soapOptions.timeout,
+      hasAgent: !!soapOptions.agent,
+      headers: soapOptions.headers
+    })
+    
     try {
-      console.log('🚀 Attempting to create SOAP client for endpoint:', endpoint + '?wsdl')
+      console.log('🚀 [SOAP CLIENT] Intentando crear cliente SOAP...')
+      console.log('🌐 [SOAP CLIENT] URL WSDL completa:', endpoint + '?wsdl')
+      console.log('⏰ [SOAP CLIENT] Iniciando petición HTTP a AEAT...')
+      
       const client = await soapClient.createClientAsync(endpoint + '?wsdl', soapOptions)
+      
+      console.log('✅ [SOAP CLIENT] Cliente SOAP creado exitosamente!')
+      console.log('🔍 [SOAP CLIENT] Descripción del cliente:', Object.keys(client.describe()))
       
       // Configurar security si tenemos certificado
       if (config.certificatePath) {
@@ -144,7 +199,21 @@ export class VerifactuSoapClient {
       
       return client
     } catch (error) {
-      throw new Error(`Error creando cliente SOAP: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+      console.error('❌ [SOAP CLIENT] Error creando cliente SOAP:', error)
+      console.error('🔍 [SOAP CLIENT] Detalles del error:', {
+        message: error instanceof Error ? error.message : 'Error desconocido',
+        name: error instanceof Error ? error.name : 'Unknown',
+        stack: error instanceof Error ? error.stack?.substring(0, 500) : 'No stack trace'
+      })
+      
+      // Si el error contiene información sobre HTML, significa que AEAT devolvió una página de error
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido'
+      if (errorMessage.includes('Root element of WSDL was <html>')) {
+        console.error('🚨 [SOAP CLIENT] AEAT devolvió HTML en lugar de WSDL - problema de autenticación o endpoint')
+        console.error('🔍 [SOAP CLIENT] Esto indica que el certificado no está siendo aceptado por AEAT')
+      }
+      
+      throw new Error(`Error creando cliente SOAP: ${errorMessage}`)
     }
   }
   

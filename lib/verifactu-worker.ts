@@ -261,6 +261,16 @@ export class VerifactuWorker {
       }
       
       // 5. Configurar cliente SOAP con certificado
+      console.log('🔧 [WORKER] Configurando cliente SOAP...')
+      console.log('🌐 [WORKER] Entorno:', config.environment)
+      console.log('📋 [WORKER] Configuración completa:', {
+        environment: config.environment,
+        mode: config.mode || 'verifactu',
+        useSello: config.useSello,
+        hasCertificatePath: !!certificatePath,
+        hasDecryptedPassword: !!decryptedPassword
+      })
+      
       const soapConfig = config.environment === 'production' 
         ? VerifactuSoapConfigFactory.production(
             certificatePath!,
@@ -268,6 +278,14 @@ export class VerifactuWorker {
             config.useSello
           )
         : VerifactuSoapConfigFactory.testing(config.useSello)
+      
+      console.log('⚙️ [WORKER] SOAP config creado:', {
+        environment: soapConfig.environment,
+        mode: soapConfig.mode,
+        useSello: soapConfig.useSello,
+        hasCertificatePath: !!soapConfig.certificatePath,
+        hasPassword: !!soapConfig.certificatePassword
+      })
       
       // 6. Enviar a AEAT
       const submitResult = await VerifactuSoapClient.submitRegistry(finalXml, soapConfig)
