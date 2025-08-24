@@ -1,7 +1,7 @@
-import soap from 'soap'
 import https from 'https'
 import fs from 'fs'
 import path from 'path'
+// Nota: soap se importa dinámicamente en createSoapClient() para evitar problemas de ES modules
 
 /**
  * Cliente SOAP para comunicación con la AEAT - VERI*FACTU
@@ -75,8 +75,26 @@ export class VerifactuSoapClient {
   /**
    * Crea un cliente SOAP configurado para la AEAT
    */
-  private static async createSoapClient(config: SoapClientConfig): Promise<soap.Client> {
+  private static async createSoapClient(config: SoapClientConfig): Promise<any> {
     const endpoint = this.getEndpoint(config)
+    
+    // Importación dinámica de soap para evitar problemas de ES modules
+    let soapModule: any
+    try {
+      soapModule = await import('soap')
+      console.log('🔍 Soap module imported:', { soapModule, keys: Object.keys(soapModule) })
+    } catch (error) {
+      console.error('❌ Error importing soap:', error)
+      throw new Error('Failed to import soap library')
+    }
+    
+    // Intentar diferentes formas de acceder a soap
+    const soapClient = soapModule.default || soapModule
+    console.log('🔍 Soap client object:', { soapClient, createClientAsync: typeof soapClient.createClientAsync })
+    
+    if (!soapClient || typeof soapClient.createClientAsync !== 'function') {
+      throw new Error('soap.createClientAsync is not available - soap module not properly loaded')
+    }
     
     // Configuración HTTPS con certificado si es necesario
     const httpsAgent = new https.Agent({
@@ -101,13 +119,14 @@ export class VerifactuSoapClient {
     }
     
     try {
-      const client = await soap.createClientAsync(endpoint + '?wsdl', soapOptions)
+      console.log('🚀 Attempting to create SOAP client for endpoint:', endpoint + '?wsdl')
+      const client = await soapClient.createClientAsync(endpoint + '?wsdl', soapOptions)
       
       // Configurar security si tenemos certificado
       if (config.certificatePath) {
         const cert = fs.readFileSync(config.certificatePath)
         const key = fs.readFileSync(config.certificatePath)
-        client.setSecurity(new soap.ClientSSLSecurity(key, cert, config.certificatePassword))
+        client.setSecurity(new soapClient.ClientSSLSecurity(key, cert, config.certificatePassword))
       }
       
       return client
