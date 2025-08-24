@@ -135,8 +135,9 @@ export class VerifactuXmlGenerator {
     // Clave de régimen especial (01 = Régimen general)
     registroFacturacion.ele('ClaveRegimenEspecialOTrascendencia').txt('01')
     
-    // Importe total
-    registroFacturacion.ele('ImporteTotal').txt(formatAmountForVerifactu(invoiceData.total))
+    // Importe total - validar que sea numérico
+    const totalAmount = Number(invoiceData.total) || 0
+    registroFacturacion.ele('ImporteTotal').txt(formatAmountForVerifactu(totalAmount))
     
     // Desglose de impuestos
     const desglose = registroFacturacion.ele('Desglose')
@@ -150,8 +151,12 @@ export class VerifactuXmlGenerator {
     const ivaGroups = new Map<number, { base: number, cuota: number }>()
     
     for (const line of invoiceData.lines) {
-      const taxRate = line.taxRate
-      const baseImponible = line.quantity * line.unitPrice
+      // Validar y convertir taxRate a número
+      const taxRate = Number(line.taxRate) || 0
+      const quantity = Number(line.quantity) || 0
+      const unitPrice = Number(line.unitPrice) || 0
+      
+      const baseImponible = quantity * unitPrice
       const cuotaIVA = baseImponible * (taxRate / 100)
       
       if (ivaGroups.has(taxRate)) {

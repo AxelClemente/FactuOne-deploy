@@ -129,6 +129,10 @@ export function getHashForQR(fullHash: string): string {
  */
 export function formatAmountForVerifactu(amount: number | string): string {
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount
+  // Validar que sea un número válido
+  if (isNaN(numAmount)) {
+    return '0,00'
+  }
   return numAmount.toFixed(2).replace('.', ',')
 }
 
