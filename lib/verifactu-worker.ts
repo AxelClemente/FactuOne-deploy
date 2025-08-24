@@ -422,7 +422,7 @@ export class VerifactuWorker {
       let invoice, contraparte
       
       if (reg.invoiceType === 'sent') {
-        // Factura emitida
+        // Factura emitida - cargar con líneas
         const invoiceData = await db
           .select()
           .from(schema.invoices)
@@ -433,9 +433,17 @@ export class VerifactuWorker {
         if (invoiceData.length > 0) {
           invoice = invoiceData[0].invoices
           contraparte = invoiceData[0].clients
+          
+          // Cargar líneas de la factura
+          const lines = await db
+            .select()
+            .from(schema.invoiceLines)
+            .where(eq(schema.invoiceLines.invoiceId, reg.invoiceId))
+          
+          invoice.lines = lines
         }
       } else {
-        // Factura recibida
+        // Factura recibida - cargar con líneas
         const invoiceData = await db
           .select()
           .from(schema.receivedInvoices)
@@ -446,6 +454,14 @@ export class VerifactuWorker {
         if (invoiceData.length > 0) {
           invoice = invoiceData[0].received_invoices
           contraparte = invoiceData[0].providers
+          
+          // Cargar líneas de la factura recibida
+          const lines = await db
+            .select()
+            .from(schema.receivedInvoiceLines)
+            .where(eq(schema.receivedInvoiceLines.receivedInvoiceId, reg.invoiceId))
+          
+          invoice.lines = lines
         }
       }
       
