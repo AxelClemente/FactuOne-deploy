@@ -124,6 +124,10 @@ export class VerifactuSoapClient {
         console.log('📋 [SOAP CLIENT] Certificado leído exitosamente, tamaño:', certBuffer.length, 'bytes')
         console.log('🔍 [SOAP CLIENT] Primeros 50 bytes del certificado:', certBuffer.toString('hex').substring(0, 100))
         
+        // Validar que es un archivo P12 válido
+        const isValidP12 = certBuffer.length > 0 && certBuffer[0] === 0x30
+        console.log('🔐 [SOAP CLIENT] Validación P12:', isValidP12 ? '✅ Formato P12 válido' : '❌ Formato P12 inválido')
+        
         httpsAgent = new https.Agent({
           cert: certBuffer,
           key: certBuffer,
@@ -151,10 +155,16 @@ export class VerifactuSoapClient {
       })
     }
     
-    // Opciones del cliente SOAP
+    // Opciones del cliente SOAP - CONFIGURACIÓN CORREGIDA según recomendaciones AEAT
     const soapOptions = {
       timeout: config.timeout || 30000,
-      agent: httpsAgent,
+      // CRÍTICO: usar wsdl_options.agent para autenticación de certificado en WSDL
+      wsdl_options: {
+        agent: httpsAgent,
+        headers: {
+          'User-Agent': 'FactuOne-VERI*FACTU/1.0'
+        }
+      },
       // Headers específicos para AEAT
       headers: {
         'User-Agent': 'FactuOne-VERI*FACTU/1.0',
@@ -176,8 +186,9 @@ export class VerifactuSoapClient {
     
     console.log('⚙️ [SOAP CLIENT] Opciones del cliente SOAP:', {
       timeout: soapOptions.timeout,
-      hasAgent: !!soapOptions.agent,
-      headers: soapOptions.headers
+      hasWsdlAgent: !!soapOptions.wsdl_options?.agent,
+      headers: soapOptions.headers,
+      wsdl_options: soapOptions.wsdl_options
     })
     
     try {
