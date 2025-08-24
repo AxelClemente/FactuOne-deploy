@@ -97,15 +97,28 @@ export class VerifactuSoapClient {
     }
     
     // Configuración HTTPS con certificado si es necesario
-    const httpsAgent = new https.Agent({
-      rejectUnauthorized: true,
-      // Si tenemos certificado, configurarlo
-      ...(config.certificatePath && {
-        cert: fs.readFileSync(config.certificatePath),
-        key: fs.readFileSync(config.certificatePath),
-        passphrase: config.certificatePassword
+    let httpsAgent: https.Agent
+    
+    if (config.certificatePath && config.certificatePassword) {
+      // SIEMPRE usar certificado para endpoints de AEAT (incluso para WSDL)
+      console.log('🔐 Configurando certificado para acceso a AEAT...')
+      const certBuffer = fs.readFileSync(config.certificatePath)
+      
+      httpsAgent = new https.Agent({
+        cert: certBuffer,
+        key: certBuffer,
+        passphrase: config.certificatePassword,
+        rejectUnauthorized: false, // Para certificados de prueba
+        keepAlive: true
       })
-    })
+      console.log('✅ Certificado configurado en HTTPS agent')
+    } else {
+      console.log('⚠️ No hay certificado configurado - puede fallar el acceso a AEAT')
+      httpsAgent = new https.Agent({
+        rejectUnauthorized: false,
+        keepAlive: true
+      })
+    }
     
     // Opciones del cliente SOAP
     const soapOptions = {
