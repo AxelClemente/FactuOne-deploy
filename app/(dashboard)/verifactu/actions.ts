@@ -131,7 +131,21 @@ export async function getVerifactuRegistries(page = 1, limit = 10) {
 
   console.log('📊 Consultando registros...')
   const registries = await db
-    .select()
+    .select({
+      id: verifactuRegistry.id,
+      businessId: verifactuRegistry.businessId,
+      invoiceId: verifactuRegistry.invoiceId,
+      invoiceType: verifactuRegistry.invoiceType,
+      sequenceNumber: verifactuRegistry.sequenceNumber,
+      currentHash: verifactuRegistry.currentHash,
+      qrUrl: verifactuRegistry.qrUrl,
+      transmissionStatus: verifactuRegistry.transmissionStatus,
+      transmissionDate: verifactuRegistry.transmissionDate,
+      aeatCsv: verifactuRegistry.aeatCsv,
+      errorMessage: verifactuRegistry.errorMessage,
+      createdAt: verifactuRegistry.createdAt,
+      updatedAt: verifactuRegistry.updatedAt
+    })
     .from(verifactuRegistry)
     .where(eq(verifactuRegistry.businessId, businessId))
     .orderBy(desc(verifactuRegistry.sequenceNumber))
