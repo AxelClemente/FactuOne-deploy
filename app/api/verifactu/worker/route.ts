@@ -4,6 +4,9 @@ import { VerifactuWorker } from '@/lib/verifactu-worker'
 import { getCurrentUser } from '@/lib/auth'
 import { getActiveBusiness } from '@/lib/getActiveBusiness'
 
+// Forzar Node.js Runtime para soporte completo de librerías (SOAP, crypto, fs, etc.)
+export const runtime = 'nodejs'
+
 /**
  * API para manejo manual del worker VERI*FACTU
  * 

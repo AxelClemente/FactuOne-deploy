@@ -4,6 +4,9 @@ import { getCurrentUser } from '@/lib/auth'
 import { getActiveBusiness } from '@/lib/getActiveBusiness'
 import { VerifactuService } from '@/lib/verifactu-service'
 
+// Forzar Node.js Runtime para soporte completo de certificados
+export const runtime = 'nodejs'
+
 export async function POST(request: NextRequest) {
   try {
     // Verificar autenticación
