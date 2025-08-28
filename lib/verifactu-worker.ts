@@ -288,9 +288,21 @@ export class VerifactuWorker {
       })
       
       // 6. Enviar a AEAT
+      console.log('📡 [WORKER] Enviando registro a AEAT:', registry.id)
+      console.log('🌐 [WORKER] Usando configuración SOAP:', {
+        environment: soapConfig.environment,
+        mode: soapConfig.mode,
+        useSello: soapConfig.useSello,
+        hasCertificate: !!soapConfig.certificatePath
+      })
+      
       const submitResult = await VerifactuSoapClient.submitRegistry(finalXml, soapConfig)
+      console.log('📥 [WORKER] Resultado de envío AEAT:', JSON.stringify(submitResult, null, 2))
       
       if (submitResult.success) {
+        console.log('✅ [WORKER] ¡ÉXITO! Registro enviado correctamente a AEAT')
+        console.log('🔖 [WORKER] CSV de confirmación AEAT:', submitResult.csv)
+        
         // Marcar como enviado exitosamente
         await VerifactuService.markAsSent(
           registry.id,
@@ -298,13 +310,22 @@ export class VerifactuWorker {
           submitResult.csv || ''
         )
         
+        console.log('💾 [WORKER] Estado actualizado a "sent" en base de datos')
+        
         // Registrar evento de éxito
         await this.logEvent(registry.businessId, 'registry_sent', {
           registryId: registry.id,
           csv: submitResult.csv,
           success: true
         })
+        
+        console.log('📋 [WORKER] Evento de éxito registrado en auditoría')
       } else {
+        console.log('❌ [WORKER] ERROR al enviar registro a AEAT')
+        console.log('🚫 [WORKER] Código de error:', submitResult.errorCode)
+        console.log('📝 [WORKER] Mensaje de error:', submitResult.errorMessage)
+        console.log('🔄 [WORKER] Reintentos actuales:', registry.retryCount)
+        
         // Incrementar contador de reintentos
         const db = await getDb()
         await db
@@ -316,6 +337,8 @@ export class VerifactuWorker {
           })
           .where(eq(schema.verifactuRegistry.id, registry.id))
         
+        console.log('💾 [WORKER] Contador de reintentos actualizado:', registry.retryCount + 1)
+        
         // Registrar evento de error
         await this.logEvent(registry.businessId, 'registry_error', {
           registryId: registry.id,
@@ -323,6 +346,8 @@ export class VerifactuWorker {
           errorCode: submitResult.errorCode,
           retryCount: registry.retryCount + 1
         })
+        
+        console.log('📋 [WORKER] Evento de error registrado en auditoría')
         
         throw new Error(submitResult.errorMessage || 'Error enviando a AEAT')
       }

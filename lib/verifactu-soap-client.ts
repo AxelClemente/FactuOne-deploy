@@ -25,17 +25,18 @@ interface AeatEndpoints {
   }
 }
 
-// Endpoints oficiales de la AEAT
+// Endpoints oficiales de la AEAT - ACTUALIZADOS SEGÚN WSDL OFICIAL
 const AEAT_ENDPOINTS: AeatEndpoints = {
   verifactu: {
-    testing: 'https://prewww1.aeat.es/wlpl/TIKE-CONT/ws/SistemaFacturacion/VerifactuSOAP',
-    testingSello: 'https://prewww10.aeat.es/wlpl/TIKE-CONT/ws/SistemaFacturacion/VerifactuSOAP',
+    // NOTA: Para testing inicial usamos producción con certificado real
+    testing: 'https://www1.agenciatributaria.gob.es/wlpl/TIKE-CONT/ws/SistemaFacturacion/VerifactuSOAP',
+    testingSello: 'https://www10.agenciatributaria.gob.es/wlpl/TIKE-CONT/ws/SistemaFacturacion/VerifactuSOAP',
     production: 'https://www1.agenciatributaria.gob.es/wlpl/TIKE-CONT/ws/SistemaFacturacion/VerifactuSOAP',
     productionSello: 'https://www10.agenciatributaria.gob.es/wlpl/TIKE-CONT/ws/SistemaFacturacion/VerifactuSOAP'
   },
   requerimiento: {
-    testing: 'https://prewww1.aeat.es/wlpl/TIKE-CONT/ws/SistemaFacturacion/RequerimientoSOAP',
-    testingSello: 'https://prewww10.aeat.es/wlpl/TIKE-CONT/ws/SistemaFacturacion/RequerimientoSOAP',
+    testing: 'https://www1.agenciatributaria.gob.es/wlpl/TIKE-CONT/ws/SistemaFacturacion/RequerimientoSOAP',
+    testingSello: 'https://www10.agenciatributaria.gob.es/wlpl/TIKE-CONT/ws/SistemaFacturacion/RequerimientoSOAP',
     production: 'https://www1.agenciatributaria.gob.es/wlpl/TIKE-CONT/ws/SistemaFacturacion/RequerimientoSOAP',
     productionSello: 'https://www10.agenciatributaria.gob.es/wlpl/TIKE-CONT/ws/SistemaFacturacion/RequerimientoSOAP'
   }
@@ -249,20 +250,46 @@ export class VerifactuSoapClient {
     config: SoapClientConfig
   ): Promise<SubmitResult> {
     try {
+      console.log('🚀 [VERIFACTU] ========== INICIO ENVÍO A AEAT ==========')
+      console.log('🌐 [VERIFACTU] Entorno:', config.environment)
+      console.log('🎯 [VERIFACTU] Modo:', config.mode)
+      console.log('🔐 [VERIFACTU] Usando certificado sello:', config.useSello)
+      console.log('📄 [VERIFACTU] XML a enviar (primeros 500 chars):', xmlContent.substring(0, 500) + '...')
+      
       const client = await this.createSoapClient(config)
+      console.log('✅ [VERIFACTU] Cliente SOAP creado exitosamente')
       
       // Preparar el mensaje SOAP
       const soapMessage = {
         RegFactuSistemaFacturacion: xmlContent
       }
+      console.log('📦 [VERIFACTU] Mensaje SOAP preparado')
+      console.log('🔍 [VERIFACTU] Estructura mensaje SOAP:', JSON.stringify(Object.keys(soapMessage), null, 2))
+      
+      console.log('📡 [VERIFACTU] Enviando solicitud a AEAT...')
+      const startTime = Date.now()
       
       // Realizar la llamada SOAP
       const [result, rawResponse] = await client.RegFactuSistemaFacturacionAsync(soapMessage)
       
+      const endTime = Date.now()
+      console.log(`⏱️ [VERIFACTU] Respuesta recibida en ${endTime - startTime}ms`)
+      console.log('📥 [VERIFACTU] Raw Response recibida:', JSON.stringify(rawResponse, null, 2))
+      console.log('📋 [VERIFACTU] Result procesado:', JSON.stringify(result, null, 2))
+      
       // Procesar la respuesta
-      return this.processSubmitResponse(result, rawResponse)
+      console.log('🔄 [VERIFACTU] Procesando respuesta AEAT...')
+      const processedResult = this.processSubmitResponse(result, rawResponse)
+      console.log('✅ [VERIFACTU] Resultado final procesado:', JSON.stringify(processedResult, null, 2))
+      console.log('🏁 [VERIFACTU] ========== FIN ENVÍO A AEAT ==========')
+      
+      return processedResult
       
     } catch (error) {
+      console.error('❌ [VERIFACTU] ERROR CRÍTICO EN ENVÍO:', error)
+      console.error('🔍 [VERIFACTU] Stack trace:', error instanceof Error ? error.stack : 'No stack available')
+      console.log('🚨 [VERIFACTU] ========== ERROR EN ENVÍO A AEAT ==========')
+      
       return {
         success: false,
         errorMessage: `Error en envío SOAP: ${error instanceof Error ? error.message : 'Error desconocido'}`
@@ -304,11 +331,22 @@ export class VerifactuSoapClient {
    */
   private static processSubmitResponse(result: any, rawResponse: string): SubmitResult {
     try {
+      console.log('🔍 [VERIFACTU] Procesando respuesta AEAT...')
+      console.log('📋 [VERIFACTU] Result recibido:', JSON.stringify(result, null, 2))
+      console.log('📄 [VERIFACTU] RawResponse recibido:', rawResponse)
+      
       // La respuesta puede venir en diferentes formatos según el resultado
       const response = result?.RespuestaRegFactuSistemaFacturacion || result
+      console.log('🎯 [VERIFACTU] Response extraída:', JSON.stringify(response, null, 2))
+      console.log('📊 [VERIFACTU] Estado de envío detectado:', response?.EstadoEnvio)
       
       // Verificar si hay errores
       if (response?.EstadoEnvio === 'Incorrecto' || response?.CodigoError) {
+        console.log('❌ [VERIFACTU] RESPUESTA DE ERROR DE AEAT:')
+        console.log('🚫 [VERIFACTU] - Código error:', response.CodigoError)
+        console.log('📝 [VERIFACTU] - Descripción error:', response.DescripcionError)
+        console.log('📋 [VERIFACTU] - Estado envío:', response?.EstadoEnvio)
+        
         return {
           success: false,
           errorCode: response.CodigoError,
@@ -319,6 +357,11 @@ export class VerifactuSoapClient {
       
       // Verificar si fue aceptado
       if (response?.EstadoEnvio === 'Correcto') {
+        console.log('✅ [VERIFACTU] RESPUESTA EXITOSA DE AEAT:')
+        console.log('🎉 [VERIFACTU] - Estado: Correcto')
+        console.log('🔖 [VERIFACTU] - CSV recibido:', response.CSV)
+        console.log('📄 [VERIFACTU] - Response completa:', JSON.stringify(response, null, 2))
+        
         return {
           success: true,
           csv: response.CSV,
