@@ -13,14 +13,26 @@ async function getPool() {
     const databaseUrl = process.env.DATABASE_URL!;
     console.log('Database URL configured:', databaseUrl ? 'YES' : 'NO');
     
+    // Forzar deshabilitación de verificación SSL para Vercel
+    if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      console.log('SSL verification disabled programmatically for production/Vercel');
+    }
+    
     // Determinar configuración SSL
     const isLocal = databaseUrl.includes('localhost') || databaseUrl.includes('127.0.0.1');
+    
+    // Configuración SSL robusta para Vercel y certificados autofirmados
     const sslConfig = isLocal ? false : {
       rejectUnauthorized: false, // Para certificados autofirmados
       requestCert: false, // No solicitar certificado del cliente
-      checkServerIdentity: () => {}, // No verificar identidad del servidor (función vacía)
-      ca: undefined, // No verificar CA
-      secureProtocol: 'TLSv1_2_method' // Usar TLS 1.2 específicamente
+      checkServerIdentity: () => undefined, // No verificar identidad del servidor
+      ca: null, // No verificar CA
+      cert: null, // No usar certificado del cliente
+      key: null, // No usar clave del cliente
+      secureProtocol: 'TLS_method', // Usar cualquier versión TLS disponible
+      servername: undefined, // No verificar nombre del servidor
+      timeout: 10000 // Timeout de 10 segundos para conexión SSL
     };
     
     console.log('SSL Config:', isLocal ? 'DISABLED (local)' : 'ENABLED (remote with self-signed)');
