@@ -13,7 +13,7 @@
  * la funcionalidad de certificados.
  */
 
-const mysql = require('mysql2/promise')
+const { Pool } = require('pg')
 require('dotenv').config()
 
 async function runMigration() {
@@ -23,36 +23,33 @@ async function runMigration() {
     console.log('🔄 Iniciando migración de campos de certificados...')
     
     // Conectar a la base de datos
-    connection = await mysql.createConnection({
-      host: process.env.DB_HOST || 'localhost',
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
-      ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL
     })
+    connection = await pool.connect()
     
     console.log('✅ Conectado a la base de datos')
     
     // 1. Verificar si la tabla existe
-    const [tableExists] = await connection.execute(`
+    const tableExists = await connection.query(`
       SELECT COUNT(*) as count 
       FROM information_schema.tables 
-      WHERE table_schema = ? AND table_name = 'verifactu_config'
-    `, [process.env.DB_NAME])
+      WHERE table_name = 'verifactu_config'
+    `)
     
-    if (tableExists[0].count === 0) {
+    if (tableExists.rows[0].count === '0') {
       console.log('⚠️ La tabla verifactu_config no existe. Ejecute primero las migraciones de Drizzle.')
       process.exit(1)
     }
     
     // 2. Verificar qué columnas ya existen
-    const [columns] = await connection.execute(`
-      SELECT COLUMN_NAME 
+    const columns = await connection.query(`
+      SELECT column_name 
       FROM information_schema.columns 
-      WHERE table_schema = ? AND table_name = 'verifactu_config'
-    `, [process.env.DB_NAME])
+      WHERE table_name = 'verifactu_config'
+    `)
     
-    const existingColumns = columns.map(row => row.COLUMN_NAME)
+    const existingColumns = columns.rows.map(row => row.column_name)
     console.log('📋 Columnas existentes:', existingColumns.join(', '))
     
     // 3. Añadir columnas faltantes
@@ -74,7 +71,7 @@ async function runMigration() {
     for (const column of columnsToAdd) {
       if (!existingColumns.includes(column.name)) {
         console.log(`➕ Añadiendo columna ${column.name}...`)
-        await connection.execute(`
+        await connection.query(`
           ALTER TABLE verifactu_config 
           ADD COLUMN ${column.name} ${column.definition}
         `)
@@ -87,9 +84,9 @@ async function runMigration() {
     // 4. Modificar columna certificate_path si es necesario
     if (existingColumns.includes('certificate_path')) {
       console.log('🔧 Actualizando columna certificate_path...')
-      await connection.execute(`
+      await connection.query(`
         ALTER TABLE verifactu_config 
-        MODIFY COLUMN certificate_path VARCHAR(500) NULL COMMENT "Ruta completa al archivo de certificado"
+        ALTER COLUMN certificate_path TYPE VARCHAR(500)
       `)
       console.log('✅ Columna certificate_path actualizada')
     }
@@ -97,7 +94,7 @@ async function runMigration() {
     // 5. Eliminar columna antigua de contraseña si existe
     if (existingColumns.includes('certificate_password')) {
       console.log('🗑️ Eliminando columna certificate_password antigua...')
-      await connection.execute(`
+      await connection.query(`
         ALTER TABLE verifactu_config 
         DROP COLUMN certificate_password
       `)
@@ -107,7 +104,7 @@ async function runMigration() {
     // 6. Crear índice para expiración (opcional pero recomendado)
     try {
       console.log('📊 Creando índice para búsquedas por expiración...')
-      await connection.execute(`
+      await connection.query(`
         CREATE INDEX idx_certificate_expiration 
         ON verifactu_config(certificate_valid_until)
       `)
@@ -122,13 +119,15 @@ async function runMigration() {
     
     // 7. Verificar estructura final
     console.log('🔍 Verificando estructura final...')
-    const [finalColumns] = await connection.execute(`
-      DESCRIBE verifactu_config
+    const finalColumns = await connection.query(`
+      SELECT column_name, data_type, is_nullable 
+      FROM information_schema.columns 
+      WHERE table_name = 'verifactu_config'
     `)
     
     console.log('📋 Estructura final de verifactu_config:')
-    finalColumns.forEach(col => {
-      console.log(`   ${col.Field} - ${col.Type} - ${col.Null} - ${col.Key}`)
+    finalColumns.rows.forEach(col => {
+      console.log(`   ${col.column_name} - ${col.data_type} - ${col.is_nullable}`)
     })
     
     console.log('🎉 Migración completada exitosamente')
@@ -138,7 +137,7 @@ async function runMigration() {
     process.exit(1)
   } finally {
     if (connection) {
-      await connection.end()
+      await connection.release()
     }
   }
 }

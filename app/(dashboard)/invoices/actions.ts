@@ -82,7 +82,7 @@ export async function createInvoice(formData: InvoiceFormData): Promise<InvoiceA
 
     const invoiceId = uuidv4()
 
-    const [newInvoice] = await db
+    await db
       .insert(invoices)
       .values({
         id: invoiceId,

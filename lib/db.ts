@@ -1,25 +1,32 @@
-import { drizzle } from "drizzle-orm/mysql2";
-import mysql from "mysql2/promise";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import * as schema from "@/app/db/schema";
 import { eq } from "drizzle-orm";
 
-// Variable para almacenar la conexión
-let connection: mysql.Connection | null = null;
+// Variable para almacenar el pool de conexiones
+let pool: Pool | null = null;
 let dbInstance: ReturnType<typeof drizzle> | null = null;
 
-// Función para obtener la conexión a la base de datos
-async function getConnection() {
-  if (!connection) {
-    connection = await mysql.createConnection(process.env.DATABASE_URL!);
+// Función para obtener el pool de conexiones
+async function getPool() {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL!,
+      ssl: process.env.DATABASE_URL?.includes('localhost') || process.env.DATABASE_URL?.includes('127.0.0.1') 
+        ? false 
+        : {
+            rejectUnauthorized: false // Para certificados autofirmados
+          }
+    });
   }
-  return connection;
+  return pool;
 }
 
 // Función para obtener la instancia de Drizzle
 export async function getDb() {
   if (!dbInstance) {
-    const conn = await getConnection();
-    dbInstance = drizzle(conn, { schema, mode: "default" });
+    const pgPool = await getPool();
+    dbInstance = drizzle(pgPool, { schema });
   }
   return dbInstance;
 }
@@ -31,9 +38,9 @@ export type { UserPermission, NewUserPermission } from "@/app/db/schema";
 
 // Función para cerrar la conexión (útil para tests)
 export async function closeConnection() {
-  if (connection) {
-    await connection.end();
-    connection = null;
+  if (pool) {
+    await pool.end();
+    pool = null;
     dbInstance = null;
   }
 }

@@ -1,6 +1,6 @@
 // app/db/schema.ts
-import { mysqlTable as table } from "drizzle-orm/mysql-core";
-import * as t from "drizzle-orm/mysql-core";
+import { pgTable as table } from "drizzle-orm/pg-core";
+import * as t from "drizzle-orm/pg-core";
 import { sql, relations } from "drizzle-orm";
 
 // Utilidades comunes - Volver a UUIDs como la base de datos real
@@ -9,8 +9,8 @@ const stringId = {
 };
 
 const timestamps = {
-  createdAt: t.datetime("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
-  updatedAt: t.datetime("updated_at").default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`).notNull(),
+  createdAt: t.timestamp("created_at").defaultNow().notNull(),
+  updatedAt: t.timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
 };
 
 // ENUMs
@@ -61,7 +61,7 @@ export const businessUsers = table("business_users", {
   ...stringId,
   userId: t.varchar("user_id", { length: 36 }).notNull().references(() => users.id),
   businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
-  role: t.mysqlEnum("role", userRoles).notNull(),
+  role: t.text("role", { enum: userRoles }).notNull(),
   ...timestamps,
 }, (table) => [t.unique().on(table.userId, table.businessId)]);
 
@@ -99,16 +99,16 @@ export const invoices = table("invoices", {
   projectId: t.varchar("project_id", { length: 36 }).references(() => projects.id),
   invoiceTypeId: t.varchar("invoice_type_id", { length: 36 }).references(() => invoiceTypes.id),
   number: t.varchar("number", { length: 50 }).notNull(),
-  date: t.datetime("date").notNull(),
-  dueDate: t.datetime("due_date").notNull(),
+  date: t.timestamp("date").notNull(),
+  dueDate: t.timestamp("due_date").notNull(),
   concept: t.text("concept").notNull(),
   subtotal: t.decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
   taxAmount: t.decimal("tax_amount", { precision: 10, scale: 2 }).notNull(),
   total: t.decimal("total", { precision: 10, scale: 2 }).notNull(),
-  status: t.mysqlEnum("status", invoiceStatus).notNull().default("draft"),
+  status: t.text("status", { enum: invoiceStatus }).notNull().default("draft"),
   documentUrl: t.varchar("document_url", { length: 500 }),
   // Campos de método de pago
-  paymentMethod: t.mysqlEnum("payment_method", ["bank", "bizum", "cash"]),
+  paymentMethod: t.text("payment_method", ["bank", "bizum", "cash"]),
   bankId: t.varchar("bank_id", { length: 36 }).references(() => banks.id),
   bizumHolder: t.varchar("bizum_holder", { length: 255 }),
   bizumNumber: t.varchar("bizum_number", { length: 20 }),
@@ -121,7 +121,7 @@ export const invoiceLines = table("invoice_lines", {
   ...stringId,
   invoiceId: t.varchar("invoice_id", { length: 36 }).notNull().references(() => invoices.id),
   description: t.text("description").notNull(),
-  quantity: t.int("quantity").notNull(),
+  quantity: t.integer("quantity").notNull(),
   unitPrice: t.decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
   taxRate: t.decimal("tax_rate", { precision: 5, scale: 2 }).notNull(),
   total: t.decimal("total", { precision: 10, scale: 2 }).notNull(),
@@ -133,7 +133,7 @@ export const receivedInvoiceLines = table("received_invoice_lines", {
   ...stringId,
   receivedInvoiceId: t.varchar("received_invoice_id", { length: 36 }).notNull().references(() => receivedInvoices.id),
   description: t.text("description").notNull(),
-  quantity: t.int("quantity").notNull(),
+  quantity: t.integer("quantity").notNull(),
   unitPrice: t.decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
   taxRate: t.decimal("tax_rate", { precision: 5, scale: 2 }).notNull(),
   total: t.decimal("total", { precision: 10, scale: 2 }).notNull(),
@@ -173,18 +173,18 @@ export const receivedInvoices = table("received_invoices", {
   typeId: t.varchar("received_invoice_type_id", { length: 36 }).references(() => receivedTypes.id),
   projectId: t.varchar("project_id", { length: 36 }).references(() => projects.id),
   number: t.varchar("number", { length: 50 }).notNull(),
-  date: t.datetime("date").notNull(),
-  dueDate: t.datetime("due_date").notNull(),
+  date: t.timestamp("date").notNull(),
+  dueDate: t.timestamp("due_date").notNull(),
   providerName: t.varchar("provider_name", { length: 255 }).notNull(),
   providerNIF: t.varchar("provider_nif", { length: 20 }).notNull(),
   amount: t.decimal("amount", { precision: 10, scale: 2 }).notNull(),
   taxAmount: t.decimal("tax_amount", { precision: 10, scale: 2 }).notNull(),
   total: t.decimal("total", { precision: 10, scale: 2 }).notNull(),
-  status: t.mysqlEnum("status", receivedInvoiceStatus).notNull().default("pending"),
+  status: t.text("status", receivedInvoiceStatus).notNull().default("pending"),
   category: t.varchar("category", { length: 100 }),
   documentUrl: t.varchar("document_url", { length: 500 }),
   // Campos de método de pago
-  paymentMethod: t.mysqlEnum("payment_method", ["bank", "bizum", "cash"]),
+  paymentMethod: t.text("payment_method", ["bank", "bizum", "cash"]),
   bankId: t.varchar("bank_id", { length: 36 }).references(() => banks.id),
   bizumHolder: t.varchar("bizum_holder", { length: 255 }),
   bizumNumber: t.varchar("bizum_number", { length: 20 }),
@@ -199,9 +199,9 @@ export const projects = table("projects", {
   clientId: t.varchar("client_id", { length: 36 }).references(() => clients.id),
   name: t.varchar("name", { length: 255 }).notNull(),
   description: t.text("description"),
-  status: t.mysqlEnum("status", projectStatus).notNull().default("pending"),
-  startDate: t.datetime("start_date"),
-  endDate: t.datetime("end_date"),
+  status: t.text("status", projectStatus).notNull().default("pending"),
+  startDate: t.timestamp("start_date"),
+  endDate: t.timestamp("end_date"),
   contractUrl: t.varchar("contract_url", { length: 500 }),
   isDeleted: t.boolean("is_deleted").default(false).notNull(),
   ...timestamps,
@@ -212,11 +212,11 @@ export const notifications = table("notifications", {
   id: t.varchar("id", { length: 36 }).primaryKey(),
   user_id: t.varchar("user_id", { length: 36 }),
   business_id: t.varchar("business_id", { length: 36 }),
-  type: t.mysqlEnum("type", notificationTypes).notNull().default("info"),
+  type: t.text("type", notificationTypes).notNull().default("info"),
   title: t.varchar("title", { length: 255 }).notNull(),
   message: t.text("message").notNull(),
   is_read: t.boolean("is_read").notNull().default(false),
-  created_at: t.datetime("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  created_at: t.timestamp("created_at").notNull().defaultNow(),
   action_url: t.varchar("action_url", { length: 500 }),
 });
 
@@ -256,21 +256,21 @@ export const invoiceAutomations = table("invoice_automations", {
   projectId: t.varchar("project_id", { length: 36 }).references(() => projects.id),
   amount: t.decimal("amount", { precision: 12, scale: 2 }).notNull(),
   concept: t.varchar("concept", { length: 255 }).notNull(),
-  frequency: t.mysqlEnum("frequency", ["day", "month", "year"]).notNull(),
-  interval: t.int("interval").notNull().default(1), // cada X días/meses/años
+  frequency: t.text("frequency", ["day", "month", "year"]).notNull(),
+  interval: t.integer("interval").notNull().default(1), // cada X días/meses/años
   startDate: t.date("start_date").notNull(),
   timeOfDay: t.time("time_of_day").notNull(),
-  maxOccurrences: t.int("max_occurrences"), // null = indefinido
-  occurrences: t.int("occurrences").notNull().default(0),
+  maxOccurrences: t.integer("max_occurrences"), // null = indefinido
+  occurrences: t.integer("occurrences").notNull().default(0),
   isActive: t.boolean("is_active").notNull().default(true),
-  lastRunAt: t.datetime("last_run_at"),
+  lastRunAt: t.timestamp("last_run_at"),
   // Campos del método de pago
-  paymentMethod: t.mysqlEnum("payment_method", ["bank", "bizum", "cash"]),
+  paymentMethod: t.text("payment_method", ["bank", "bizum", "cash"]),
   bankId: t.varchar("bank_id", { length: 36 }).references(() => banks.id),
   bizumHolder: t.varchar("bizum_holder", { length: 255 }),
   bizumNumber: t.varchar("bizum_number", { length: 20 }),
-  createdAt: t.datetime("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: t.datetime("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`).$onUpdate(() => sql`CURRENT_TIMESTAMP`),
+  createdAt: t.timestamp("created_at").notNull().defaultNow(),
+  updatedAt: t.timestamp("updated_at").notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
 // Líneas de automatización de facturas
@@ -282,8 +282,8 @@ export const automationLines = table("automation_lines", {
   unitPrice: t.decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
   taxRate: t.decimal("tax_rate", { precision: 5, scale: 2 }).notNull(),
   total: t.decimal("total", { precision: 10, scale: 2 }).notNull(),
-  createdAt: t.datetime("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
-  updatedAt: t.datetime("updated_at").default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`).notNull(),
+  createdAt: t.timestamp("created_at").defaultNow().notNull(),
+  updatedAt: t.timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
 });
 
 // Automatización de ejecución de automaciones
@@ -291,11 +291,11 @@ export const automationExecutions = table("automation_executions", {
   id: t.varchar("id", { length: 36 }).primaryKey(),
   automationId: t.varchar("automation_id", { length: 36 }).notNull(),
   invoiceId: t.varchar("invoice_id", { length: 36 }),
-  executedAt: t.datetime("executed_at").notNull(),
-  status: t.mysqlEnum("status", ["executed", "sent", "completed", "error"]).notNull(),
+  executedAt: t.timestamp("executed_at").notNull(),
+  status: t.text("status", ["executed", "sent", "completed", "error"]).notNull(),
   errorMessage: t.text("error_message"),
-  createdAt: t.datetime("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
-  updatedAt: t.datetime("updated_at").default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`).notNull(),
+  createdAt: t.timestamp("created_at").defaultNow().notNull(),
+  updatedAt: t.timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
 });
 
 // Exclusiones de entidades por usuario, negocio y módulo
@@ -305,8 +305,8 @@ export const userModuleExclusions = table("user_module_exclusions", {
   businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
   module: t.varchar("module", { length: 50 }).notNull(), // 'clients', 'providers', 'projects'
   entityId: t.varchar("entity_id", { length: 36 }).notNull(),
-  createdAt: t.datetime("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
-  updatedAt: t.datetime("updated_at").default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`).notNull(),
+  createdAt: t.timestamp("created_at").defaultNow().notNull(),
+  updatedAt: t.timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
 }, (table) => [t.unique().on(table.userId, table.businessId, table.module, table.entityId)]);
 
 // Tabla para registro VERI*FACTU
@@ -314,21 +314,21 @@ export const verifactuRegistry = table("verifactu_registry", {
   ...stringId,
   businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
   invoiceId: t.varchar("invoice_id", { length: 36 }).notNull().references(() => invoices.id),
-  invoiceType: t.mysqlEnum("invoice_type", ["sent", "received"]).notNull(),
-  sequenceNumber: t.int("sequence_number").notNull(), // Número secuencial por negocio
+  invoiceType: t.text("invoice_type", ["sent", "received"]).notNull(),
+  sequenceNumber: t.integer("sequence_number").notNull(), // Número secuencial por negocio
   previousHash: t.varchar("previous_hash", { length: 128 }), // Hash del registro anterior
   currentHash: t.varchar("current_hash", { length: 128 }).notNull(), // Hash del registro actual
   qrCode: t.text("qr_code").notNull(), // Contenido del código QR
   qrUrl: t.varchar("qr_url", { length: 500 }).notNull(), // URL del QR
   xmlContent: t.text("xml_content").notNull(), // XML completo para envío
   signedXml: t.text("signed_xml"), // XML firmado con XAdES
-  transmissionStatus: t.mysqlEnum("transmission_status", ["pending", "sending", "sent", "error", "rejected"]).notNull().default("pending"),
-  transmissionDate: t.datetime("transmission_date"), // Fecha de envío a AEAT
+  transmissionStatus: t.text("transmission_status", ["pending", "sending", "sent", "error", "rejected"]).notNull().default("pending"),
+  transmissionDate: t.timestamp("transmission_date"), // Fecha de envío a AEAT
   aeatResponse: t.text("aeat_response"), // Respuesta completa de AEAT
   aeatCsv: t.varchar("aeat_csv", { length: 50 }), // CSV de confirmación AEAT
   errorMessage: t.text("error_message"), // Mensaje de error si falla
-  retryCount: t.int("retry_count").default(0), // Número de reintentos
-  nextRetryAt: t.datetime("next_retry_at"), // Próximo intento de envío
+  retryCount: t.integer("retry_count").default(0), // Número de reintentos
+  nextRetryAt: t.timestamp("next_retry_at"), // Próximo intento de envío
   isVerifiable: t.boolean("is_verifiable").default(false).notNull(), // Si es sistema VERI*FACTU
   ...timestamps,
 }, (table) => [
@@ -343,15 +343,15 @@ export const verifactuConfig = table("verifactu_config", {
   ...stringId,
   businessId: t.varchar("business_id", { length: 36 }).notNull().references(() => businesses.id),
   enabled: t.boolean("enabled").default(false).notNull(), // Si está activo VERI*FACTU
-  mode: t.mysqlEnum("mode", ["verifactu", "requerimiento"]).notNull().default("verifactu"), // Modo de operación
+  mode: t.text("mode", ["verifactu", "requerimiento"]).notNull().default("verifactu"), // Modo de operación
   certificatePath: t.varchar("certificate_path", { length: 500 }), // Ruta al certificado digital (actualizada)
   certificatePasswordEncrypted: t.text("certificate_password_encrypted"), // Contraseña cifrada de forma segura
   certificateUploadedAt: t.timestamp("certificate_uploaded_at"), // Cuándo se subió el certificado
   certificateValidUntil: t.date("certificate_valid_until"), // Fecha de expiración del certificado
-  environment: t.mysqlEnum("environment", ["production", "testing"]).notNull().default("testing"),
-  lastSequenceNumber: t.int("last_sequence_number").default(0).notNull(), // Último número de secuencia usado
-  flowControlSeconds: t.int("flow_control_seconds").default(60).notNull(), // Segundos entre envíos
-  maxRecordsPerSubmission: t.int("max_records_per_submission").default(100).notNull(),
+  environment: t.text("environment", ["production", "testing"]).notNull().default("testing"),
+  lastSequenceNumber: t.integer("last_sequence_number").default(0).notNull(), // Último número de secuencia usado
+  flowControlSeconds: t.integer("flow_control_seconds").default(60).notNull(), // Segundos entre envíos
+  maxRecordsPerSubmission: t.integer("max_records_per_submission").default(100).notNull(),
   autoSubmit: t.boolean("auto_submit").default(true).notNull(), // Envío automático
   includeInPdf: t.boolean("include_in_pdf").default(true).notNull(), // Incluir QR y leyenda en PDF
   ...timestamps,
@@ -364,7 +364,7 @@ export const verifactuEvents = table("verifactu_events", {
   registryId: t.varchar("registry_id", { length: 36 }).references(() => verifactuRegistry.id),
   eventType: t.varchar("event_type", { length: 50 }).notNull(), // created, signed, sent, confirmed, error
   eventData: t.text("event_data"), // Datos del evento en JSON
-  createdAt: t.datetime("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  createdAt: t.timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => [t.index("idx_registry").on(table.registryId)]);
 
 // DEFINICIÓN DE RELACIONES

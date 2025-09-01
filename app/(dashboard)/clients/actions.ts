@@ -60,8 +60,9 @@ export async function createClient(businessId: string, formData: ClientFormData)
     }
 
     // Crear el nuevo cliente
-    const [newClient] = await db.insert(clients).values({
-      id: uuidv4(),
+    const clientId = uuidv4()
+    await db.insert(clients).values({
+      id: clientId,
       businessId: businessId,
       name: validatedData.name,
       nif: validatedData.nif,
@@ -78,11 +79,11 @@ export async function createClient(businessId: string, formData: ClientFormData)
       type: "action",
     })
 
-    console.log("Cliente creado:", newClient.insertId)
+    console.log("Cliente creado:", clientId)
 
     return {
       success: true,
-      clientId: newClient.insertId.toString(),
+      clientId: clientId,
     }
   } catch (error) {
     console.error("Error al crear cliente:", error)

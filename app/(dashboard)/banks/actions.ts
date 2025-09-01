@@ -17,7 +17,8 @@ export type BankWithStats = {
   accountNumber: string
   createdAt: Date
   updatedAt: Date
-  _count: {
+  invoiceCount?: number
+  _count?: {
     invoices: number
   }
 }
@@ -39,11 +40,11 @@ export async function getBanksWithStats(businessId: string, userId: string): Pro
         accountNumber: banks.accountNumber,
         createdAt: banks.createdAt,
         updatedAt: banks.updatedAt,
-        _count: sql<{ invoices: number }>`(
+        invoiceCount: sql<number>`(
           SELECT COUNT(*) 
           FROM invoices 
           WHERE invoices.business_id = ${businessId}
-        )`.as('_count')
+        )`.as('invoice_count')
       })
       .from(banks)
       .where(
@@ -230,11 +231,11 @@ export async function getBankById(bankId: string): Promise<BankWithStats | null>
         accountNumber: banks.accountNumber,
         createdAt: banks.createdAt,
         updatedAt: banks.updatedAt,
-        _count: sql<{ invoices: number }>`(
+        invoiceCount: sql<number>`(
           SELECT COUNT(*) 
           FROM invoices 
           WHERE invoices.business_id = banks.business_id
-        )`.as('_count')
+        )`.as('invoice_count')
       })
       .from(banks)
       .where(
