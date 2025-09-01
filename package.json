@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "npx puppeteer browsers install chrome && next build",
-    "start": "next start",
+    "dev": "NODE_TLS_REJECT_UNAUTHORIZED=0 next dev",
+    "build": "NODE_TLS_REJECT_UNAUTHORIZED=0 npx puppeteer browsers install chrome && NODE_TLS_REJECT_UNAUTHORIZED=0 next build",
+    "start": "NODE_TLS_REJECT_UNAUTHORIZED=0 next start",
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",

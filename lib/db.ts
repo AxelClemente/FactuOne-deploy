@@ -10,13 +10,33 @@ let dbInstance: ReturnType<typeof drizzle> | null = null;
 // Función para obtener el pool de conexiones
 async function getPool() {
   if (!pool) {
+    const databaseUrl = process.env.DATABASE_URL!;
+    console.log('Database URL configured:', databaseUrl ? 'YES' : 'NO');
+    
+    // Determinar configuración SSL
+    const isLocal = databaseUrl.includes('localhost') || databaseUrl.includes('127.0.0.1');
+    const sslConfig = isLocal ? false : {
+      rejectUnauthorized: false, // Para certificados autofirmados
+      requestCert: false, // No solicitar certificado del cliente
+      checkServerIdentity: () => {}, // No verificar identidad del servidor (función vacía)
+      ca: undefined, // No verificar CA
+      secureProtocol: 'TLSv1_2_method' // Usar TLS 1.2 específicamente
+    };
+    
+    console.log('SSL Config:', isLocal ? 'DISABLED (local)' : 'ENABLED (remote with self-signed)');
+    
     pool = new Pool({
-      connectionString: process.env.DATABASE_URL!,
-      ssl: process.env.DATABASE_URL?.includes('localhost') || process.env.DATABASE_URL?.includes('127.0.0.1') 
-        ? false 
-        : {
-            rejectUnauthorized: false // Para certificados autofirmados
-          }
+      connectionString: databaseUrl,
+      ssl: sslConfig,
+      // Configuraciones adicionales para mejorar la conectividad
+      max: 20, // Máximo número de clientes en el pool
+      idleTimeoutMillis: 30000, // Cerrar clientes inactivos después de 30 segundos
+      connectionTimeoutMillis: 10000, // Timeout de conexión de 10 segundos
+    });
+    
+    // Manejar errores del pool
+    pool.on('error', (err) => {
+      console.error('Database pool error:', err);
     });
   }
   return pool;
